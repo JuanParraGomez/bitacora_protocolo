@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitácora — protocolo analítico asistido por IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAF9F5; --card:#FFFFFF; --ink:#1C1E21; --ink2:#5C6168; --ink3:#8B9097;
+  --line:#E5E2D9; --line2:#D2CEC2;
+  --flow:#0E6B62; --flow-ink:#0A4F49; --flow-bg:#E3EFEC; --flow-line:#B9D8D2;
+  --gate:#B45309; --gate-ink:#8A3E06; --gate-bg:#FBF0DF; --gate-line:#E8C9A0;
+  --danger:#A32D2D; --danger-bg:#F9ECEC;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --disp:'Space Grotesk',system-ui,sans-serif;
+  --body:system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#141619; --card:#1C1F23; --ink:#E9E7E1; --ink2:#A6ABB2; --ink3:#787E86;
+    --line:#2B2F34; --line2:#3A3F45;
+    --flow:#4FB3A7; --flow-ink:#8AD4CA; --flow-bg:#13302C; --flow-line:#1F4B45;
+    --gate:#E0913B; --gate-ink:#F0B87A; --gate-bg:#2E2210; --gate-line:#5C441E;
+    --danger:#E07A7A; --danger-bg:#3A1E1E;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+::selection{background:var(--flow-bg)}
+
+/* ---------- shell ---------- */
+.shell{display:flex;min-height:100vh}
+.side{width:230px;flex-shrink:0;border-right:1px solid var(--line);padding:26px 18px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px}
+.brand{font-family:var(--disp);font-weight:600;font-size:19px;letter-spacing:-.01em;margin-bottom:2px}
+.brand small{display:block;font-family:var(--mono);font-weight:400;font-size:10.5px;color:var(--ink3);letter-spacing:.04em;margin-top:3px;line-height:1.5}
+.nav{margin-top:22px;display:flex;flex-direction:column;gap:2px}
+.nav button{all:unset;cursor:pointer;padding:8px 10px;border-radius:7px;font-size:14px;color:var(--ink2);display:flex;gap:9px;align-items:center}
+.nav button:hover{background:var(--card);color:var(--ink)}
+.nav button.on{background:var(--flow-bg);color:var(--flow-ink);font-weight:500}
+.nav button:focus-visible{outline:2px solid var(--flow);outline-offset:1px}
+.side .foot{margin-top:auto;font-size:11.5px;color:var(--ink3);font-family:var(--mono);line-height:1.7}
+#saveState{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:14px;min-height:16px}
+main{flex:1;padding:38px 46px 90px;max-width:940px}
+@media(max-width:760px){
+  .shell{flex-direction:column}
+  .side{width:100%;height:auto;position:static;flex-direction:row;align-items:center;flex-wrap:wrap;padding:14px 16px;gap:10px}
+  .nav{margin-top:0;flex-direction:row;flex-wrap:wrap}
+  .side .foot,#saveState{display:none}
+  main{padding:22px 16px 70px}
+}
+@media(max-width:480px){
+  h1{font-size:22px}
+  .card{padding:15px 14px}
+  .ph-head{padding:13px 14px;flex-wrap:wrap}
+  .ph-body{padding:2px 14px 16px}
+  .toolbar{gap:8px}
+  .btn{font-size:13.5px;padding:8px 13px}
+  .btn.tiny{font-size:12.5px;padding:6px 10px}
+}
+
+/* ---------- type ---------- */
+h1{font-family:var(--disp);font-size:26px;font-weight:600;letter-spacing:-.015em;line-height:1.25}
+h2{font-family:var(--disp);font-size:18px;font-weight:600;letter-spacing:-.01em}
+h3{font-family:var(--disp);font-size:15px;font-weight:600}
+.sub{color:var(--ink2);margin-top:6px;max-width:60ch}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3)}
+
+/* ---------- cards & controls ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+.btn{all:unset;cursor:pointer;font-family:var(--disp);font-weight:500;font-size:14px;padding:9px 16px;border-radius:8px;background:var(--flow);color:#fff;display:inline-flex;align-items:center;gap:7px}
+.btn:hover{background:var(--flow-ink)}
+.btn:focus-visible{outline:2px solid var(--flow);outline-offset:2px}
+.btn.ghost{background:transparent;color:var(--flow);border:1px solid var(--flow-line)}
+.btn.ghost:hover{background:var(--flow-bg)}
+.btn.tiny{font-size:12px;padding:5px 10px;border-radius:6px}
+.btn.warn{background:transparent;color:var(--danger);border:1px solid var(--line)}
+.btn.warn:hover{background:var(--danger-bg)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+label{display:block;font-size:13.5px;font-weight:500;color:var(--ink2);margin:14px 0 5px}
+label .opt{font-weight:400;color:var(--ink3)}
+input[type=text],textarea,select{width:100%;background:var(--paper);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font:inherit;font-size:15px;color:var(--ink)}
+textarea{resize:vertical;min-height:64px;line-height:1.55}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--flow)}
+.checkrow{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:11px 13px;background:var(--paper);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.checkrow input{width:16px;height:16px;margin-top:3px;accent-color:var(--flow);flex-shrink:0}
+.checkrow span{font-size:14.5px;color:var(--ink2)}
+.chip{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;padding:3px 9px;border-radius:99px;border:1px solid var(--line2);color:var(--ink2)}
+.chip.f{background:var(--flow-bg);border-color:var(--flow-line);color:var(--flow-ink)}
+.chip.g{background:var(--gate-bg);border-color:var(--gate-line);color:var(--gate-ink)}
+.hint{display:flex;gap:9px;font-size:13.5px;color:var(--ink2);background:var(--paper);border-left:3px solid var(--gate);padding:9px 12px;margin-top:16px;line-height:1.55}
+.hint b{color:var(--gate-ink);font-weight:600}
+
+/* ---------- notebook spine (signature) ---------- */
+.spine{position:relative;margin-top:30px;padding-left:34px}
+.spine::before{content:'';position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:var(--gate);opacity:.55}
+.phase{position:relative;margin-bottom:18px}
+.phase::before{content:'';position:absolute;left:-32px;top:20px;width:14px;height:14px;border-radius:50%;background:var(--paper);border:2px solid var(--line2)}
+.phase.done::before{background:var(--flow);border-color:var(--flow)}
+.phase.open::before{background:var(--gate);border-color:var(--gate)}
+.phase .ph-card{background:var(--card);border:1px solid var(--line);border-radius:12px}
+.phase.open .ph-card{border-color:var(--gate-line)}
+.ph-head{display:flex;align-items:baseline;gap:12px;padding:16px 20px;cursor:pointer}
+.ph-head:focus-visible{outline:2px solid var(--flow);outline-offset:-2px}
+.ph-head .num{font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.ph-head h2{flex:1}
+.ph-head .st{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em}
+.phase.done .st{color:var(--flow)}
+.phase.open .st{color:var(--gate)}
+.phase.lock .st{color:var(--ink3)}
+.ph-body{padding:2px 22px 22px;border-top:1px solid var(--line)}
+.phase.lock .ph-card{opacity:.55}
+.phase.lock .ph-head{cursor:default}
+
+/* ---------- gate stamp (signature) ---------- */
+.gate{margin-top:22px;border:1.5px dashed var(--gate-line);background:var(--gate-bg);border-radius:10px;padding:15px 18px}
+.gate .stamp{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--gate-ink);font-weight:500}
+.gate ul{margin:9px 0 0 18px;font-size:13px;color:var(--ink2)}
+.gate ul li{margin-bottom:4px}
+.gate.ok{border-color:var(--flow-line);background:var(--flow-bg)}
+.gate.ok .stamp{color:var(--flow-ink)}
+.gate .btn{margin-top:12px}
+
+/* ---------- rows (linaje, predicciones, iteraciones) ---------- */
+.rowset{margin-top:6px}
+.rw{border:1px solid var(--line);border-radius:9px;padding:13px 14px;margin-top:10px;background:var(--paper);position:relative}
+.rw .del{all:unset;cursor:pointer;position:absolute;top:8px;right:10px;color:var(--ink3);font-size:15px;line-height:1;padding:3px}
+.rw .del:hover{color:var(--danger)}
+.rw label:first-of-type{margin-top:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.pred-tag{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--gate-ink)}
+
+/* ---------- prompt drawer ---------- */
+details.prompt{margin-top:16px;border:1px solid var(--line);border-radius:9px;background:var(--card)}
+details.prompt summary{cursor:pointer;padding:11px 14px;font-size:13px;font-weight:500;color:var(--flow-ink);list-style:none;display:flex;gap:8px;align-items:center}
+details.prompt summary::before{content:'›';font-family:var(--mono);transition:transform .15s}
+details.prompt[open] summary::before{transform:rotate(90deg)}
+details.prompt pre{margin:0 14px 12px;padding:13px;background:var(--paper);border:1px solid var(--line);border-radius:7px;font-family:var(--mono);font-size:12px;line-height:1.65;white-space:pre-wrap;color:var(--ink2)}
+details.prompt .btn{margin:0 14px 13px}
+
+/* ---------- task list ---------- */
+.tlist{display:flex;flex-direction:column;gap:12px;margin-top:24px}
+.tcard{display:flex;align-items:center;gap:16px;cursor:pointer}
+.tcard:hover{border-color:var(--flow-line)}
+.tcard .dots{display:flex;gap:5px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--paper);border:1.5px solid var(--line2)}
+.dot.d{background:var(--flow);border-color:var(--flow)}
+.dot.o{background:var(--gate);border-color:var(--gate)}
+.tcard .meta{flex:1;min-width:0}
+.tcard .meta h3{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcard .meta p{font-size:12.5px;color:var(--ink3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{margin-top:26px;padding:34px;text-align:center;border:1.5px dashed var(--line2);border-radius:12px;color:var(--ink2);font-size:14px}
+
+/* ---------- reference tables ---------- */
+table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);padding:8px 10px;border-bottom:1.5px solid var(--line2);vertical-align:bottom}
+td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink2);line-height:1.55}
+td b{color:var(--ink);font-weight:600}
+td .sig{color:var(--danger);font-size:12.5px}
+.anti{margin-top:14px}
+.anti h3{color:var(--danger)}
+.anti p{font-size:13.5px;color:var(--ink2);margin-top:6px}
+.anti .det{font-family:var(--mono);font-size:11.5px;color:var(--ink3);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+
+/* ---------- registro view ---------- */
+.mdbox{width:100%;min-height:340px;font-family:var(--mono);font-size:12px;line-height:1.7}
+.banner{background:var(--flow-bg);border:1px solid var(--flow-line);color:var(--flow-ink);border-radius:9px;padding:11px 15px;font-size:13.5px;margin-top:18px}
+.banner.warn{background:var(--gate-bg);border-color:var(--gate-line);color:var(--gate-ink)}
+.back{all:unset;cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--ink3);margin-bottom:16px;display:inline-block}
+.back:hover{color:var(--ink)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div>
+      <div class="brand">Bitácora<small>protocolo analítico<br>asistido por IA</small></div>
+      <nav class="nav" id="nav"></nav>
+      <div id="saveState"></div>
+    </div>
+    <div class="foot">comprender → predecir →<br>ejecutar → confrontar</div>
+  </aside>
+  <main id="app" aria-live="polite"></main>
+</div>
+<script>
+/* ================= data: prompts, matriz, anti-patrones ================= */
+const UNIV = {
+soc:{t:'Prompt de tutor socrático (LLM de razonamiento)',x:`Te comparto mi Guía de comprensión y predicción. Tu rol es de tutor socrático estricto.
+PROHIBIDO: proponer un plan, redactar secciones por mí, darme predicciones o "mejorar" mi documento.
+PERMITIDO, una pregunta a la vez y máximo 5 en total:
+1. Señalar supuestos implícitos que no declaré.
+2. Buscar contraejemplos concretos a mis predicciones.
+3. Preguntarme por elementos, actores o pasos omitidos.
+4. Atacar mi alcance con casos borde realistas.
+Cuando responda cada pregunta, evalúa si mi respuesta es sólida o evasiva antes de pasar a la siguiente.
+
+GUÍA:
+[pegar aquí]`},
+aar:{t:'Prompt de facilitador AAR (solo preguntas)',x:`Vamos a hacer mi After-Action Review. Tu rol es de facilitador: SOLO formulas preguntas, una a la vez.
+PROHIBIDO: explicar las discrepancias por mí, proponer causas, redactar conclusiones o resumir "lo aprendido".
+Secuencia de preguntas:
+1. ¿Qué esperaba exactamente (predicción y umbral)?
+2. ¿Qué ocurrió en la realidad?
+3. ¿Por qué la diferencia? (exige mecánica causal, rechaza respuestas vagas)
+4. ¿Qué suposición MÍA era incorrecta o incompleta?
+5. ¿Qué cambio procedimentalmente en la próxima tarea?
+Si mi respuesta culpa solo a factores externos, repregunta hasta que identifique una suposición propia.
+
+PREDICCIONES Y RESULTADOS:
+[pegar aquí]`},
+toolF2:'Tu cabeza primero. Luego un LLM razonador como tutor socrático sobre TU borrador. Nunca "escríbeme el plan".',
+toolF4:'Humano. La IA solo formula preguntas como facilitador. Prohibido que redacte la retrospectiva por ti.'
+};
+
+const TIPOS = {
+datos:{ nombre:'Análisis de datos',
+ f1:{ t:'Orientación y rastreo de linaje', s:'Mapear el territorio antes de razonar. Solo extracción, cero interpretación.',
+  rows:[{k:'variable',l:'Variable / indicador',ph:'ej. MLTV_ADOPTION'},
+        {k:'origen',l:'Origen físico (tabla.campo real)',ph:'ej. RP_GOLD_DB.GROWTH.FCT_ORDERS.IS_MLTV'},
+        {k:'ruta',l:'Query / ruta de construcción',ph:'link o referencia a la query del diccionario'},
+        {k:'negocio',l:'Significado en lenguaje de negocio',ph:'qué mide realmente, en tus palabras'}],
+  label:'Rastreo de linaje', add:'+ Agregar variable',
+  gateMsg:'Mapea al menos una variable a su origen físico real (tabla y campo, no el nombre bonito del dashboard).',
+  check:'Todas las variables del requerimiento tienen origen físico rastreado. No estoy razonando sobre nombres bonitos de dashboard.',
+  dudasPh:'ej. el diccionario dice "usuarios activos" pero no define la ventana temporal',
+  hint:'Rastrea primero la variable que menos entiendes. Es la que más probablemente invalide el plan, y quieres saberlo ahora, no en la fase 3.',
+  tool:'RAG (NotebookLM / Claude con archivos) · information_schema · Excel manual — tier económico. Delegas extracción; no delegas resolver contradicciones entre fuentes.',
+  prompt:{t:'Prompt de extracción literal (RAG / NotebookLM)',x:`Actúa como motor de extracción, no como analista. Del corpus adjunto, extrae SOLO información literal sobre el indicador [NOMBRE]:
+1. Definición exacta tal como está escrita.
+2. Tabla, vista o archivo de origen.
+3. Campos que lo componen y filtros aplicados.
+4. La query o transformación referenciada, completa.
+Devuelve citas textuales con su ubicación. Prohibido interpretar, parafrasear o inferir. Si algo no consta, responde exactamente: "no consta".`}},
+ f2:{ decisionPh:'ej. el VP decide si escalar la campaña MLTV a Monterrey según la conversión de GDL',
+  predPh:'ej. la adopción de MLTV en GDL estará entre 8% y 12%, mayor en zonas de alto ticket',
+  umbralPh:'ej. falsa si <8% o >12%',
+  pasosPh:`1. join orders×users por user_id, ventana ene–jun
+2. excluir órdenes canceladas
+3. ...`},
+ f3:{ checkA:'El código corre de punta a punta y devuelve un set de datos limpio con métricas descriptivas.',
+  checkB:'Audité cada join, filtro y agregación que la IA introdujo. Puedo explicar cada CTE sin releer el chat.',
+  intentoPh:'ej. v1 de la query de adopción con join a dim_users',
+  tool:'Copiloto tier medio alimentado con tu guía de la fase 2. Todo lo que genere se audita antes de integrarse.',
+  prompts:[{t:'Prompt generador de queries (ingiere la guía)',x:`Genera la query siguiendo ESTRICTAMENTE la guía adjunta. Reglas duras:
+1. Usa únicamente las tablas y campos listados en la sección de linaje. Nada más.
+2. No introduzcas filtros, joins ni heurísticas que no estén en los pasos metodológicos.
+3. Comenta cada CTE indicando qué paso de la guía implementa.
+4. Si un paso es ambiguo, DETENTE y pregúntame en lugar de asumir.
+5. Dialecto: Snowflake.
+
+GUÍA:
+[pegar aquí]`},{t:'Prompt de depuración acotada',x:`Este es el error y el fragmento de query. Corrige SOLO el error señalado sin reestructurar la lógica ni "optimizar" nada más. Explica en una línea qué causaba el error.
+
+ERROR:
+[pegar]
+
+QUERY:
+[pegar]`}]},
+ f4:{ patronL:'Patrón reutilizable', patronPh:'-- la query o script que copiarás la próxima vez' }},
+
+software:{ nombre:'Software / automatización',
+ f1:{ t:'Orientación y mapeo del terreno', s:'Entender el sistema y sus restricciones antes de escribir una línea. Solo reconocimiento.',
+  rows:[{k:'variable',l:'Componente / requisito',ph:'ej. endpoint de reservas, cron de scraping'},
+        {k:'origen',l:'Fuente de verdad',ph:'repo, doc, sistema existente, dueño del proceso'},
+        {k:'ruta',l:'Referencia exacta',ph:'link al archivo, módulo o documento'},
+        {k:'negocio',l:'Qué debe hacer, en tus palabras',ph:'el comportamiento esperado, sin jerga'}],
+  label:'Mapa del sistema', add:'+ Agregar componente',
+  gateMsg:'Mapea al menos un componente o requisito a su fuente de verdad (repo, doc o dueño).',
+  check:'Cada requisito tiene fuente de verdad identificada y sé qué partes del sistema toca. No voy a programar sobre supuestos.',
+  dudasPh:'ej. no sé si la API externa soporta paginación; ¿quién es el dueño del esquema?',
+  hint:'Empieza por el componente que menos entiendes o la integración más riesgosa: es la que puede invalidar el diseño completo.',
+  tool:'Lectura de repo y docs con IA ("explícame este módulo"), RAG sobre documentación — tier económico. Delegas reconocimiento; no delegas decidir la arquitectura.',
+  prompt:{t:'Prompt de reconocimiento de código/docs',x:`Actúa como lector de código y documentación, no como arquitecto. Del material adjunto extrae SOLO:
+1. Qué hace hoy el módulo/sistema [X].
+2. Sus dependencias y contratos (inputs, outputs, formatos).
+3. Restricciones explícitas: versiones, límites, convenciones del repo.
+Cita archivo y línea (o sección) de cada afirmación. Prohibido proponer cambios o mejoras. Si algo no está documentado, di "no consta".`}},
+ f2:{ decisionPh:'ej. con esto el equipo deja de moderar videos a mano; éxito: <5 min por lote',
+  predPh:'ej. la integración con la API de X tomará menos de 2 días y no tocará el core',
+  umbralPh:'ej. falsa si necesito modificar el esquema de la BD',
+  pasosPh:`1. definir contrato del endpoint
+2. implementar validación
+3. integrar con el worker de Celery
+4. ...`},
+ f3:{ checkA:'La solución corre de punta a punta contra el criterio de done de la guía, no "en mi máquina a medias".',
+  checkB:'Entiendo cada bloque que la IA generó y puedo explicarlo sin releer el chat. Cero cajas negras integradas.',
+  intentoPh:'ej. v1 del endpoint con validación pydantic',
+  tool:'Copiloto tier medio con tu guía como spec. Tú decides la arquitectura; él escribe el boilerplate.',
+  prompts:[{t:'Prompt de implementación desde spec',x:`Implementa siguiendo ESTRICTAMENTE la spec adjunta. Reglas duras:
+1. Solo los componentes y contratos listados. Nada más.
+2. No introduzcas dependencias, patrones ni "mejoras" fuera de la spec.
+3. Comenta cada función indicando qué requisito implementa.
+4. Si algo es ambiguo, DETENTE y pregunta en lugar de asumir.
+Stack: [FastAPI / Python / n8n según aplique].
+
+SPEC:
+[pegar aquí]`}]},
+ f4:{ patronL:'Patrón reutilizable', patronPh:'# el snippet, config o estructura que copiarás la próxima vez' }},
+
+campana:{ nombre:'Campaña / outreach',
+ f1:{ t:'Orientación y mapeo de actores', s:'Saber a quién contactas y por qué antes de escribir un solo mensaje.',
+  rows:[{k:'variable',l:'Actor / creador',ph:'ej. @jorgeleo._'},
+        {k:'origen',l:'Canal y alcance',ph:'ej. TikTok 120K · IG 45K · engagement 6%'},
+        {k:'ruta',l:'Contacto / referencia',ph:'DM, mail, manager, link a sus videos clave'},
+        {k:'negocio',l:'Por qué es fit',ph:'qué de su contenido conecta con el objetivo'}],
+  label:'Mapa de actores', add:'+ Agregar actor',
+  gateMsg:'Registra al menos un actor con canal y alcance verificados.',
+  check:'Cada actor tiene datos verificados (alcance real, contacto, fit). No voy a contactar a ciegas.',
+  dudasPh:'ej. ¿el engagement de @X es orgánico? ¿quién negocia, él o su manager?',
+  hint:'Investiga primero al actor del que más dudas: si el fit no existe, mejor descubrirlo antes de diseñar la campaña alrededor de él.',
+  tool:'Scraping y búsqueda asistida (tu pipeline de ScrapeCreators, búsqueda web) · tier económico para resumir perfiles. Delegas recolección; no delegas juzgar el fit.',
+  prompt:{t:'Prompt de perfil de creador (solo hechos)',x:`Resume SOLO con datos verificables del perfil/material adjunto:
+1. Temas de contenido y formatos que le funcionan.
+2. Frecuencia de publicación y engagement observable.
+3. Marcas o restaurantes con los que ya trabajó.
+4. Tono y estilo.
+Cita el video o post fuente de cada afirmación. Prohibido opinar si "encaja" con mi campaña: eso lo decido yo.`}},
+ f2:{ decisionPh:'ej. cerrar 3 videos con foodies de Tampico este mes; el negocio decide si el canal escala',
+  predPh:'ej. de 20 contactados, responderán 4-6 en 72 horas',
+  umbralPh:'ej. falsa si responden menos de 3',
+  pasosPh:`1. lista corta de 20 actores por fit
+2. variante A y B del primer mensaje
+3. tanda 1 (10 DMs) + registro de respuestas
+4. seguimiento a las 72h`},
+ f3:{ checkA:'Las acciones se ejecutaron (mensajes enviados, seguimientos hechos) y cada respuesta quedó registrada.',
+  checkB:'Cada mensaje que salió lo revisé y suena a mí. Nada se envió en piloto automático.',
+  intentoPh:'ej. tanda 1: 10 DMs con la variante A',
+  tool:'IA para borradores de mensajes y variantes; tú personalizas y apruebas cada envío.',
+  prompts:[{t:'Prompt de borrador de outreach',x:`Redacta un borrador de primer mensaje para [ACTOR] siguiendo mi guía. Reglas duras:
+1. Usa solo los datos del mapa de actores; no inventes cumplidos genéricos.
+2. Referencia un contenido específico suyo.
+3. Máximo 60 palabras, tono directo y humano.
+4. Deja [espacios] donde yo deba personalizar.
+Es un borrador: no se envía nada sin mi revisión.
+
+GUÍA:
+[pegar aquí]`}]},
+ f4:{ patronL:'Patrón reutilizable', patronPh:'la plantilla de mensaje + secuencia de seguimiento que funcionó' }},
+
+contenido:{ nombre:'Contenido / entregable',
+ f1:{ t:'Orientación e insumos', s:'Reunir el brief, los datos y las referencias antes de producir nada.',
+  rows:[{k:'variable',l:'Elemento del brief',ph:'ej. objetivo del video, audiencia, mensaje clave'},
+        {k:'origen',l:'Fuente / insumo',ph:'de dónde sale: dato, entrevista, campaña previa'},
+        {k:'ruta',l:'Referencia',ph:'link, archivo o ejemplo que marca el estándar'},
+        {k:'negocio',l:'En tus palabras',ph:'qué debe lograr este elemento'}],
+  label:'Brief e insumos', add:'+ Agregar elemento',
+  gateMsg:'Registra al menos un elemento del brief con su fuente o insumo verificado.',
+  check:'Tengo brief, insumos y referencias verificadas. No voy a producir sobre vacíos que rellene la IA.',
+  dudasPh:'ej. ¿el dato de conversión existe o hay que calcularlo? ¿el creador ya confirmó fecha?',
+  hint:'Asegura primero el insumo más incierto (¿el dato existe?, ¿el creador confirmó?): es el que puede tumbar todo el entregable.',
+  tool:'RAG y extracción sobre insumos y campañas previas · tier económico. Delegas recopilar; no delegas definir el mensaje.',
+  prompt:{t:'Prompt de extracción de insumos',x:`Del material adjunto extrae SOLO:
+1. Datos duros citables, cada uno con su fuente.
+2. Citas textuales aprovechables.
+3. Vacíos de información: qué falta para cumplir el brief.
+Prohibido redactar el contenido o proponer ángulos: eso viene después y lo defino yo.`}},
+ f2:{ decisionPh:'ej. el VP decide con este reporte si duplica presupuesto; el video debe generar solicitudes de restaurantes',
+  predPh:'ej. el video con @X superará 15K vistas en 7 días',
+  umbralPh:'ej. falsa si <10K vistas o engagement <4%',
+  pasosPh:`1. estructura del guión / esqueleto del documento
+2. borrador v1 con datos marcados
+3. verificación de cada cifra
+4. versión final`},
+ f3:{ checkA:'El borrador está completo contra el brief: cubre cada elemento definido en la fase 1.',
+  checkB:'Verifiqué cada dato y afirmación que la IA metió. Nada publicable lleva números sin fuente.',
+  intentoPh:'ej. v1 del guión de 45 segundos',
+  tool:'IA generativa para estructura y borradores desde TU guía; tú defines el mensaje y validas cada dato.',
+  prompts:[{t:'Prompt de borrador desde brief',x:`Genera el borrador siguiendo ESTRICTAMENTE mi guía. Reglas duras:
+1. Usa solo los datos e insumos listados; marca con [FUENTE?] cualquier dato que falte en lugar de inventarlo.
+2. Respeta la estructura de pasos definida.
+3. Tono: [definir].
+4. Si un punto del brief es ambiguo, pregunta antes de asumir.
+
+GUÍA:
+[pegar aquí]`}]},
+ f4:{ patronL:'Patrón reutilizable', patronPh:'la estructura, guión o esqueleto que funcionó y reutilizarás' }},
+
+general:{ nombre:'General',
+ f1:{ t:'Orientación: mapear el territorio', s:'Entender de qué está hecho el problema antes de actuar.',
+  rows:[{k:'variable',l:'Elemento clave',ph:'pieza, actor o recurso del que depende la tarea'},
+        {k:'origen',l:'Fuente de verdad',ph:'dónde se verifica: doc, persona, sistema'},
+        {k:'ruta',l:'Referencia',ph:'link o ubicación exacta'},
+        {k:'negocio',l:'En tus palabras',ph:'qué es y por qué importa'}],
+  label:'Mapa del problema', add:'+ Agregar elemento',
+  gateMsg:'Registra al menos un elemento clave con su fuente de verdad.',
+  check:'Cada elemento crítico tiene fuente verificada. Entiendo el territorio antes de moverme.',
+  dudasPh:'lo que las fuentes no responden y habrá que preguntar',
+  hint:'Empieza por el elemento que menos entiendes: es el que más probablemente invalide tu plan.',
+  tool:'Extracción y búsqueda asistida · tier económico. Delegas recopilar; no delegas entender.',
+  prompt:{t:'Prompt de extracción literal',x:`Del material adjunto extrae SOLO información literal sobre [X]: definiciones, datos, restricciones y referencias, citando la fuente exacta de cada punto. Prohibido interpretar o rellenar vacíos. Si algo no consta, di "no consta".`}},
+ f2:{ decisionPh:'qué decisión o resultado habilita esta tarea, y para quién',
+  predPh:'qué esperas que pase, con dirección y magnitud',
+  umbralPh:'qué resultado la refuta',
+  pasosPh:`1. ...
+2. ...
+3. ...`},
+ f3:{ checkA:'El resultado está completo contra el criterio de done definido en la guía.',
+  checkB:'Revisé y entiendo todo lo que la IA aportó; puedo defenderlo sin releer el chat.',
+  intentoPh:'qué hiciste en este intento',
+  tool:'IA como ejecutora desde tu guía; tú auditas todo lo que produce.',
+  prompts:[{t:'Prompt de ejecución acotada',x:`Ejecuta el paso [N] de mi guía siguiendo estrictamente lo especificado. No agregues alcance ni supongas: ante cualquier ambigüedad, pregunta.
+
+GUÍA:
+[pegar aquí]`}]},
+ f4:{ patronL:'Patrón reutilizable', patronPh:'el proceso o plantilla destilada de esta tarea' }}
+};
+function cfg(t){ return TIPOS[t.tipo] || TIPOS.general; }
+
+const MATRIZ = [
+{op:'Recuperación de información y exploración ontológica',
+ tool:'RAG (NotebookLM, Claude con archivos), information_schema de Snowflake, exploración manual del Excel. Modelo económico: Haiku, Gemini Flash-Lite, DeepSeek Flash.',
+ si:'Alto volumen y baja ambigüedad: definiciones exactas, linaje mecánico de tablas, unificar contexto disperso.',
+ no:'Cuando los diccionarios se contradicen entre sí: eso requiere hablar con el dueño del indicador, no con un modelo.',
+ sig:'Aceptas la primera respuesta del RAG sin verificar fecha ni fuente (automation bias).'},
+{op:'Formulación de hipótesis y construcción del modelo mental',
+ tool:'LLM de razonamiento frontier (Claude Opus, GPT razonador) SOLO en modo tutor socrático, sobre un borrador tuyo.',
+ si:'Para estresar un plan que TÚ ya estructuraste: contraejemplos, variables omitidas, robustez lógica.',
+ no:'El objetivo de negocio, los trade-offs y las predicciones nacen de tu cabeza. Nunca "escribe el plan por mí".',
+ sig:'Parálisis ante la página en blanco: no puedes iniciar un esquema sin pedirle el borrador a la IA (never-skilling).'},
+{op:'Generación de código y transformación de datos',
+ tool:'Copiloto / tier medio: Sonnet, Gemini Flash, DeepSeek Pro. La guía de la fase 2 es el prompt.',
+ si:'Boilerplate, sintaxis repetitiva, traducción literal de tu plan a SQL/Python, optimización sintáctica.',
+ no:'Si el código introduce heurísticas que no están en tu guía, o si no puedes auditarlo matemáticamente, no se integra.',
+ sig:'Aceptas joins o filtros que no pediste y los internalizas como "atajos válidos" (mis-skilling).'},
+{op:'Interpretación causal y evaluación de resultados',
+ tool:'Humano. La IA solo formula preguntas (facilitador AAR) o corre verificaciones paramétricas (nulos, anomalías).',
+ si:'Checks automáticos de calidad de datos como apoyo a tu observación.',
+ no:'La reconciliación entre hipótesis y datos, y la redacción del AAR, son tuyas. Siempre.',
+ sig:'No puedes explicar la causalidad de tus resultados sin releer el informe que generó la IA (competencia falsa).'}
+];
+
+const ANTI = [
+{n:'AAR ritualista',p:'La retrospectiva se llena por cumplir: causas superficiales que culpan solo a factores externos ("la data estaba mala", "la IA alucinó") sin tocar tus suposiciones.',d:'Detección: la compuerta de la fase 4 exige que al menos una causa señale una suposición tuya. Si te cuesta encontrarla, es la señal.'},
+{n:'Parálisis por análisis',p:'La guía de la fase 2 se vuelve un monolito intocable y consume más del 20% del tiempo total. Cuando la ejecución exige desvíos, nadie actualiza el documento.',d:'Detección: si el ciclo plan→código tarda días y no horas, recorta. La guía es viñetas con umbrales, no un paper.'},
+{n:'Biblioteca inerte (falacia del coleccionista)',p:'Acumulas extracciones de la IA y notas transitorias, pero no hay registros permanentes escritos con tu síntesis propia.',d:'Detección: revisa semanalmente. Toda nota transitoria de más de 14 días se purga si no se refactorizó a un registro permanente.'},
+{n:'Mis-skilling silencioso',p:'Produces reportes fluidos y rápidos, pero colapsarías bajo preguntas granulares sobre decisiones del código. Absorbiste heurísticas de la máquina como si fueran técnica válida.',d:'Detección: cada fragmento en tu registro final lleva comentarios escritos en TUS palabras. Si no puedes comentarlo, no lo entendiste.'}
+];
+
+const FASES = [
+{n:1,t:'Orientación',s:''},
+{n:2,t:'Guía de comprensión y predicción',s:'Working backwards + predicciones falsables. Aquí se fabrica el aprendizaje.'},
+{n:3,t:'Ejecución asistida',s:'La IA genera desde tu guía, tú auditas e iteras. Andamiaje, no piloto automático.'},
+{n:4,t:'AAR y registro permanente',s:'Confrontar predicción contra realidad y cristalizar el patrón reutilizable.'}
+];
+
+/* ================= storage & state ================= */
+window.storage = window.storage || {
+  async get(key){
+    const res = await fetch('/api/storage/' + encodeURIComponent(key));
+    if(res.status === 404) return null;
+    if(!res.ok) throw new Error('storage get failed');
+    return res.json();
+  },
+  async set(key, value){
+    const res = await fetch('/api/storage/' + encodeURIComponent(key), {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({value})
+    });
+    if(!res.ok) throw new Error('storage set failed');
+  },
+  async delete(key){
+    const res = await fetch('/api/storage/' + encodeURIComponent(key), {method:'DELETE'});
+    if(!res.ok && res.status !== 404) throw new Error('storage delete failed');
+  }
+};
+const hasStore = typeof window.storage !== 'undefined' && !!window.storage?.get;
+const mem = {};
+async function sget(k){ if(!hasStore) return mem[k] ?? null;
+  try{ const r = await window.storage.get(k); return r ? r.value : null; }catch(e){ return null; } }
+async function sset(k,v){ if(!hasStore){ mem[k]=v; return; }
+  try{ await window.storage.set(k,v); }catch(e){ console.error('storage',e); flash('No se pudo guardar. Reintenta.'); } }
+
+let index = {tareas:[], registros:[]};
+let cur = null;
+let route = {view:'inicio', id:null};
+let saveTimer = null;
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = s => document.querySelector(s);
+const hoy = () => new Date().toLocaleDateString('es-CO',{year:'numeric',month:'short',day:'numeric'});
+
+function blankTask(nombre, directiva, tipo, plantillaDe){
+  return {
+    id:uid(), nombre, directiva, tipo: tipo||'general', created:Date.now(), fase:1, estado:'activa', plantillaDe: plantillaDe||null,
+    f1:{ linaje:[{}], dudas:'', checkMapeo:false },
+    f2:{ decision:'', faqs:'', alcance:'', noObjetivos:'', pasos:'', descartadas:'', guia:'', promptGuia:UNIV.soc.x, predicciones:[{texto:'',umbral:'',conf:'media'},{texto:'',umbral:'',conf:'media'},{texto:'',umbral:'',conf:'media'}] },
+    f3:{ iteraciones:[{intento:'',resultado:'',ajuste:''}], checkCompila:false, checkAuditado:false, notas:'', promptEjecucion:'' },
+    f4:{ aar:[], cambio:'', patron:'', titulo:'', conexiones:'', promptAar:UNIV.aar.x }
+  };
+}
+function setPath(obj, path, val){
+  const parts = path.split('.'); let o = obj;
+  for(let i=0;i<parts.length-1;i++){ const p=parts[i]; o = /^\d+$/.test(p) ? o[+p] : o[p]; }
+  const last = parts[parts.length-1];
+  if(/^\d+$/.test(last)) o[+last]=val; else o[last]=val;
+}
+
+function dirty(){
+  $('#saveState').textContent = 'guardando…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveCur, 600);
+}
+async function saveCur(){
+  if(!cur) return;
+  const it = index.tareas.find(t=>t.id===cur.id);
+  if(it){ it.nombre=cur.nombre; it.fase=cur.fase; it.estado=cur.estado; it.tipo=cur.tipo; }
+  await sset('bitacora:t:'+cur.id, JSON.stringify(cur));
+  await sset('bitacora:index', JSON.stringify(index));
+  $('#saveState').textContent = 'guardado ✓';
+}
+function flash(msg){
+  const s=$('#saveState'); s.textContent=msg;
+  setTimeout(()=>{ if(s.textContent===msg) s.textContent=''; },3500);
+}
+
+function ensureTaskShape(t){
+  if(!t.f2) t.f2 = {};
+  if(typeof t.f2.guia !== 'string') t.f2.guia = '';
+  if(typeof t.f2.promptGuia !== 'string') t.f2.promptGuia = '';
+  if(!t.f2.promptGuia.trim()) t.f2.promptGuia = UNIV.soc.x;
+  if(!t.f3) t.f3 = {};
+  if(typeof t.f3.promptEjecucion !== 'string') t.f3.promptEjecucion = '';
+  if(!t.f4) t.f4 = {};
+  if(typeof t.f4.promptAar !== 'string') t.f4.promptAar = '';
+  if(!t.f4.promptAar.trim()) t.f4.promptAar = UNIV.aar.x;
+  return t;
+}
+
+function buildGuide(t){
+  const c = cfg(t);
+  const L = [];
+  L.push('# Guía de comprensión y predicción');
+  L.push('');
+  L.push('Proyecto: '+t.nombre);
+  L.push('Tipo: '+c.nombre);
+  if(t.directiva && t.directiva.trim()) L.push('Directiva cruda: '+t.directiva.trim());
+  L.push('');
+  L.push('## Decisión o resultado que habilita');
+  L.push((t.f2.decision || '').trim() || '[pendiente]');
+  L.push('');
+  L.push('## Alcance');
+  L.push((t.f2.alcance || '').trim() || '[pendiente]');
+  L.push('');
+  L.push('## No-objetivos');
+  L.push((t.f2.noObjetivos || '').trim() || '[pendiente]');
+  L.push('');
+  L.push('## Pasos');
+  L.push((t.f2.pasos || '').trim() || '[pendiente]');
+  if((t.f2.faqs || '').trim()){
+    L.push('');
+    L.push('## Preguntas difíciles anticipadas');
+    L.push(t.f2.faqs.trim());
+  }
+  if((t.f2.descartadas || '').trim()){
+    L.push('');
+    L.push('## Alternativas descartadas');
+    L.push(t.f2.descartadas.trim());
+  }
+  L.push('');
+  L.push('## Predicciones falsables');
+  const preds = (t.f2.predicciones || []).filter(p => (p.texto || '').trim() || (p.umbral || '').trim());
+  if(!preds.length) L.push('- [pendiente]');
+  preds.forEach((p,i)=>{
+    L.push(`- ${i+1}. ${(p.texto || '').trim() || '[sin texto]'} | Umbral: ${(p.umbral || '').trim() || '[sin umbral]'} | Confianza: ${p.conf || 'media'}`);
+  });
+  return L.join('\n');
+}
+
+function buildGuidePrompt(t){
+  const guia = (t.f2.guia || '').trim() || buildGuide(t);
+  const prompt = (t.f2.promptGuia || UNIV.soc.x).trim();
+  return prompt.includes('[pegar aquí]') ? prompt.replace('[pegar aquí]', guia) : prompt + '\n\nGUÍA:\n' + guia;
+}
+
+function buildAarContext(t){
+  const L = [];
+  L.push('Tarea: '+t.nombre);
+  L.push('');
+  L.push('PREDICCIONES Y RESULTADOS:');
+  (t.f4.aar || []).forEach((a,i)=>{
+    L.push(`${i+1}. ${a.pred || '[predicción]'}`);
+    L.push('   Observado: '+((a.observado || '').trim() || '[pendiente]'));
+    L.push('   Causa: '+((a.causa || '').trim() || '[pendiente]'));
+  });
+  if((t.f4.cambio || '').trim()){
+    L.push('');
+    L.push('Cambio procedimental: '+t.f4.cambio.trim());
+  }
+  return L.join('\n');
+}
+
+function buildAarPrompt(t){
+  const prompt = (t.f4.promptAar || UNIV.aar.x).trim();
+  const ctx = buildAarContext(t);
+  return prompt.includes('[pegar aquí]') ? prompt.replace('[pegar aquí]', ctx) : prompt + '\n\nPREDICCIONES Y RESULTADOS:\n' + ctx;
+}
+
+/* ================= gates ================= */
+function gate(t){
+  const c = cfg(t);
+  const f=[];
+  if(t.fase===1){
+    const [k1,k2]=[c.f1.rows[0].k, c.f1.rows[1].k];
+    if(!t.f1.linaje.some(r=>(r[k1]||'').trim() && (r[k2]||'').trim()))
+      f.push(c.f1.gateMsg);
+    if(!t.f1.checkMapeo)
+      f.push('Marca la confirmación de mapeo completo al final de la fase.');
+  }
+  if(t.fase===2){
+    if(!t.f2.decision.trim()) f.push('Escribe la decisión o resultado que esta tarea habilita (working backwards).');
+    if(!t.f2.alcance.trim() || !t.f2.noObjetivos.trim()) f.push('Define alcance Y no-objetivos. Los no-objetivos evitan el sobre-alcance.');
+    if(!t.f2.pasos.trim()) f.push('Esquematiza los pasos en viñetas.');
+    const ok = t.f2.predicciones.filter(p=>(p.texto||'').trim() && (p.umbral||'').trim());
+    if(ok.length<3) f.push('Completa 3 predicciones en el bloque "Registro de predicciones": cada una necesita texto y umbral. Llevas '+ok.length+' de 3.');
+  }
+  if(t.fase===3){
+    if(!t.f3.iteraciones.some(i=>i.intento.trim())) f.push('Registra al menos una iteración: qué hiciste y qué pasó.');
+    if(!t.f3.checkCompila) f.push('Confirma: '+c.f3.checkA);
+    if(!t.f3.checkAuditado) f.push('Confirma: '+c.f3.checkB);
+  }
+  if(t.fase===4){
+    const completas = t.f4.aar.filter(a=>(a.observado||'').trim() && (a.causa||'').trim()).length;
+    if(completas < t.f4.aar.length)
+      f.push('Completa observado y causa en cada predicción del AAR. Llevas '+completas+' de '+t.f4.aar.length+'.');
+    if(!t.f4.aar.some(a=>a.mia))
+      f.push('Al menos una causa debe señalar una suposición TUYA incorrecta o incompleta. Culpar solo a factores externos es AAR ritualista.');
+    if(!t.f4.cambio.trim()) f.push('Define el cambio procedimental concreto para la próxima tarea.');
+    if(!t.f4.titulo.trim()) f.push('Titula el registro como una afirmación ("X funciona así, no así"), no como un tema.');
+  }
+  return f;
+}
+
+/* ================= registro permanente ================= */
+function buildMd(t){
+  const L=[];
+  L.push('# '+t.f4.titulo.trim());
+  L.push('');
+  const c = cfg(t);
+  L.push('Fecha: '+hoy()+' · Tarea: '+t.nombre+' · Tipo: '+c.nombre + (t.plantillaDe?(' · Copiado de: '+t.plantillaDe):''));
+  L.push('');
+  L.push('## Contexto');
+  L.push(t.directiva.trim());
+  L.push('');
+  L.push('## '+c.f1.label);
+  const [k1,k2,k3,k4]=c.f1.rows.map(r=>r.k);
+  t.f1.linaje.filter(r=>(r[k1]||'').trim()).forEach(r=>{
+    L.push('- **'+r[k1].trim()+'** ← '+(r[k2]||'').trim()+((r[k3]||'').trim()?(' · '+r[k3].trim()):'')+((r[k4]||'').trim()?(' — '+r[k4].trim()):''));
+  });
+  L.push('');
+  L.push('## After-Action Review');
+  t.f4.aar.forEach((a,i)=>{
+    L.push('**Predicción '+(i+1)+':** '+a.pred);
+    L.push('- Observado: '+a.observado.trim());
+    L.push('- Causa: '+a.causa.trim()+(a.mia?' *(suposición propia corregida)*':''));
+    L.push('');
+  });
+  L.push('**Cambio procedimental:** '+t.f4.cambio.trim());
+  L.push('');
+  if(t.f4.patron.trim()){
+    L.push('## Patrón reutilizable');
+    L.push('```sql');
+    L.push(t.f4.patron.trim());
+    L.push('```');
+    L.push('');
+  }
+  if(t.f4.conexiones.trim()){
+    L.push('## Conexiones');
+    L.push(t.f4.conexiones.trim());
+  }
+  return L.join('\n');
+}
+
+async function completar(t){
+  const md = buildMd(t);
+  const rid = uid();
+  index.registros.unshift({id:rid, titulo:t.f4.titulo.trim(), fecha:hoy(), tarea:t.nombre, taskId:t.id});
+  await sset('bitacora:r:'+rid, md);
+  t.estado='completada';
+  await saveCur();
+  route={view:'registro', id:rid};
+  render();
+}
+
+/* ================= render helpers ================= */
+const uiOpen = new Set();
+let pendingPrefill = null;
+
+function promptsFor(t,fase){
+  const c = cfg(t);
+  if(fase===1) return [c.f1.prompt];
+  if(fase===2) return [UNIV.soc];
+  if(fase===3) return c.f3.prompts;
+  return [UNIV.aar];
+}
+function promptsHtml(t,fase){
+  return promptsFor(t,fase).map((p,i)=>{
+    const pid = 'pr'+fase+'_'+i;
+    return `<details class="prompt"><summary>${esc(p.t)}</summary><pre id="${pid}">${esc(p.x)}</pre><button class="btn ghost tiny" data-a="copy" data-t="${pid}">Copiar prompt</button></details>`;
+  }).join('');
+}
+function toolHtml(t,fase){
+  const c = cfg(t);
+  const tx = fase===1?c.f1.tool : fase===2?UNIV.toolF2 : fase===3?c.f3.tool : UNIV.toolF4;
+  return `<div class="hint"><span><b>Herramienta y criterio:</b> ${esc(tx)}</span></div>`;
+}
+function gateHtml(t){
+  if(t.estado==='completada') return '';
+  const falt = gate(t);
+  const fase = t.fase;
+  if(falt.length){
+    return `<div class="gate" id="gatebox"><div class="stamp">⨯ compuerta cerrada — fase ${fase}</div><ul>${falt.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
+  }
+  const lbl = fase<4 ? 'Validar y pasar a la fase '+(fase+1) : 'Cerrar tarea y generar registro permanente';
+  return `<div class="gate ok" id="gatebox"><div class="stamp">✓ compuerta abierta — requisitos cumplidos</div><button class="btn" data-a="avanzar">${esc(lbl)}</button></div>`;
+}
+function updateGate(){
+  const g = document.getElementById('gatebox');
+  if(g && cur && route.view==='tarea'){ g.outerHTML = gateHtml(cur) || '<span id="gatebox"></span>'; }
+}
+
+/* ---------- phase bodies ---------- */
+function f1Html(t){
+  const c = cfg(t).f1;
+  const rows = t.f1.linaje.map((r,i)=>{
+    const cell = rf => `<div><label>${esc(rf.l)}</label><input type="text" data-p="f1.linaje.${i}.${rf.k}" value="${esc(r[rf.k]||'')}" placeholder="${esc(rf.ph)}"></div>`;
+    return `<div class="rw"><button class="del" data-a="del-linaje" data-i="${i}" aria-label="Eliminar fila">×</button>
+      <div class="grid2">${cell(c.rows[0])}${cell(c.rows[1])}</div>
+      <div class="grid2">${cell(c.rows[2])}${cell(c.rows[3])}</div>
+    </div>`;
+  }).join('');
+  return `
+    ${toolHtml(t,1)}
+    <div class="hint"><span><b>Orden por incertidumbre:</b> ${esc(c.hint)}</span></div>
+    <label style="margin-top:20px">${esc(c.label)}</label>
+    <div class="rowset">${rows}</div>
+    <button class="btn ghost tiny" style="margin-top:10px" data-a="add-linaje">${esc(c.add)}</button>
+    <label>Dudas abiertas <span class="opt">(lo que las fuentes no responden — candidatas a preguntar a alguien)</span></label>
+    <textarea data-p="f1.dudas" placeholder="${esc(c.dudasPh)}">${esc(t.f1.dudas)}</textarea>
+    <label class="checkrow"><input type="checkbox" data-p="f1.checkMapeo" ${t.f1.checkMapeo?'checked':''}><span>${esc(c.check)}</span></label>
+    ${promptsHtml(t,1)}`;
+}
+
+function f2Html(t){
+  const c2 = cfg(t).f2;
+  const promptGuia = (t.f2.promptGuia && t.f2.promptGuia.trim()) ? t.f2.promptGuia : UNIV.soc.x;
+  const predCount = t.f2.predicciones.filter(p=>(p.texto||'').trim() && (p.umbral||'').trim()).length;
+  const preds = t.f2.predicciones.map((p,i)=>`
+    <div class="rw"><button class="del" data-a="del-pred" data-i="${i}" aria-label="Eliminar predicción">×</button>
+      <div class="pred-tag">Hipótesis ${i+1}</div>
+      <label>Predicción <span class="opt">(dirección, magnitud o resultado esperado — antes de ejecutar)</span></label>
+      <textarea data-p="f2.predicciones.${i}.texto" placeholder="${esc(c2.predPh)}">${esc(p.texto)}</textarea>
+      <div class="grid2">
+        <div><label>Umbral falsable <span class="opt">(qué resultado la refuta)</span></label><input type="text" data-p="f2.predicciones.${i}.umbral" value="${esc(p.umbral)}" placeholder="${esc(c2.umbralPh)}"></div>
+        <div><label>Confianza</label><select data-p="f2.predicciones.${i}.conf">
+          <option value="baja" ${p.conf==='baja'?'selected':''}>Baja</option>
+          <option value="media" ${p.conf==='media'?'selected':''}>Media</option>
+          <option value="alta" ${p.conf==='alta'?'selected':''}>Alta</option></select></div>
+      </div>
+    </div>`).join('');
+  return `
+    ${toolHtml(t,2)}
+    <div class="hint"><span><b>Anti parálisis:</b> esta guía es viñetas con umbrales, no un paper. Si te consume más del 20% del tiempo total de la tarea, recorta.</span></div>
+    <label>Decisión o resultado que habilita <span class="opt">(working backwards: ¿quién decide qué con esto?)</span></label>
+    <textarea data-p="f2.decision" placeholder="${esc(c2.decisionPh)}">${esc(t.f2.decision)}</textarea>
+    <label>Preguntas difíciles que te harán <span class="opt">(FAQ anticipado, opcional)</span></label>
+    <textarea data-p="f2.faqs" placeholder="ej. ¿por qué este enfoque y no el otro? ¿qué queda por fuera y por qué?">${esc(t.f2.faqs)}</textarea>
+    <div class="grid2">
+      <div><label>Alcance</label><textarea data-p="f2.alcance" placeholder="qué SÍ cubre esta tarea">${esc(t.f2.alcance)}</textarea></div>
+      <div><label>No-objetivos</label><textarea data-p="f2.noObjetivos" placeholder="qué queda explícitamente fuera">${esc(t.f2.noObjetivos)}</textarea></div>
+    </div>
+    <label>Pasos <span class="opt">(viñetas: el camino, no la novela)</span></label>
+    <textarea data-p="f2.pasos" style="min-height:96px" placeholder="${esc(c2.pasosPh).split(String.fromCharCode(10)).join('&#10;')}">${esc(t.f2.pasos)}</textarea>
+    <label>Alternativas descartadas <span class="opt">(y por qué — opcional)</span></label>
+    <textarea data-p="f2.descartadas">${esc(t.f2.descartadas)}</textarea>
+    <label style="margin-top:22px">Registro de predicciones <span class="opt">(mínimo 3; cuentan cuando tienen texto y umbral)</span></label>
+    <div class="hint"><span><b>Estado:</b> llevas ${predCount} de 3 predicciones completas. Escribe cada predicción en estas cajas; el prompt socrático de abajo no cuenta para abrir la compuerta.</span></div>
+    <div class="rowset">${preds}</div>
+    <div class="toolbar">
+      <button class="btn ghost tiny" data-a="add-pred">+ Agregar predicción</button>
+      <button class="btn tiny" data-a="guardar">Guardar fase 2</button>
+    </div>
+    <label>Prompt socrático del proyecto <span class="opt">(editable; queda guardado en esta tarea)</span></label>
+    <textarea id="f2prompt" data-p="f2.promptGuia" style="min-height:260px;font-family:var(--mono);font-size:12.5px">${esc(promptGuia)}</textarea>
+    <div class="toolbar">
+      <button class="btn ghost tiny" data-a="insertar-guia">Insertar guía actual en el prompt</button>
+      <button class="btn ghost tiny" data-a="copy" data-t="f2prompt">Copiar prompt</button>
+      <button class="btn tiny" data-a="guardar">Guardar prompt</button>
+    </div>`;
+}
+
+function f3Html(t){
+  const c3 = cfg(t).f3;
+  const promptBase = (c3.prompts && c3.prompts[0] && c3.prompts[0].x) || '';
+  const promptEjecucion = (t.f3.promptEjecucion && t.f3.promptEjecucion.trim()) ? t.f3.promptEjecucion : promptBase;
+  const its = t.f3.iteraciones.map((r,i)=>`
+    <div class="rw"><button class="del" data-a="del-iter" data-i="${i}" aria-label="Eliminar iteración">×</button>
+      <div class="pred-tag">Iteración ${i+1}</div>
+      <label>Qué hice</label><input type="text" data-p="f3.iteraciones.${i}.intento" value="${esc(r.intento)}" placeholder="${esc(c3.intentoPh)}">
+      <div class="grid2">
+        <div><label>Qué pasó</label><input type="text" data-p="f3.iteraciones.${i}.resultado" value="${esc(r.resultado)}" placeholder="error, resultado raro, ok, respuesta recibida"></div>
+        <div><label>Ajuste</label><input type="text" data-p="f3.iteraciones.${i}.ajuste" value="${esc(r.ajuste)}" placeholder="qué cambié y por qué"></div>
+      </div>
+    </div>`).join('');
+  return `
+    ${toolHtml(t,3)}
+    <label>Bitácora de iteraciones</label>
+    <div class="rowset">${its}</div>
+    <button class="btn ghost tiny" style="margin-top:10px" data-a="add-iter">+ Agregar iteración</button>
+    <label>Notas de ejecución <span class="opt">(hallazgos, sorpresas — opcional)</span></label>
+    <textarea data-p="f3.notas">${esc(t.f3.notas)}</textarea>
+    <label class="checkrow"><input type="checkbox" data-p="f3.checkCompila" ${t.f3.checkCompila?'checked':''}><span>${esc(c3.checkA)}</span></label>
+    <label class="checkrow"><input type="checkbox" data-p="f3.checkAuditado" ${t.f3.checkAuditado?'checked':''}><span>${esc(c3.checkB)}</span></label>
+    <label>Prompt de ejecución del proyecto <span class="opt">(editable; queda guardado en esta tarea)</span></label>
+    <textarea id="f3prompt" data-p="f3.promptEjecucion" style="min-height:240px;font-family:var(--mono);font-size:12.5px">${esc(promptEjecucion)}</textarea>
+    <div class="toolbar">
+      <button class="btn ghost tiny" data-a="insertar-guia-ejecucion">Insertar guía actual en el prompt</button>
+      <button class="btn ghost tiny" data-a="copy" data-t="f3prompt">Copiar prompt</button>
+      <button class="btn tiny" data-a="guardar">Guardar prompt</button>
+    </div>`;
+}
+
+function f4Html(t){
+  const c4 = cfg(t).f4;
+  const aarCount = t.f4.aar.filter(a=>(a.observado||'').trim() && (a.causa||'').trim()).length;
+  const promptAar = (t.f4.promptAar && t.f4.promptAar.trim()) ? t.f4.promptAar : UNIV.aar.x;
+  const rows = t.f4.aar.map((a,i)=>`
+    <div class="rw">
+      <div class="pred-tag">Predicción ${i+1}</div>
+      <p style="font-size:13.5px;color:var(--ink2);margin-top:4px">${esc(a.pred)}</p>
+      <label>Qué se observó realmente</label><input type="text" data-p="f4.aar.${i}.observado" value="${esc(a.observado)}" placeholder="el número, respuesta o resultado real">
+      <label>Causa mecánica de la diferencia <span class="opt">(autoexplicación: por qué, en TUS palabras)</span></label>
+      <textarea data-p="f4.aar.${i}.causa" placeholder="qué mecanismo real explica la brecha entre lo esperado y lo observado">${esc(a.causa)}</textarea>
+      <label class="checkrow"><input type="checkbox" data-p="f4.aar.${i}.mia" ${a.mia?'checked':''}><span>Esta causa señala una suposición mía que era incorrecta o incompleta.</span></label>
+    </div>`).join('');
+  return `
+    ${toolHtml(t,4)}
+    <label>Confrontación predicción vs. realidad</label>
+    <div class="hint"><span><b>Estado:</b> llevas ${aarCount} de ${t.f4.aar.length} predicciones con observado y causa. La causa puede ser corta si explica el mecanismo real.</span></div>
+    <div class="rowset">${rows}</div>
+    <label>Cambio procedimental <span class="opt">(qué haré distinto en la próxima tarea de este tipo)</span></label>
+    <textarea data-p="f4.cambio" placeholder="ej. siempre verificar X contra la fuente real antes de predecir">${esc(t.f4.cambio)}</textarea>
+    <label>${esc(c4.patronL)} <span class="opt">(depurado y comentado en tus palabras)</span></label>
+    <textarea data-p="f4.patron" style="min-height:130px;font-family:var(--mono);font-size:12.5px" placeholder="${esc(c4.patronPh)}">${esc(t.f4.patron)}</textarea>
+    <label>Título del registro <span class="opt">(una afirmación, no un tema)</span></label>
+    <input type="text" data-p="f4.titulo" value="${esc(t.f4.titulo)}" placeholder="ej. los foodies de nicho responden 3× más que los masivos — cambia la lista corta">
+    <label>Conexiones <span class="opt">(otras notas, tareas relacionadas, advertencias — opcional)</span></label>
+    <textarea data-p="f4.conexiones">${esc(t.f4.conexiones)}</textarea>
+    <label>Prompt AAR del proyecto <span class="opt">(editable; queda guardado en esta tarea)</span></label>
+    <textarea id="f4prompt" data-p="f4.promptAar" style="min-height:260px;font-family:var(--mono);font-size:12.5px">${esc(promptAar)}</textarea>
+    <div class="toolbar">
+      <button class="btn ghost tiny" data-a="insertar-aar">Insertar AAR actual en el prompt</button>
+      <button class="btn ghost tiny" data-a="copy" data-t="f4prompt">Copiar prompt</button>
+      <button class="btn tiny" data-a="guardar">Guardar prompt</button>
+    </div>`;
+}
+
+/* ================= views ================= */
+function navHtml(){
+  const groups = {inicio:['inicio','intake','tarea'], biblioteca:['biblioteca','registro'], referencia:['referencia']};
+  const items=[['inicio','Tareas'],['biblioteca','Biblioteca'],['referencia','Referencia']];
+  return items.map(([v,l])=>`<button class="${groups[v].includes(route.view)?'on':''}" data-a="nav" data-v="${v}">${l}</button>`).join('');
+}
+
+function viewInicio(){
+  const act = index.tareas.filter(t=>t.estado==='activa');
+  const done = index.tareas.filter(t=>t.estado==='completada');
+  const card = t => {
+    const dots=[1,2,3,4].map(f=>`<span class="dot ${t.estado==='completada'||f<t.fase?'d':f===t.fase?'o':''}"></span>`).join('');
+    return `<div class="card tcard" data-a="abrir" data-id="${t.id}" role="button" tabindex="0">
+      <div class="dots">${dots}</div>
+      <div class="meta"><h3>${esc(t.nombre)}</h3><p>${TIPOS[t.tipo]?TIPOS[t.tipo].nombre+' · ':''}${t.estado==='completada'?'Completada':'Fase '+t.fase+' de 4'}</p></div>
+      <button class="btn warn tiny" data-a="borrar" data-id="${t.id}">Borrar</button>
+    </div>`;
+  };
+  return `
+    <div class="eyebrow">Cuaderno de protocolo</div>
+    <h1 style="margin-top:6px">Tareas analíticas</h1>
+    <p class="sub">Cada tarea atraviesa cuatro fases con compuertas duras: no avanzas sin linaje rastreado, sin predicciones falsables, sin auditoría del código, ni cierras sin confrontar lo que esperabas contra lo que pasó.</p>
+    ${hasStore?'':'<div class="banner warn" style="margin-top:16px">Este entorno no soporta persistencia: los datos viven solo en esta sesión. Ábrelo como artefacto en Claude para guardar entre sesiones.</div>'}
+    <div class="toolbar"><button class="btn" data-a="nueva">+ Nueva tarea</button></div>
+    ${act.length?`<div class="tlist">${act.map(card).join('')}</div>`:`<div class="empty">Sin tareas activas. La próxima vez que te suelten dos indicadores desconocidos y un Excel críptico, empieza aquí.</div>`}
+    ${done.length?`<h2 style="margin-top:34px">Completadas</h2><div class="tlist">${done.map(card).join('')}</div>`:''}`;
+}
+
+function viewIntake(){
+  const regs = index.registros;
+  const selTipo = (pendingPrefill && pendingPrefill.tipo) || 'general';
+  const opts = Object.entries(TIPOS).map(([k,v])=>`<option value="${k}" ${k===selTipo?'selected':''}>${esc(v.nombre)}</option>`).join('');
+  return `
+    <button class="back" data-a="nav" data-v="inicio">← volver</button>
+    <h1>Nueva tarea</h1>
+    ${pendingPrefill?`<div class="banner">Copiando estructura de: <b>${esc(pendingPrefill.from)}</b>. Primero copiar, luego mejorar — ajusta lo que cambie, no arranques de cero.</div>`:
+    (regs.length?`<div class="banner warn"><b>Antes de arrancar:</b> ¿ya resolviste algo de topología similar? Revisa la biblioteca y copia el registro como plantilla — ese es el punto del sistema.</div>`:'')}
+    <label>Tipo de proyecto <span class="opt">(define qué significa "mapear el territorio" y qué prompts recibes)</span></label>
+    <select id="ntipo">${opts}</select>
+    <label>Nombre de la tarea</label>
+    <input type="text" id="nnombre" placeholder="ej. Diagnóstico MLTV GDL · API de reservas · Campaña foodies Tampico">
+    <label>Directiva cruda <span class="opt">(el requerimiento tal como te llegó, sin traducir)</span></label>
+    <textarea id="ndirectiva" placeholder="ej. 'consigue 3 videos con foodies este mes' / 'automatiza la moderación' / 'analiza estos 2 indicadores'"></textarea>
+    <div class="toolbar"><button class="btn" data-a="crear">Crear y empezar la fase 1</button></div>`;
+}
+
+function viewTarea(){
+  const t = cur;
+  const fasesT = [{n:1,t:cfg(t).f1.t,s:cfg(t).f1.s},FASES[1],FASES[2],FASES[3]];
+  const phases = fasesT.map(F=>{
+    const st = t.estado==='completada' ? 'done' : (F.n<t.fase?'done':F.n===t.fase?'open':'lock');
+    const openBody = st==='open' || (st==='done' && uiOpen.has(F.n));
+    const bodyFn = [f1Html,f2Html,f3Html,f4Html][F.n-1];
+    const stLbl = st==='done'?'✓ validada':st==='open'?'en curso':'bloqueada';
+    return `<div class="phase ${st}">
+      <div class="ph-card">
+        <div class="ph-head" ${st==='done'?`data-a="toggle" data-f="${F.n}" role="button" tabindex="0"`:''}>
+          <span class="num">F${F.n}</span><h2>${F.t}</h2><span class="st">${stLbl}</span>
+        </div>
+        ${openBody?`<div class="ph-body"><p class="sub" style="margin-top:10px;font-size:13px">${F.s}</p>${bodyFn(t)}${st==='open'?gateHtml(t):''}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  const reg = index.registros.find(r=>r.taskId===t.id);
+  return `
+    <button class="back" data-a="nav" data-v="inicio">← tareas</button>
+    <div class="eyebrow">${esc(t.directiva).slice(0,120)}</div>
+    <h1 style="margin-top:6px">${esc(t.nombre)}</h1>
+    <div style="margin-top:10px"><span class="chip">${esc(cfg(t).nombre)}</span> <span class="chip ${t.estado==='completada'?'f':'g'}">${t.estado==='completada'?'completada':'fase '+t.fase+' de 4'}</span>${t.plantillaDe?` <span class="chip">copiada de: ${esc(t.plantillaDe)}</span>`:''}</div>
+    ${t.estado==='completada'&&reg?`<div class="banner">Tarea cerrada. Su registro permanente vive en la biblioteca. <button class="btn ghost tiny" data-a="ver-reg" data-id="${reg.id}">Ver registro</button></div>`:''}
+    <div class="spine">${phases}</div>`;
+}
+
+function viewBiblioteca(){
+  const list = index.registros.map(r=>`
+    <div class="card tcard" data-a="ver-reg" data-id="${r.id}" role="button" tabindex="0">
+      <div class="meta"><h3>${esc(r.titulo)}</h3><p>${esc(r.fecha)} · ${esc(r.tarea)}</p></div>
+      <button class="btn ghost tiny" data-a="plantilla" data-tid="${r.taskId}" data-from="${esc(r.titulo)}">Usar como plantilla</button>
+    </div>`).join('');
+  return `
+    <div class="eyebrow">Registros permanentes</div>
+    <h1 style="margin-top:6px">Biblioteca</h1>
+    <p class="sub">Cada registro es una tarea resuelta con su AAR y su patrón reutilizable. Es tu material de "primero copiar": la próxima tarea de topología similar arranca desde aquí, no desde cero, y la IA pasa de arquitecta a ejecutora periférica.</p>
+    ${list?`<div class="tlist">${list}</div>`:`<div class="empty">Todavía no hay registros. Se generan automáticamente al cerrar la fase 4 de una tarea.</div>`}`;
+}
+
+async function viewRegistro(){
+  const meta = index.registros.find(r=>r.id===route.id);
+  const md = await sget('bitacora:r:'+route.id) || '(registro no encontrado)';
+  return `
+    <button class="back" data-a="nav" data-v="biblioteca">← biblioteca</button>
+    <h1>${esc(meta?meta.titulo:'Registro')}</h1>
+    <div class="toolbar">
+      <button class="btn ghost tiny" data-a="copy" data-t="mdview">Copiar markdown</button>
+      <button class="btn ghost tiny" data-a="dl" data-id="${route.id}">Descargar .md</button>
+      ${meta?`<button class="btn tiny" data-a="plantilla" data-tid="${meta.taskId}" data-from="${esc(meta.titulo)}">Usar como plantilla</button>`:''}
+    </div>
+    <textarea class="mdbox" id="mdview" readonly style="margin-top:16px">${esc(md)}</textarea>`;
+}
+
+function viewReferencia(){
+  const rows = MATRIZ.map(m=>`<tr>
+    <td><b>${esc(m.op)}</b><br>${esc(m.tool)}</td>
+    <td>${esc(m.si)}</td>
+    <td>${esc(m.no)}</td>
+    <td class="sig">${esc(m.sig)}</td></tr>`).join('');
+  const anti = ANTI.map(a=>`<div class="card anti"><h3>${esc(a.n)}</h3><p>${esc(a.p)}</p><div class="det">${esc(a.d)}</div></div>`).join('');
+  return `
+    <div class="eyebrow">Criterio, no velocidad</div>
+    <h1 style="margin-top:6px">Matriz de delegación</h1>
+    <p class="sub">Qué operación cognitiva va a qué clase de herramienta. La regla de fondo: delegas generación y extracción; nunca delegas comprensión ni verificación.</p>
+    <div style="overflow-x:auto"><table>
+      <tr><th style="width:28%">Operación · herramienta</th><th>Cuándo delegar</th><th>Cuándo no</th><th>Señal de sobre-delegación</th></tr>
+      ${rows}</table></div>
+    <h2 style="margin-top:38px">Anti-patrones</h2>
+    <p class="sub">Los cuatro modos en que este sistema degenera, y cómo detectarlos a tiempo.</p>
+    ${anti}`;
+}
+
+/* ================= render & actions ================= */
+async function render(){
+  $('#nav').innerHTML = navHtml();
+  const app = $('#app');
+  if(route.view==='inicio') app.innerHTML = viewInicio();
+  else if(route.view==='intake') app.innerHTML = viewIntake();
+  else if(route.view==='tarea') app.innerHTML = viewTarea();
+  else if(route.view==='biblioteca') app.innerHTML = viewBiblioteca();
+  else if(route.view==='registro') app.innerHTML = await viewRegistro();
+  else if(route.view==='referencia') app.innerHTML = viewReferencia();
+  window.scrollTo(0,0);
+}
+
+async function handleAction(a, ds, el){
+  if(a==='nav'){ route={view:ds.v,id:null}; if(ds.v!=='tarea') cur=null; pendingPrefill=null; render(); }
+  else if(a==='nueva'){ pendingPrefill=null; route={view:'intake'}; render(); }
+  else if(a==='crear'){
+    const nombre=$('#nnombre').value.trim(), dir=$('#ndirectiva').value.trim();
+    const tipo=($('#ntipo')&&$('#ntipo').value)||'general';
+    if(!nombre){ flash('Ponle nombre a la tarea.'); $('#nnombre').focus(); return; }
+    const t = blankTask(nombre, dir, tipo, pendingPrefill?pendingPrefill.from:null);
+    if(pendingPrefill){
+      if(pendingPrefill.linaje) t.f1.linaje = pendingPrefill.linaje.map(r=>({...r}));
+      Object.assign(t.f2, pendingPrefill.f2||{});
+      if(pendingPrefill.patron) t.f3.notas = 'Patrón heredado para adaptar:\n'+pendingPrefill.patron;
+    }
+    index.tareas.unshift({id:t.id,nombre:t.nombre,fase:1,estado:'activa',tipo:t.tipo});
+    cur=t; await saveCur();
+    route={view:'tarea',id:t.id}; uiOpen.clear(); pendingPrefill=null; render();
+  }
+  else if(a==='abrir'){
+    const raw = await sget('bitacora:t:'+ds.id);
+    if(!raw){ flash('No se pudo abrir la tarea.'); return; }
+    cur = ensureTaskShape(JSON.parse(raw)); if(!cur.tipo) cur.tipo='datos'; route={view:'tarea',id:ds.id}; uiOpen.clear(); render();
+  }
+  else if(a==='borrar'){
+    if(!confirm('¿Borrar esta tarea? Su registro en la biblioteca (si existe) se conserva.')) return;
+    index.tareas = index.tareas.filter(t=>t.id!==ds.id);
+    if(hasStore){ try{ await window.storage.delete('bitacora:t:'+ds.id); }catch(e){} }
+    await sset('bitacora:index', JSON.stringify(index));
+    if(cur&&cur.id===ds.id) cur=null;
+    render();
+  }
+  else if(a==='toggle'){ const f=+ds.f; uiOpen.has(f)?uiOpen.delete(f):uiOpen.add(f); render(); }
+  else if(a==='add-linaje'){ cur.f1.linaje.push({variable:'',origen:'',ruta:'',negocio:''}); await saveCur(); render(); }
+  else if(a==='del-linaje'){ if(cur.f1.linaje.length>1){ cur.f1.linaje.splice(+ds.i,1); await saveCur(); render(); } }
+  else if(a==='add-pred'){ cur.f2.predicciones.push({texto:'',umbral:'',conf:'media'}); await saveCur(); render(); }
+  else if(a==='del-pred'){ if(cur.f2.predicciones.length>1){ cur.f2.predicciones.splice(+ds.i,1); await saveCur(); render(); } }
+  else if(a==='add-iter'){ cur.f3.iteraciones.push({intento:'',resultado:'',ajuste:''}); await saveCur(); render(); }
+  else if(a==='del-iter'){ if(cur.f3.iteraciones.length>1){ cur.f3.iteraciones.splice(+ds.i,1); await saveCur(); render(); } }
+  else if(a==='guardar'){
+    const prompt2 = document.getElementById('f2prompt');
+    const prompt3 = document.getElementById('f3prompt');
+    const prompt4 = document.getElementById('f4prompt');
+    if(prompt2 && cur?.f2) cur.f2.promptGuia = prompt2.value;
+    if(prompt3 && cur?.f3) cur.f3.promptEjecucion = prompt3.value;
+    if(prompt4 && cur?.f4) cur.f4.promptAar = prompt4.value;
+    await saveCur();
+    flash('guardado ✓');
+  }
+  else if(a==='insertar-guia'){
+    cur.f2.guia = buildGuide(cur);
+    cur.f2.promptGuia = buildGuidePrompt(cur);
+    await saveCur();
+    flash('guía insertada en el prompt ✓');
+    render();
+  }
+  else if(a==='insertar-guia-ejecucion'){
+    const prompt = (cur.f3.promptEjecucion || ((cfg(cur).f3.prompts && cfg(cur).f3.prompts[0] && cfg(cur).f3.prompts[0].x) || '')).trim();
+    const guia = (cur.f2.guia || '').trim() || buildGuide(cur);
+    cur.f2.guia = guia;
+    cur.f3.promptEjecucion = prompt.includes('[pegar aquí]') ? prompt.replace('[pegar aquí]', guia) : prompt + '\n\nGUÍA:\n' + guia;
+    await saveCur();
+    flash('guía insertada en el prompt ✓');
+    render();
+  }
+  else if(a==='actualizar-guia'){ cur.f2.guia = buildGuide(cur); cur.f2.promptGuia = buildGuidePrompt(cur); await saveCur(); flash('guía y prompt enlazados ✓'); render(); }
+  else if(a==='insertar-aar'){
+    cur.f4.promptAar = buildAarPrompt(cur);
+    await saveCur();
+    flash('AAR insertado en el prompt ✓');
+    render();
+  }
+  else if(a==='avanzar'){
+    if(gate(cur).length){ updateGate(); return; }
+    if(cur.fase===3){
+      cur.f4.aar = cur.f2.predicciones.filter(p=>p.texto.trim()).map(p=>({pred:p.texto.trim()+' — umbral: '+p.umbral.trim(), observado:'', causa:'', mia:false}));
+    }
+    if(cur.fase<4){ cur.fase++; await saveCur(); render(); }
+    else{ await completar(cur); }
+  }
+  else if(a==='copy'){
+    const src = document.getElementById(ds.t);
+    copyText(src ? (src.value ?? src.textContent) : '');
+  }
+  else if(a==='dl'){
+    const md = await sget('bitacora:r:'+ds.id) || '';
+    const meta = index.registros.find(r=>r.id===ds.id);
+    download(((meta&&meta.titulo)||'registro').toLowerCase().replace(/[^a-z0-9áéíóúñ]+/gi,'-').slice(0,60)+'.md', md);
+  }
+  else if(a==='plantilla'){
+    const raw = await sget('bitacora:t:'+ds.tid);
+    if(!raw){ flash('No encontré la tarea original.'); return; }
+    const o = JSON.parse(raw);
+    pendingPrefill = { from: ds.from, tipo: o.tipo||'datos',
+      linaje: o.f1.linaje,
+      f2: { alcance:o.f2.alcance, noObjetivos:o.f2.noObjetivos, pasos:o.f2.pasos, decision:'', faqs:'', descartadas:'', predicciones:[{texto:'',umbral:'',conf:'media'},{texto:'',umbral:'',conf:'media'},{texto:'',umbral:'',conf:'media'}] },
+      patron: o.f4.patron };
+    route={view:'intake'}; render();
+  }
+  else if(a==='ver-reg'){ route={view:'registro',id:ds.id}; render(); }
+}
+
+function copyText(txt){
+  const done = ()=>flash('copiado ✓');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(()=>fallbackCopy(txt,done));
+  } else fallbackCopy(txt,done);
+}
+function fallbackCopy(txt,done){
+  const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta);
+  ta.select(); try{ document.execCommand('copy'); done(); }catch(e){ flash('Copia manual desde el cuadro.'); }
+  ta.remove();
+}
+function download(name, txt){
+  try{
+    const b=new Blob([txt],{type:'text/markdown'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name;
+    document.body.appendChild(a); a.click(); a.remove();
+  }catch(e){ flash('Descarga bloqueada aquí: usa "Copiar markdown".'); }
+}
+
+/* ================= events & init ================= */
+document.addEventListener('click', e=>{
+  const el = e.target.closest('[data-a]');
+  if(!el) return;
+  if(el.dataset.a==='abrir' && e.target.closest('[data-a="borrar"]')) return;
+  handleAction(el.dataset.a, el.dataset, el);
+});
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && e.target.matches('[role="button"][data-a]')) handleAction(e.target.dataset.a, e.target.dataset, e.target);
+});
+document.addEventListener('input', e=>{
+  const p = e.target.dataset.p;
+  if(p && cur){
+    const v = e.target.type==='checkbox' ? e.target.checked : e.target.value;
+    setPath(cur, p, v); dirty(); updateGate();
+  }
+});
+document.addEventListener('change', e=>{
+  const p = e.target.dataset.p;
+  if(p && cur && (e.target.type==='checkbox' || e.target.tagName==='SELECT')){
+    const v = e.target.type==='checkbox' ? e.target.checked : e.target.value;
+    setPath(cur, p, v); dirty(); updateGate();
+  }
+});
+
+(async function init(){
+  try{
+    const raw = await sget('bitacora:index');
+    if(raw) index = JSON.parse(raw);
+  }catch(e){ console.error(e); }
+  render();
+})();
+</script>
+</body>
+</html>

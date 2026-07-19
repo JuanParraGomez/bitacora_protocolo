@@ -1,0 +1,24 @@
+services:
+  bitacora-protocolo:
+    build: .
+    container_name: bitacora_protocolo
+    restart: always
+    environment:
+      PORT: ${PORT:-3000}
+      DATA_DIR: ${DATA_DIR:-/app/data}
+    volumes:
+      - ./data:/app/data
+    networks:
+      - coolify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=coolify"
+      - "traefik.http.routers.bitacora-protocolo.rule=Host(`bitacora.uniflexa.cloud`)"
+      - "traefik.http.routers.bitacora-protocolo.entrypoints=https,websecure"
+      - "traefik.http.routers.bitacora-protocolo.tls=true"
+      - "traefik.http.routers.bitacora-protocolo.tls.certresolver=letsencrypt"
+      - "traefik.http.services.bitacora-protocolo.loadbalancer.server.port=3000"
+
+networks:
+  coolify:
+    external: true

@@ -4,11 +4,52 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node .output/server/index.mjs",
+    "dev": "node scripts/dev-with-graphify.mjs",
+    "dev:nuxt": "npx nuxi dev --host 0.0.0.0 --port 3000",
+    "test:red": "vitest run",
+    "test:green": "npm run typecheck && npm run test:unit && npm run test:contract && npm run test:migration",
+    "test:e2e:red": "playwright test",
+    "build": "nuxt build",
+    "typecheck": "nuxt typecheck",
+    "test:unit": "vitest run app tests/migration",
+    "test:contract": "vitest run tests/contract",
+    "test:integration": "vitest run tests/integration",
+    "test:migration": "vitest run tests/migration",
+    "db:check": "node scripts/db-check.mjs",
+    "db:backup": "node scripts/db-backup.mjs",
+    "fixtures:create": "node scripts/create-legacy-fixtures.mjs",
+    "migration:verify": "npm run test:migration",
+    "graph:generate": "node scripts/graphify-workflow.mjs generate",
+    "graph:update": "node scripts/graphify-workflow.mjs update",
+    "graph:check": "node scripts/graphify-workflow.mjs check",
+    "graph:watch": "node scripts/graphify-watch.mjs",
+    "architecture": "node scripts/generate-structure.mjs",
+    "structure": "node scripts/generate-structure.mjs",
+    "structure:check": "node scripts/structure-check.mjs",
+    "structure:watch": "node scripts/structure-watch.mjs",
+    "architecture:check": "dependency-cruiser --config .dependency-cruiser.cjs app server shared --output-type err-long",
+    "test:architecture": "npx vitest run tests/integration/structure-snapshot.test.ts",
+    "test:browser": "npm run test:e2e:red",
+    "build:production": "npm run build",
+    "verify": "npm run typecheck && npm run test:unit && npm run test:contract && npm run test:migration && npm run test:integration && npm run structure:check && npm run graph:update && npm run graph:check && npm run build",
+    "verify:e2e": "npm run test:e2e:red"
   },
   "dependencies": {
+    "@nuxt/ui": "^4.10.0",
     "better-sqlite3": "^11.9.1",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "nuxt": "^4.5.0",
+    "tailwindcss": "^4.3.0",
+    "vue": "^3.5.40",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "dependency-cruiser": "^18.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10",
+    "vue-tsc": "^3.3.8"
   }
 }

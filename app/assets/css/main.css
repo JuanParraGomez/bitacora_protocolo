@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+:root {
+  --ui-primary: var(--color-indigo-600);
+  --ui-primary-50: var(--color-indigo-50);
+  --ui-primary-100: var(--color-indigo-100);
+  --ui-primary-200: var(--color-indigo-200);
+  --ui-primary-300: var(--color-indigo-300);
+  --ui-primary-400: var(--color-indigo-400);
+  --ui-primary-500: var(--color-indigo-500);
+  --ui-primary-600: var(--color-indigo-600);
+  --ui-primary-700: var(--color-indigo-700);
+}

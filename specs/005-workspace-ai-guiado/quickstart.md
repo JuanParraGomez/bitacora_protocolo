@@ -17,6 +17,19 @@ Para cada bloque:
 4. Ejecutar la prueba enfocada y el conjunto afectado hasta verde.
 5. Hacer commit del bloque antes de continuar.
 
+## Registro de implementación (2026-07-27)
+
+- T001: `tests/contract/nuxt-ui-setup.test.ts` creado para validar `@nuxt/ui`, `UApp`, `app/assets/css/main.css` y ausencia de `@ai-sdk/*`/`vueform`.
+- T002: la corrida inicial falló por configuración incompleta (`nuxt.config.ts`, `app.vue`, `app.config.ts`, `app/assets/css/main.css`); se dejó evidencia y luego se corrigió.
+- T003: se instaló `@nuxt/ui` y `tailwindcss`, se agregó `app.config.ts`, `app/assets/css/main.css` y se envolvió `app.vue` con `<UApp>`.
+- T004: validación final ejecutada con resultados verdes:
+  - `npx vitest run tests/contract/nuxt-ui-setup.test.ts`
+  - `npm run typecheck`
+  - `npm run build`
+
+  Ajuste de compatibilidad aplicado:
+  - el primer intento de build falló por lock activo y por path de stylesheet (`app/assets/css/main.css`), se resolvió con `alias: { app: \`\${process.cwd()}/app\` }` en `nuxt.config.ts`.
+
 ## Focused verification
 
 ### Domain and adapter

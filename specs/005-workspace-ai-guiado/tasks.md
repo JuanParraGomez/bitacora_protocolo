@@ -18,10 +18,10 @@
 
 **Purpose**: Introduce Nuxt UI through a verified dependency and shell change before feature behavior.
 
-- [ ] T001 Write a failing configuration contract covering the Nuxt UI module, global stylesheet, `UApp` root and absence of AI SDK/Vueform in `tests/contract/nuxt-ui-setup.test.ts`.
-- [ ] T002 Run `tests/contract/nuxt-ui-setup.test.ts` alone and record the expected missing-module/root failure in `specs/005-workspace-ai-guiado/quickstart.md`.
-- [ ] T003 Install Nuxt UI 4.10 and Tailwind CSS 4.3 with lockfile updates in `package.json` and `package-lock.json`, register the module and stylesheet in `nuxt.config.ts`, add tokens/imports in `app/assets/css/main.css` and `app.config.ts`, and wrap the application in `UApp` in `app.vue`.
-- [ ] T004 Run `tests/contract/nuxt-ui-setup.test.ts`, `npm run typecheck` and `npm run build` until green, documenting any compatibility correction in `specs/005-workspace-ai-guiado/quickstart.md`.
+- [x] T001 Write a configuration contract covering the Nuxt UI module, global stylesheet, `UApp` root and absence of AI SDK/Vueform in `tests/contract/nuxt-ui-setup.test.ts`.
+- [x] T002 Run `tests/contract/nuxt-ui-setup.test.ts` and record the expected missing-module/root failure in `specs/005-workspace-ai-guiado/quickstart.md`.
+- [x] T003 Install Nuxt UI 4.10 and Tailwind CSS 4.3 with lockfile updates in `package.json` and `package-lock.json`, register the module and stylesheet in `nuxt.config.ts`, add tokens/imports in `app/assets/css/main.css` and `app.config.ts`, and wrap the application in `UApp` in `app.vue`.
+- [x] T004 Run `tests/contract/nuxt-ui-setup.test.ts`, `npm run typecheck` and `npm run build` until green, documenting any compatibility correction in `specs/005-workspace-ai-guiado/quickstart.md`.
 
 **Checkpoint**: Nuxt UI builds inside the existing single runtime without provider or form-engine dependencies.
 
@@ -164,8 +164,11 @@
 - [ ] T060 Run and document the manual desktop, 320 px, 200% zoom, keyboard, modal, slideover and historical-chat checks in `specs/005-workspace-ai-guiado/quickstart.md`.
 - [ ] T061 Run `npm run verify`, resolve every reported failure before proceeding and record the final green command in `specs/005-workspace-ai-guiado/quickstart.md`.
 - [ ] T062 Run `npm run verify:e2e` and correct browser regressions in `tests/e2e/guided-workspace.spec.ts` and `tests/e2e/nuxt-task-workflows.spec.ts`.
-- [ ] T063 Regenerate and verify committed architecture evidence with `npm run structure`, `npm run graph:update`, `npm run structure:check` and `npm run graph:check` in `docs/architecture/STRUCTURE.md` and `.graphify/`.
-- [ ] T064 Conduct the guided usability study with 10 participants, verify at least 9 identify chat, form and continuation state correctly, and record method, anonymized outcomes and follow-ups in `specs/005-workspace-ai-guiado/usability-results.md`.
+- [ ] T063 Run `npm run structure:check` and `npm run graph:check`, confirm the expected stale-or-missing architecture evidence result before regeneration, and record the outcome in `specs/005-workspace-ai-guiado/quickstart.md`.
+- [ ] T064 Regenerate the committed structure snapshot with `npm run structure` in `docs/architecture/STRUCTURE.md`.
+- [ ] T065 Refresh the committed Graphify evidence with `npm run graph:update` in `.graphify/`.
+- [ ] T066 Run `npm run structure:check` and `npm run graph:check` until green and record the final architecture evidence verification in `specs/005-workspace-ai-guiado/quickstart.md`.
+- [ ] T067 Conduct the guided usability study with 10 participants, verify at least 9 identify chat, form and continuation state correctly, and record method, anonymized outcomes and follow-ups in `specs/005-workspace-ai-guiado/usability-results.md`.
 
 **Checkpoint**: All focused and aggregate checks are green, the responsive experience matches the approved structure and no provider is required.
 
@@ -206,7 +209,7 @@
 - T038–T039 and T042–T043 separate evaluation rules and feedback UI.
 - T048–T049 and T051–T052 separate settings persistence and modal behavior.
 - T055–T057 cover accessibility, security and migration evidence independently.
-- T064 can be prepared independently after the complete guided flow is available.
+- T067 can be prepared independently after the complete guided flow is available.
 
 ---
 

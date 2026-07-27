@@ -71,7 +71,7 @@ const problemAnalysisSchema = z.object({
 export const assistanceSettingsSchema = z.object({
   mode: assistanceModeSchema.default('codex'),
   connectionStatus: assistanceConnectionStatusSchema.default('deferred'),
-  schemaVersion: z.number().int().positive().default(1),
+  schemaVersion: z.literal(1).default(1),
 }).strict();
 
 const formUpdateCommon = {
@@ -107,6 +107,7 @@ const updateFieldMap = {
   'f3.notas': z.string().default(''),
   'f4.aar': z.array(reviewSchema).default([]),
   'f4.cambio': z.string().default(''),
+  'f4.patron': z.string().default(''),
   'f4.titulo': z.string().default(''),
   'f4.conexiones': z.string().default(''),
   'f4.mejorasCriterios': z.array(criterionImprovementSchema).default([]),
@@ -120,7 +121,8 @@ const formUpdateUnionEntries = Object.entries(updateFieldMap).map(([field, value
   }),
 );
 
-export const formUpdateSchema = z.discriminatedUnion('field', formUpdateUnionEntries);
+type FormUpdateUnionEntry = (typeof formUpdateUnionEntries)[number];
+export const formUpdateSchema = z.discriminatedUnion('field', formUpdateUnionEntries as [FormUpdateUnionEntry, ...FormUpdateUnionEntry[]]);
 
 export const assistantMessageSchema: z.ZodType<any> = z.object({
   id: z.string().min(1),

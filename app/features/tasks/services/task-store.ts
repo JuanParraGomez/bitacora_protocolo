@@ -1,7 +1,7 @@
 import { STORAGE_KEYS, StorageCompatibilityError } from '../../../../shared/contracts/storage';
 import type { Task } from '../domain/task.schema';
 import { repairTask } from '../domain/task.schema';
-import { repairAssistantState } from '../domain/task-assistant.schema';
+import { repairAssistantState, type AssistanceSettings } from '../domain/task-assistant.schema';
 
 export type StorageClient = {
   get(key: string): Promise<string | null>;
@@ -16,6 +16,8 @@ export type TaskStore = {
   readTask: (id: string) => Promise<unknown>;
   writeTask: (id: string, task: unknown) => Promise<void>;
   readRecord: (id: string) => Promise<string | null>;
+  readAssistanceSettings: () => Promise<AssistanceSettings>;
+  writeAssistanceSettings: (settings: unknown) => Promise<void>;
 };
 
 function decodeJson<T>(key: string, value: string | null): T | null {
@@ -29,6 +31,11 @@ function decodeJson<T>(key: string, value: string | null): T | null {
 
 function unavailable(cause: unknown): StorageCompatibilityError {
   return new StorageCompatibilityError('DATABASE_UNAVAILABLE', 'Legacy storage is unavailable; retry the operation.', { cause });
+}
+
+function sanitizeAssistanceSettings(raw: unknown): AssistanceSettings {
+  const settings = repairAssistantState({ settings: raw }).settings;
+  return { ...settings, schemaVersion: 1 };
 }
 
 export function createTaskStore(storage: StorageClient): TaskStore {
@@ -58,5 +65,15 @@ export function createTaskStore(storage: StorageClient): TaskStore {
       } catch (cause) { throw unavailable(cause); }
     },
     async readRecord(id) { return this.readRaw(STORAGE_KEYS.record(id)); },
+    async readAssistanceSettings() {
+      const value = await this.readRaw(STORAGE_KEYS.assistanceSettings);
+      const parsed = decodeJson<unknown>(STORAGE_KEYS.assistanceSettings, value);
+      return sanitizeAssistanceSettings(parsed);
+    },
+    async writeAssistanceSettings(settings) {
+      try {
+        await storage.set(STORAGE_KEYS.assistanceSettings, JSON.stringify(sanitizeAssistanceSettings(settings)));
+      } catch (cause) { throw unavailable(cause); }
+    },
   };
 }

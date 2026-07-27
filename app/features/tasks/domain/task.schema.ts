@@ -128,7 +128,12 @@ export function repairTask(input: unknown): Task {
       justificacion: 'Decisión de compatibilidad aplicada para conservar el progreso heredado.',
     } : {}),
   };
-  const parsed = taskSchema.parse({ ...candidate, id: typeof candidate.id === 'string' && candidate.id ? candidate.id : `recovered-${Date.now()}`, f1: { ...rawPhaseOne, analisisProblema: analysis } });
+  const parsed = taskSchema.parse({
+    ...candidate,
+    id: typeof candidate.id === 'string' && candidate.id ? candidate.id : `recovered-${Date.now()}`,
+    f1: { ...rawPhaseOne, analisisProblema: analysis },
+    assistant: repairAssistantState(candidate.assistant),
+  });
   const criteria = parsed.f2.criterios.map((criterion, index) => ({ ...criterion, id: criterion.id || `criterion-${index + 1}` }));
   const predictions = [...parsed.f2.predicciones];
   while (predictions.length < 3) predictions.push({ texto: '', umbral: '', conf: 'media' });

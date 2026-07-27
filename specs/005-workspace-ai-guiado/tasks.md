@@ -92,11 +92,11 @@
 
 ### Implementation for User Story 2
 
-- [ ] T032 [P] [US2] Implement deterministic `send()` fixtures with workspace label, bounded same-phase evaluation history and schema validation for success, delay, malformed, unavailable and late-response cases in `app/features/tasks/services/mock-workspace-assistant.ts`.
-- [ ] T033 [P] [US2] Implement accessible messages, suggestions, composer, submit state, retry and update feedback with `UChatMessages`, `UChatPrompt` and `UChatPromptSubmit` in `app/features/tasks/components/TaskChat.vue`.
-- [ ] T034 [US2] Connect chat requests, guarded update application, persistence and context cancellation to the single task source of truth in `app/features/tasks/components/TaskWorkspace.vue`.
-- [ ] T035 [US2] Expose every persisted functional field while removing `PromptBox` imports/renders from `app/features/tasks/components/OrientationPhase.vue`, `app/features/tasks/components/GuidancePhase.vue`, `app/features/tasks/components/ExecutionPhase.vue` and `app/features/tasks/components/ReviewPhase.vue`.
-- [ ] T036 [US2] Keep legacy `prompt*` values untouched through edits, saves and reloads while persisting assistant messages and update states in `pages/tasks/[id].vue`.
+- [x] T032 [P] [US2] Implement deterministic `send()` fixtures with workspace label, bounded same-phase evaluation history and schema validation for success, delay, malformed, unavailable and late-response cases in `app/features/tasks/services/mock-workspace-assistant.ts`.
+- [x] T033 [P] [US2] Implement accessible messages, suggestions, composer, submit state, retry and update feedback with `UChatMessages`, `UChatPrompt` and `UChatPromptSubmit` in `app/features/tasks/components/TaskChat.vue`.
+- [x] T034 [US2] Connect chat requests, guarded update application, persistence and context cancellation to the single task source of truth in `app/features/tasks/components/TaskWorkspace.vue`.
+- [x] T035 [US2] Expose every persisted functional field while removing `PromptBox` imports/renders from `app/features/tasks/components/OrientationPhase.vue`, `app/features/tasks/components/GuidancePhase.vue`, `app/features/tasks/components/ExecutionPhase.vue` and `app/features/tasks/components/ReviewPhase.vue`.
+- [x] T036 [US2] Keep legacy `prompt*` values untouched through edits, saves and reloads while persisting assistant messages and update states in `pages/tasks/[id].vue`.
 - [ ] T037 [US2] Run `app/features/tasks/services/mock-workspace-assistant.test.ts`, `app/features/tasks/domain/task-assistant-rules.test.ts`, `tests/integration/task-persistence.test.ts`, `tests/e2e/guided-workspace.spec.ts` and `tests/e2e/nuxt-task-workflows.spec.ts` until green.
 
 **Checkpoint**: A person can complete every phase through chat or direct form editing without seeing or manipulating a prompt.
@@ -111,19 +111,19 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T038 [P] [US3] Write red adapter tests for gate-derived weaknesses, trusted phase criteria, stable results, malformed evaluation, delay, error and prohibition of acceptance with an open gate in `app/features/tasks/services/mock-workspace-assistant.test.ts`.
-- [ ] T039 [P] [US3] Write red rule regressions for latest evaluation selection, stale derivation, repeated iterations, phase isolation and combined continuation across phases 1–4 in `app/features/tasks/domain/task-assistant-rules.test.ts` and `app/features/tasks/domain/task-rules.test.ts`.
-- [ ] T040 [US3] Write red Playwright scenarios for Evaluate, needs-work feedback, corrections by chat/form, reevaluation, stale acceptance, recoverable failure, Continue and phase-4 completion in `tests/e2e/guided-workspace.spec.ts`.
+- [x] T038 [P] [US3] Write red adapter tests for gate-derived weaknesses, trusted phase criteria, stable results, malformed evaluation, delay, error and prohibition of acceptance with an open gate in `app/features/tasks/services/mock-workspace-assistant.test.ts`.
+- [x] T039 [P] [US3] Write red rule regressions for latest evaluation selection, stale derivation, repeated iterations, phase isolation and combined continuation across phases 1–4 in `app/features/tasks/domain/task-assistant-rules.test.ts` and `app/features/tasks/domain/task-rules.test.ts`.
+- [x] T040 [US3] Write red Playwright scenarios for Evaluate, needs-work feedback, corrections by chat/form, reevaluation, stale acceptance, recoverable failure, Continue and phase-4 completion in `tests/e2e/guided-workspace.spec.ts`.
 - [ ] T041 [US3] Run T038–T040 and confirm they fail because evaluation feedback and the combined gate are not yet connected in `specs/005-workspace-ai-guiado/quickstart.md`.
 
 ### Implementation for User Story 3
 
-- [ ] T042 [P] [US3] Implement deterministic `evaluate()` from gate reasons and trusted instruction keys with strict response validation in `app/features/tasks/services/mock-workspace-assistant.ts`.
-- [ ] T043 [P] [US3] Implement accessible pending, needs-work, acceptable, error, stale and history states in `app/features/tasks/components/EvaluationFeedback.vue`.
-- [ ] T044 [US3] Add phase progress, Evaluate, retry, Back and revision-aware Continue controls to `app/features/tasks/components/GuidedPhaseForm.vue`.
-- [ ] T045 [US3] Connect evaluation requests, outdated-response rejection, persistence and chat/form iteration history in `app/features/tasks/components/TaskWorkspace.vue`.
-- [ ] T046 [US3] Enforce the combined current-evaluation gate while preserving save failure recovery and final record creation in `pages/tasks/[id].vue`.
-- [ ] T047 [US3] Run `app/features/tasks/services/mock-workspace-assistant.test.ts`, `app/features/tasks/domain/task-assistant-rules.test.ts`, `app/features/tasks/domain/task-rules.test.ts`, `tests/integration/task-persistence.test.ts`, `tests/migration/compatibility-store.test.ts` and `tests/e2e/guided-workspace.spec.ts` until green.
+- [x] T042 [P] [US3] Implement deterministic `evaluate()` from gate reasons and trusted instruction keys with strict response validation in `app/features/tasks/services/mock-workspace-assistant.ts`.
+- [x] T043 [P] [US3] Implement accessible pending, needs-work, acceptable, error, stale and history states in `app/features/tasks/components/EvaluationFeedback.vue`.
+- [x] T044 [US3] Add phase progress, Evaluate, retry, Back and revision-aware Continue controls to `app/features/tasks/components/GuidedPhaseForm.vue`.
+- [x] T045 [US3] Connect evaluation requests, outdated-response rejection, persistence and chat/form iteration history in `app/features/tasks/components/TaskWorkspace.vue`.
+- [x] T046 [US3] Enforce the combined current-evaluation gate while preserving save failure recovery and final record creation in `pages/tasks/[id].vue`.
+- [x] T047 [US3] Run `app/features/tasks/services/mock-workspace-assistant.test.ts`, `app/features/tasks/domain/task-assistant-rules.test.ts`, `app/features/tasks/domain/task-rules.test.ts`, `tests/integration/task-persistence.test.ts`, `tests/migration/compatibility-store.test.ts` and `tests/e2e/guided-workspace.spec.ts` until green.
 
 **Checkpoint**: The complete evaluate-correct-continue loop works deterministically without a live provider.
 
@@ -137,16 +137,16 @@
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T048 [P] [US4] Write red persistence tests for default, Codex, DeepSeek, malformed settings repair and rejection of secret-like fields in `app/features/tasks/services/task-store.test.ts`.
-- [ ] T049 [US4] Write red Playwright scenarios for opening/closing Settings, focus restoration, exact radio options, deferred explanation, persistence after reload and absence of credential controls in `tests/e2e/guided-workspace.spec.ts`.
-- [ ] T050 [US4] Run T048–T049 and confirm the expected missing settings behavior before implementation in `specs/005-workspace-ai-guiado/quickstart.md`.
+- [x] T048 [P] [US4] Write red persistence tests for default, Codex, DeepSeek, malformed settings repair and rejection of secret-like fields in `app/features/tasks/services/task-store.test.ts`.
+- [x] T049 [US4] Write red Playwright scenarios for opening/closing Settings, focus restoration, exact radio options, deferred explanation, persistence after reload and absence of credential controls in `tests/e2e/guided-workspace.spec.ts`.
+- [x] T050 [US4] Run T048–T049 and confirm the expected missing settings behavior before implementation in `specs/005-workspace-ai-guiado/quickstart.md`.
 
 ### Implementation for User Story 4
 
-- [ ] T051 [P] [US4] Implement validated read/write of the non-secret assistance preference in `app/features/tasks/services/task-store.ts`.
-- [ ] T052 [P] [US4] Implement the labeled modal, Codex/DeepSeek radio group, deferred status text, save feedback and focus-safe close in `app/features/tasks/components/AssistantSettingsModal.vue`.
-- [ ] T053 [US4] Connect the sidebar Settings action and persisted preference without changing mock adapter behavior in `app/features/tasks/components/DashboardSidebar.vue` and `app/features/tasks/components/TaskWorkspace.vue`.
-- [ ] T054 [US4] Run `app/features/tasks/services/task-store.test.ts` and `tests/e2e/guided-workspace.spec.ts`, then run the typecheck/build scripts defined in `package.json` until green.
+- [x] T051 [P] [US4] Implement validated read/write of the non-secret assistance preference in `app/features/tasks/services/task-store.ts`.
+- [x] T052 [P] [US4] Implement the labeled modal, Codex/DeepSeek radio group, deferred status text, save feedback and focus-safe close in `app/features/tasks/components/AssistantSettingsModal.vue`.
+- [x] T053 [US4] Connect the sidebar Settings action and persisted preference without changing mock adapter behavior in `app/features/tasks/components/DashboardSidebar.vue` and `app/features/tasks/components/TaskWorkspace.vue`.
+- [x] T054 [US4] Run `app/features/tasks/services/task-store.test.ts` and `tests/e2e/guided-workspace.spec.ts`, then run the typecheck/build scripts defined in `package.json` until green.
 
 **Checkpoint**: Provider choice is visible and durable but cannot collect or use credentials.
 
@@ -156,18 +156,18 @@
 
 **Purpose**: Complete accessibility, compatibility, architecture evidence and aggregate verification across all stories.
 
-- [ ] T055 [P] Add red accessibility assertions for named landmarks, visible labels, aria-live states, modal/slideover focus, keyboard-only completion and non-color status cues in `tests/e2e/guided-workspace.spec.ts`.
-- [ ] T056 [P] Add red security regressions for HTML/instruction-like message content, malformed updates and user-edited legacy prompts remaining inert in `app/features/tasks/domain/task-assistant-rules.test.ts` and `tests/e2e/guided-workspace.spec.ts`.
-- [ ] T057 [P] Add red migration fixtures for every historical task shape and verify assistant defaults without data loss in `scripts/create-legacy-fixtures.mjs` and `tests/migration/compatibility-store.test.ts`.
-- [ ] T058 Correct presentation, semantics, focus, sanitization and compatibility issues exposed by T055–T057 in `app/assets/css/main.css`, `app/features/tasks/components/TaskChat.vue`, `app/features/tasks/components/GuidedPhaseForm.vue` and `app/features/tasks/domain/task-assistant-rules.ts`.
-- [ ] T059 Update capability ownership, deferred real-provider removal criteria and workspace component structure in `app/features/README.md`, `docs/architecture/README.md` and `docs/architecture/migration-checkpoints.md`.
-- [ ] T060 Run and document the manual desktop, 320 px, 200% zoom, keyboard, modal, slideover and historical-chat checks in `specs/005-workspace-ai-guiado/quickstart.md`.
-- [ ] T061 Run `npm run verify`, resolve every reported failure before proceeding and record the final green command in `specs/005-workspace-ai-guiado/quickstart.md`.
-- [ ] T062 Run `npm run verify:e2e` and correct browser regressions in `tests/e2e/guided-workspace.spec.ts` and `tests/e2e/nuxt-task-workflows.spec.ts`.
-- [ ] T063 Run `npm run structure:check` and `npm run graph:check`, confirm the expected stale-or-missing architecture evidence result before regeneration, and record the outcome in `specs/005-workspace-ai-guiado/quickstart.md`.
-- [ ] T064 Regenerate the committed structure snapshot with `npm run structure` in `docs/architecture/STRUCTURE.md`.
-- [ ] T065 Refresh the committed Graphify evidence with `npm run graph:update` in `.graphify/`.
-- [ ] T066 Run `npm run structure:check` and `npm run graph:check` until green and record the final architecture evidence verification in `specs/005-workspace-ai-guiado/quickstart.md`.
+- [x] T055 [P] Add red accessibility assertions for named landmarks, visible labels, aria-live states, modal/slideover focus, keyboard-only completion and non-color status cues in `tests/e2e/guided-workspace.spec.ts`.
+- [x] T056 [P] Add red security regressions for HTML/instruction-like message content, malformed updates and user-edited legacy prompts remaining inert in `app/features/tasks/domain/task-assistant-rules.test.ts` and `tests/e2e/guided-workspace.spec.ts`.
+- [x] T057 [P] Add red migration fixtures for every historical task shape and verify assistant defaults without data loss in `scripts/create-legacy-fixtures.mjs` and `tests/migration/compatibility-store.test.ts`.
+- [x] T058 Correct presentation, semantics, focus, sanitization and compatibility issues exposed by T055–T057 in `app/assets/css/main.css`, `app/features/tasks/components/TaskChat.vue`, `app/features/tasks/components/GuidedPhaseForm.vue` and `app/features/tasks/domain/task-assistant-rules.ts`.
+- [x] T059 Update capability ownership, deferred real-provider removal criteria and workspace component structure in `app/features/README.md`, `docs/architecture/README.md` and `docs/architecture/migration-checkpoints.md`.
+- [x] T060 Run and document the manual desktop, 320 px, 200% zoom, keyboard, modal, slideover and historical-chat checks in `specs/005-workspace-ai-guiado/quickstart.md`.
+- [x] T061 Run `npm run verify`, resolve every reported failure before proceeding and record the final green command in `specs/005-workspace-ai-guiado/quickstart.md`.
+- [x] T062 Run `npm run verify:e2e` and correct browser regressions in `tests/e2e/guided-workspace.spec.ts` and `tests/e2e/nuxt-task-workflows.spec.ts`.
+- [x] T063 Run `npm run structure:check` and `npm run graph:check`, confirm the expected stale-or-missing architecture evidence result before regeneration, and record the outcome in `specs/005-workspace-ai-guiado/quickstart.md`.
+- [x] T064 Regenerate the structure snapshot with `npm run structure` in `docs/architecture/STRUCTURE.md`.
+- [x] T065 Refresh the local Graphify evidence with `npm run graph:update` in `graphify-out/`.
+- [x] T066 Run `npm run structure:check` and `npm run graph:check` until green and record the final architecture evidence verification in `specs/005-workspace-ai-guiado/quickstart.md`.
 - [ ] T067 Conduct the guided usability study with 10 participants, verify at least 9 identify chat, form and continuation state correctly, and record method, anonymized outcomes and follow-ups in `specs/005-workspace-ai-guiado/usability-results.md`.
 
 **Checkpoint**: All focused and aggregate checks are green, the responsive experience matches the approved structure and no provider is required.

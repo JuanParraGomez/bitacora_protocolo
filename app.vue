@@ -4,8 +4,8 @@ import AppNavigation from '~/app/components/shared/AppNavigation.vue';
 
 <template>
   <UApp>
-    <div class="app-shell app-shell--minimal">
-      <header class="app-header">
+    <div class="app-shell app-shell--minimal" :class="{ 'app-shell--workspace': $route.path.startsWith('/tasks/') && $route.path !== '/tasks/new' }">
+      <header v-if="!($route.path.startsWith('/tasks/') && $route.path !== '/tasks/new')" class="app-header">
         <AppNavigation />
       </header>
       <NuxtPage />
@@ -15,16 +15,16 @@ import AppNavigation from '~/app/components/shared/AppNavigation.vue';
 
 <style>
 :root {
-  color: #172033;
-  background: #f5f7fb;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1d241f;
+  background: #f4f7f3;
+  font-family: Avenir Next, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   line-height: 1.5;
   text-rendering: optimizeLegibility;
 }
 
 * { box-sizing: border-box; }
-body { min-width: 320px; margin: 0; background: #f5f7fb; }
+body { min-width: 320px; margin: 0; background: #f4f7f3; }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 
@@ -38,6 +38,13 @@ button { cursor: pointer; }
   margin-bottom: 2.5rem;
   padding: .35rem 0 1rem;
   border-bottom: 1px solid #e5e9f2;
+}
+
+.app-shell--workspace {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
  .app-shell--minimal main { display: grid; gap: 1.25rem; }
@@ -56,11 +63,11 @@ button { cursor: pointer; }
   transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
 }
 textarea { min-height: 7rem; resize: vertical; }
-.app-shell--minimal input:not([type='checkbox']):focus, .app-shell--minimal select:focus, .app-shell--minimal textarea:focus { border-color: #7c6cf2; box-shadow: 0 0 0 4px rgba(124, 108, 242, .14); background: #fff; }
+.app-shell--minimal input:not([type='checkbox']):focus, .app-shell--minimal select:focus, .app-shell--minimal textarea:focus { border-color: #007a4d; box-shadow: 0 0 0 4px rgba(0, 122, 77, .13); background: #fff; }
 .app-shell--minimal label:has(> input[type='checkbox']) { display: flex; align-items: center; gap: .55rem; }
-.app-shell--minimal input[type='checkbox'] { width: 1rem; min-height: 1rem; margin: 0; accent-color: #6d5ce7; }
+.app-shell--minimal input[type='checkbox'] { width: 1rem; min-height: 1rem; margin: 0; accent-color: #007a4d; }
 .app-shell--minimal button { border: 1px solid #d9dfeb; border-radius: .7rem; padding: .65rem .9rem; color: #26314a; background: #fff; font-weight: 700; }
-.app-shell--minimal button:hover:not(:disabled) { border-color: #b6acef; background: #f8f7ff; }
+.app-shell--minimal button:hover:not(:disabled) { border-color: #8ab8a3; background: #f2faf6; }
 .app-shell--minimal button:disabled { cursor: not-allowed; opacity: .55; }
 .app-shell--minimal [role='alert'] { padding: .85rem 1rem; border: 1px solid #fecaca; border-radius: .8rem; color: #991b1b; background: #fff1f2; }
 

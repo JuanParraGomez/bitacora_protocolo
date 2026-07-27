@@ -1,0 +1,11 @@
+{
+  "description": "Legacy fixture contract for migration tests",
+  "files": {
+    "bitacora.sqlite": "valid legacy database with kv_store rows",
+    "empty.sqlite": "empty database with kv_store schema",
+    "malformed.sqlite": "database containing invalid JSON values",
+    "interrupted.sqlite": "copy representing an interrupted migration"
+  },
+  "requiredKeys": ["bitacora:index"],
+  "preservationRule": "keys and opaque string values must remain unchanged"
+}

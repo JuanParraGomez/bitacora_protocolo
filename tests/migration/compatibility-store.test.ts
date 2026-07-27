@@ -1,17 +1,23 @@
 import { mkdtempSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import { KvStoreRepository } from '../../server/repositories/kv-store.repository';
+import { repairTask } from '../../app/features/tasks/domain/task.schema';
 
-const fixtureDatabases = ['bitacora', 'empty', 'interrupted', 'malformed'].map((name) =>
+const fixtureDatabases = ['bitacora', 'empty', 'interrupted', 'malformed', 'historical-pre-assistant', 'historical-custom-prompts', 'historical-assistant-secrets'].map((name) =>
   path.join(process.cwd(), 'tests/fixtures/legacy', `${name}.sqlite`),
 );
 
 const fixtureName = (fixturePath: string) => path.basename(fixturePath).replace('.sqlite', '');
 
 describe('compatibility store migration', () => {
+  beforeAll(() => {
+    execFileSync(process.execPath, ['scripts/create-legacy-fixtures.mjs'], { cwd: process.cwd(), stdio: 'pipe' });
+  });
+
   it('reads fixture databases and keeps legacy rows queryable', async () => {
     const { inspectLegacyDatabase } = await import('../../scripts/migration-service.mjs');
 
@@ -72,6 +78,34 @@ describe('compatibility store migration', () => {
 
     const roundtrip = rows.map((row) => ({ ...row }));
     expect(assertNonDestructiveMigration(rows, roundtrip)).toBe(true);
+  });
+
+  it('repairs every historical task shape with assistant defaults and no data loss', async () => {
+    const { inspectLegacyDatabase } = await import('../../scripts/migration-service.mjs');
+    const historicalFixtures = fixtureDatabases.filter((fixture) => fixtureName(fixture).startsWith('historical-'));
+
+    for (const fixture of historicalFixtures) {
+      const rows = inspectLegacyDatabase(fixture);
+      const taskRows = rows.filter((entry: { key: string }) => entry.key.startsWith('bitacora:t:'));
+      expect(taskRows.length, fixtureName(fixture)).toBeGreaterThan(0);
+
+      for (const row of taskRows) {
+        const original = JSON.parse(row.value);
+        const repaired = repairTask(original);
+        expect(repaired.assistant).toMatchObject({
+          schemaVersion: 1,
+          messages: [],
+          evaluations: [],
+          settings: { connectionStatus: 'deferred', schemaVersion: 1 },
+        });
+        expect(JSON.stringify(repaired)).not.toContain('never-commit');
+        expect(JSON.stringify(repaired)).not.toContain('never-token');
+        if (original.f1?.promptOrientacion) expect(repaired.f1.promptOrientacion).toBe(original.f1.promptOrientacion);
+        if (original.f2?.promptGuia) expect(repaired.f2.promptGuia).toBe(original.f2.promptGuia);
+        if (original.f3?.promptEjecucion) expect(repaired.f3.promptEjecucion).toBe(original.f3.promptEjecucion);
+        if (original.f4?.promptAar) expect(repaired.f4.promptAar).toBe(original.f4.promptAar);
+      }
+    }
   });
 
   it('upserts, timestamps, deletes, and commits compatible legacy values transactionally', () => {

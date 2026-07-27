@@ -2,13 +2,56 @@
 @import "@nuxt/ui";
 
 :root {
-  --ui-primary: var(--color-indigo-600);
-  --ui-primary-50: var(--color-indigo-50);
-  --ui-primary-100: var(--color-indigo-100);
-  --ui-primary-200: var(--color-indigo-200);
-  --ui-primary-300: var(--color-indigo-300);
-  --ui-primary-400: var(--color-indigo-400);
-  --ui-primary-500: var(--color-indigo-500);
-  --ui-primary-600: var(--color-indigo-600);
-  --ui-primary-700: var(--color-indigo-700);
+  --ui-primary: #007a4d;
+  --ui-primary-50: #effaf4;
+  --ui-primary-100: #d8f3e5;
+  --ui-primary-200: #aee4c9;
+  --ui-primary-300: #76cda6;
+  --ui-primary-400: #35a978;
+  --ui-primary-500: #078752;
+  --ui-primary-600: #007a4d;
+  --ui-primary-700: #005f3e;
+}
+
+.workspace-section--form .phase-workspace__content,
+.workspace-section--form .phase-workspace__form {
+  width: 100%;
+  min-width: 0;
+}
+
+.workspace-section--form fieldset {
+  width: 100%;
+  min-width: 0;
+  min-inline-size: 0;
+}
+
+.workspace-section--form label {
+  display: grid;
+  gap: .42rem;
+}
+
+.workspace-section--form label:has(> input[type='checkbox']) {
+  display: flex;
+  align-items: center;
+}
+
+.workspace-section--form input:not([type='checkbox']),
+.workspace-section--form select,
+.workspace-section--form textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+html[style*="zoom: 2"] body {
+  width: 50%;
+  min-width: 0 !important;
+  overflow-x: hidden;
+}
+
+@media (max-width: 767px) {
+  html[style*="zoom: 2"] .task-sidebar,
+  html[style*="zoom: 2"] .workspace-section--form {
+    zoom: .5;
+  }
 }

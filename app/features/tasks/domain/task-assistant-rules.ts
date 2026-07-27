@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto';
-
 import { repairTask } from './task.schema';
 import { formUpdateSchema, type FormUpdate, phaseList, type TaskPhase, type PhaseEvaluation } from './task-assistant.schema';
 import type { Task } from './task.schema';
@@ -13,15 +11,33 @@ type ResponseLike = {
   requestId?: string;
 };
 
+type AssistantUpdateResult = {
+  task: Task;
+  applied: Array<FormUpdate & { status: 'applied' }>;
+  rejected: Array<FormUpdate>;
+};
 
-const hashSnapshot = (value: unknown): string =>
-  createHash('sha256').update(JSON.stringify(value)).digest('hex');
+
+const hashSnapshot = (value: unknown): string => {
+  const source = JSON.stringify(value);
+  let left = 0x811c9dc5;
+  let right = 0x9e3779b9;
+
+  for (const char of source) {
+    const code = char.codePointAt(0) ?? 0;
+    left ^= code;
+    left = Math.imul(left, 0x01000193) >>> 0;
+    right ^= code + left;
+    right = Math.imul(right, 0x85ebca6b) >>> 0;
+  }
+
+  return `${left.toString(16).padStart(8, '0')}${right.toString(16).padStart(8, '0')}`;
+};
 
 function extractPhaseData(task: Task, phase: TaskPhase): Record<string, unknown> {
   if (phase === 1) {
     const { linaje, dudas, checkMapeo, confirmacion, analisisProblema } = task.f1;
-    const { justificacion: _justificacion, ...remainingAnalysis } = analisisProblema as Record<string, unknown>;
-    return { linaje, dudas, checkMapeo, confirmacion, analisisProblema: remainingAnalysis };
+    return { linaje, dudas, checkMapeo, confirmacion, analisisProblema };
   }
   if (phase === 2) {
     const { decision, faqs, alcance, noObjetivos, pasos, descartadas, guia, criterios, predicciones } = task.f2;
@@ -37,7 +53,7 @@ function extractPhaseData(task: Task, phase: TaskPhase): Record<string, unknown>
 
 function normalizePhase(task: Task, phase?: Task['fase']): TaskPhase {
   const value = typeof phase === 'number' ? phase : task.fase;
-  return phaseList.includes(value as TaskPhase) ? value as TaskPhase : task.fase;
+  return phaseList.includes(value as TaskPhase) ? value as TaskPhase : task.fase as TaskPhase;
 }
 
 export function buildPhaseSnapshot(taskInput: Task, phase?: Task['fase']): PhaseSnapshot {
@@ -49,6 +65,37 @@ export function buildPhaseSnapshot(taskInput: Task, phase?: Task['fase']): Phase
 export function buildPhaseRevision(taskInput: Task, phase?: Task['fase']): string {
   const snapshot = buildPhaseSnapshot(taskInput, phase);
   return hashSnapshot(snapshot);
+}
+
+function resolveTaskField(target: unknown, key: string): unknown {
+  if (!target || typeof target !== 'object') return undefined;
+  return (target as Record<string, unknown>)[key];
+}
+
+function writeTaskField(target: unknown, key: string, value: unknown): void {
+  if (!target || typeof target !== 'object') return;
+  (target as Record<string, unknown>)[key] = value;
+}
+
+function assignByPath(task: Task, path: string, value: unknown): void {
+  const parts = path.split('.');
+  let cursor: Record<string, unknown> = task as unknown as Record<string, unknown>;
+
+  for (let index = 0; index < parts.length - 1; index++) {
+    const segment = parts[index];
+    if (!segment) continue;
+    const current = resolveTaskField(cursor, segment);
+    if (!current || typeof current !== 'object') {
+      const next = {};
+      writeTaskField(cursor, segment, next);
+      cursor = next as Record<string, unknown>;
+      continue;
+    }
+    cursor = current as Record<string, unknown>;
+  }
+
+  const finalSegment = parts.at(-1);
+  if (finalSegment) writeTaskField(cursor, finalSegment, value);
 }
 
 export function getLatestCurrentEvaluation(taskInput: Task): PhaseEvaluation | null {
@@ -80,6 +127,52 @@ export function canContinueByAssistant(taskInput: Task): boolean {
   const latest = getLatestCurrentEvaluation(task);
   const hasOpenGate = isGateOpen(task);
   return hasOpenGate && !!latest && latest.status === 'acceptable' && isEvaluationCurrent(task, latest);
+}
+
+export function classifyUpdateConflict(taskInput: Task, updateInput: FormUpdate): boolean {
+  const task = repairTask(taskInput);
+  const currentRevision = buildPhaseRevision(task, task.fase);
+  const parsed = formUpdateSchema.safeParse(updateInput);
+
+  if (!parsed.success) return true;
+  const candidate = parsed.data as FormUpdate;
+  if (candidate.status !== 'proposed') return true;
+  if (candidate.baseRevision !== currentRevision) return true;
+  if (!isAllowedPhaseFieldPath(candidate.field, task.fase as TaskPhase)) return true;
+
+  return false;
+}
+
+export function applyAssistantUpdates(taskInput: Task, updatesInput: FormUpdate[]): AssistantUpdateResult {
+  const task = repairTask(taskInput);
+  const currentRevision = buildPhaseRevision(task, task.fase);
+  const nextTask = repairTask(JSON.parse(JSON.stringify(task)));
+  const applied: Array<FormUpdate & { status: 'applied' }> = [];
+  const rejected: FormUpdate[] = [];
+
+  for (const update of updatesInput) {
+    const parsed = formUpdateSchema.safeParse(update);
+    if (!parsed.success) {
+      rejected.push({ ...update, status: 'rejected' as const });
+      continue;
+    }
+
+    const candidate = parsed.data as FormUpdate;
+    if (!isAllowedPhaseFieldPath(candidate.field, task.fase as TaskPhase)) {
+      rejected.push({ ...candidate, status: 'rejected' as const });
+      continue;
+    }
+
+    if (candidate.status !== 'proposed' || candidate.baseRevision !== currentRevision) {
+      rejected.push({ ...candidate, status: 'conflict' as const });
+      continue;
+    }
+
+    assignByPath(nextTask, candidate.field, candidate.value);
+    applied.push({ ...candidate, status: 'applied' });
+  }
+
+  return { task: nextTask, applied, rejected };
 }
 
 function isGateOpen(task: Task): boolean {
@@ -127,14 +220,15 @@ export function isAllowedPhaseFieldPath(field: string, phase: TaskPhase): boolea
     3: ['f3.iteraciones', 'f3.checkCompila', 'f3.checkAuditado', 'f3.notas'],
     4: ['f4.aar', 'f4.cambio', 'f4.patron', 'f4.titulo', 'f4.conexiones', 'f4.mejorasCriterios'],
   } as const;
-  return available[phase] ? available[phase].includes(field as (typeof available)[TaskPhase][number]) : false;
+  return available[phase] ? (available[phase] as readonly string[]).includes(field) : false;
 }
 
 export function validateUpdateForTask(taskInput: Task, update: FormUpdate): boolean {
   const task = repairTask(taskInput);
   const parsed = formUpdateSchema.safeParse(update);
   if (!parsed.success) return false;
-  if (parsed.data.status !== 'proposed') return true;
-  if (parsed.data.baseRevision !== buildPhaseRevision(task, task.fase)) return false;
-  return isAllowedPhaseFieldPath(parsed.data.field, task.fase);
+  const candidate = parsed.data as FormUpdate;
+  if (candidate.status !== 'proposed') return true;
+  if (candidate.baseRevision !== buildPhaseRevision(task, task.fase)) return false;
+  return isAllowedPhaseFieldPath(candidate.field, task.fase as TaskPhase);
 }

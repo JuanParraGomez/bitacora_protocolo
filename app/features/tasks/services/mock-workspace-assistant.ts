@@ -1,0 +1,476 @@
+import { z } from 'zod';
+import { formUpdateSchema, type FormUpdate, type TaskPhase } from '../domain/task-assistant.schema';
+import { buildPhaseRevision, buildPhaseSnapshot } from '../domain/task-assistant-rules';
+import { phaseInstructions, getPhaseInstructionKey } from '../domain/phase-instructions';
+import { repairTask, type Task } from '../domain/task.schema';
+
+type MockAdapterMode = 'success' | 'delay' | 'malformed' | 'unavailable';
+
+type TaskSnapshot = Record<string, unknown>;
+
+export type ChatRequest = {
+  requestId: string;
+  workspaceLabel: string;
+  taskId: string;
+  phase: TaskPhase;
+  baseRevision: string;
+  message: string;
+  phaseSnapshot: TaskSnapshot;
+  recentMessages: Array<unknown>;
+  previousEvaluations: Array<unknown>;
+};
+
+export type ChatResponse = {
+  requestId: string;
+  taskId: string;
+  phase: TaskPhase;
+  baseRevision: string;
+  message: string;
+  suggestions: string[];
+  updates: FormUpdate[];
+};
+
+export type EvaluationRequest = {
+  requestId: string;
+  taskId: string;
+  phase: TaskPhase;
+  responseRevision: string;
+  phaseSnapshot: TaskSnapshot;
+  gateReasons: string[];
+  instructionKey: string;
+  previousEvaluations: Array<unknown>;
+};
+
+export type EvaluationResponse = {
+  id: string;
+  requestId: string;
+  taskId: string;
+  phase: TaskPhase;
+  responseRevision: string;
+  status: 'acceptable' | 'needs-work' | 'error';
+  weaknesses: string[];
+  recommendations: string[];
+  gatePassed: boolean;
+  gateReasons: string[];
+  evaluatorVersion: string;
+};
+
+export type WorkspaceAssistantAdapter = {
+  send(request: ChatRequest): Promise<ChatResponse>;
+  evaluate(request: EvaluationRequest): Promise<EvaluationResponse>;
+};
+
+export type MockWorkspaceAdapterOptions = {
+  sendMode?: MockAdapterMode;
+  evaluateMode?: MockWorkspaceAdapterOptions['sendMode'];
+  delayMs?: number;
+};
+
+const MAX_SUGGESTIONS = 3;
+const MAX_PREVIOUS_ENTRIES = 5;
+const UPDATE_LIMIT = 180;
+
+const chatResponseSchema = z.object({
+  requestId: z.string().min(1),
+  taskId: z.string().min(1),
+  phase: z.number().int().min(1).max(4),
+  baseRevision: z.string(),
+  message: z.string(),
+  suggestions: z.array(z.string()).max(MAX_SUGGESTIONS),
+  updates: z.array(formUpdateSchema),
+}).transform((value) => ({
+  ...value,
+  suggestions: Array.from(new Set(value.suggestions)).slice(0, MAX_SUGGESTIONS),
+  updates: value.updates,
+}));
+
+const evaluationResponseSchema = z.object({
+  id: z.string().min(1),
+  requestId: z.string().min(1),
+  taskId: z.string().min(1),
+  phase: z.number().int().min(1).max(4),
+  responseRevision: z.string(),
+  status: z.enum(['acceptable', 'needs-work', 'error']),
+  weaknesses: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  gatePassed: z.boolean(),
+  gateReasons: z.array(z.string()),
+  evaluatorVersion: z.string().default('mock-v1'),
+});
+
+function normalizeText(value: string): string {
+  return value
+    .replaceAll('\n', ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function hasText(value: unknown): boolean {
+  return typeof value === 'string' ? value.trim().length > 0 : value !== undefined && value !== null;
+}
+
+function sanitizeEvaluationValue(value: string): string {
+  return normalizeText(value).replaceAll('<', ' ').replaceAll('>', ' ').slice(0, UPDATE_LIMIT);
+}
+
+function isInstructionLike(value: string): boolean {
+  const text = normalizeText(value).toLowerCase();
+  return text.includes('<script') || text.includes('javascript:') || text.includes('onerror=') || text.includes('onload=');
+}
+
+function trimEntries<T>(value: readonly T[] | undefined): T[] {
+  if (!value?.length) return [];
+  return [...value].slice(-MAX_PREVIOUS_ENTRIES);
+}
+
+function isTrustedInstructionKey(phase: TaskPhase, instructionKey: string): boolean {
+  return phaseInstructions[phase].some((instruction) => instruction.key === instructionKey);
+}
+
+function buildEvaluationId(requestId: string, revision: string, phase: TaskPhase): string {
+  return `eval-${phase}-${Date.now().toString(36)}-${requestId}`;
+}
+
+function trimRecentPhaseEvaluations(taskId: string, phase: TaskPhase, entries: readonly unknown[]): Array<Record<string, unknown>> {
+  const filtered = entries.filter((entry): entry is Record<string, unknown> => {
+    if (!entry || typeof entry !== 'object') return false;
+    const candidate = entry as Record<string, unknown>;
+    return candidate.taskId === taskId && candidate.phase === phase;
+  });
+
+  return trimEntries(filtered);
+}
+
+function uniqueByPrefix(list: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const item of list) {
+    const entry = normalizeText(item).slice(0, 120);
+    if (!entry) continue;
+    if (seen.has(entry)) continue;
+    seen.add(entry);
+    result.push(entry);
+    if (result.length >= MAX_SUGGESTIONS) break;
+  }
+
+  return result;
+}
+
+function suggestionFromPhaseSnapshot(phase: TaskPhase, snapshot: TaskSnapshot, message: string): string[] {
+  const normalized = normalizeText(message).toLowerCase();
+
+  if (phase === 1) {
+    const lineage = snapshot.linaje as Array<Record<string, string>> | undefined;
+    const hasLineage = Array.isArray(lineage) && lineage.some((row) => hasText(row.origen) || hasText(row.resultado));
+    const analysis = snapshot.analisisProblema as { problemaDetectado?: string; evidencia?: string; analisis?: string; decision?: string; justificacion?: string; problemaVigente?: string } | undefined;
+
+    const missing: string[] = [];
+    if (!hasLineage) missing.push('Completa al menos una relación de linaje.');
+    if (!hasText(snapshot.checkMapeo)) missing.push('Activa la casilla de confirmación del mapeo.');
+    if (!hasText(snapshot.confirmacion)) missing.push('Confirma la revisión final del diagnóstico.');
+    if (!hasText(analysis?.problemaDetectado) || !hasText(analysis?.evidencia) || !hasText(analysis?.analisis)) {
+      missing.push('Completa problema detectado, evidencia y análisis.');
+    }
+
+    if (normalized.includes('problema') && analysis?.decision !== 'mantener' && analysis?.decision !== 'reformular') {
+      return uniqueByPrefix([...missing, 'Define si mantienes o reformulas el problema vigente.', ...missing.slice(0, 1)]);
+    }
+
+    return uniqueByPrefix(missing.length ? missing : [
+      'Aclara el siguiente dato funcional por campo.',
+      'Define una formulación vigente más precisa.',
+      'Cierra con una decisión explícita y accionable.',
+    ]);
+  }
+
+  if (phase === 2) {
+    const missing: string[] = [];
+    if (!hasText(snapshot.decision as unknown)) missing.push('Especifica la decisión o resultado de guía.');
+    if (!hasText(snapshot.alcance as unknown) || !hasText(snapshot.noObjetivos as unknown)) missing.push('Completa alcance y no-objetivos.');
+    if (!hasText(snapshot.pasos as unknown)) missing.push('Registra los pasos clave del plan.');
+
+    return uniqueByPrefix(missing.length ? missing : [
+      'Añade una predicción con umbral.',
+      'Relaciona el criterio o mejora con evidencia.',
+      'Completa preguntas o acciones de la guía.',
+    ]);
+  }
+
+  if (phase === 3) {
+    const missing: string[] = [];
+    if (!hasText(snapshot.checkCompila as unknown) || !hasText(snapshot.checkAuditado as unknown)) missing.push('Confirma compilación y auditabilidad.');
+
+    return uniqueByPrefix(missing.length ? missing : [
+      'Registra un intento y su resultado.',
+      'Anota qué ajustaste y por qué.',
+      'Vincula cada ajuste con evidencias concretas.',
+    ]);
+  }
+
+  const missing: string[] = [];
+  if (!hasText(snapshot.cambio as unknown) || !hasText(snapshot.titulo as unknown)) {
+    missing.push('Finaliza el cambio procedimental y el título de la mejora.');
+  }
+
+  return uniqueByPrefix(missing.length ? missing : [
+    'Describe la mejora causal y su razonamiento.',
+    'Confirma al menos una hipótesis marcada como mía.',
+    'Cierra la confrontación con evidencia.',
+  ]);
+}
+
+function buildTaskSnapshot(taskInput: string, phase: TaskPhase, snapshot: TaskSnapshot): Task {
+  const phaseKey = `f${phase}` as const;
+  return repairTask({
+    id: taskInput,
+    fase: phase,
+    [phaseKey]: snapshot ?? {},
+  });
+}
+
+function buildUpdatesFromMessage(request: ChatRequest): FormUpdate[] {
+  const text = normalizeText(request.message).toLowerCase();
+  const updates: Array<{ field: string; value: string }> = [];
+
+  if (request.phase === 1 && text.includes('problema')) {
+    updates.push({ field: 'f1.analisisProblema.problemaDetectado', value: sanitizeEvaluationValue(request.message) });
+  }
+
+  if (request.phase === 1 && text.includes('evidencia')) {
+    updates.push({ field: 'f1.analisisProblema.evidencia', value: sanitizeEvaluationValue(request.message) });
+  }
+
+  if (request.phase === 1 && (text.includes('decisión') || text.includes('decision'))) {
+    updates.push({ field: 'f1.analisisProblema.decision', value: /mantener/.test(text) ? 'mantener' : 'reformular' });
+  }
+
+  if (request.phase === 2 && (text.includes('decisión') || text.includes('decision'))) {
+    updates.push({ field: 'f2.decision', value: sanitizeEvaluationValue(request.message) });
+  }
+
+  if (request.phase === 2 && text.includes('alcance')) {
+    updates.push({ field: 'f2.alcance', value: sanitizeEvaluationValue(request.message) });
+  }
+
+  if (request.phase === 3 && text.includes('iter')) {
+    updates.push({ field: 'f3.notas', value: sanitizeEvaluationValue(request.message) });
+  }
+
+  if (request.phase === 4 && text.includes('cambio')) {
+    updates.push({ field: 'f4.cambio', value: sanitizeEvaluationValue(request.message) });
+  }
+
+  if (!updates.length && request.phase === 2) {
+    updates.push({ field: 'f2.guia', value: sanitizeEvaluationValue(request.message) });
+  }
+
+  return updates
+    .slice(0, 2)
+    .map((candidate) => formUpdateSchema.parse({
+      sourceMessageId: request.requestId,
+      baseRevision: request.baseRevision,
+      status: 'proposed',
+      field: candidate.field,
+      value: candidate.value,
+    }));
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function toMessageList(request: ChatRequest, updates: FormUpdate[]): ChatResponse {
+  const suggestions = suggestionFromPhaseSnapshot(request.phase, request.phaseSnapshot, request.message);
+
+  return {
+    requestId: request.requestId,
+    taskId: request.taskId,
+    phase: request.phase,
+    baseRevision: request.baseRevision,
+    message: `Asistente activo en ${request.workspaceLabel || 'este proyecto'}: listo para orientar la fase ${request.phase}.`,
+    suggestions,
+    updates,
+  };
+}
+
+export function createMockWorkspaceAssistant(options: MockWorkspaceAdapterOptions = {}): WorkspaceAssistantAdapter {
+  const inFlightSend = new Map<string, Promise<ChatResponse>>();
+  const inFlightEvaluation = new Map<string, Promise<EvaluationResponse>>();
+
+  async function send(request: ChatRequest): Promise<ChatResponse> {
+    const cached = inFlightSend.get(request.requestId);
+    if (cached) return cached;
+
+    if (options.sendMode === 'unavailable') {
+      throw new Error('not available');
+    }
+
+  const resolved: Promise<ChatResponse> = (async () => {
+      if (options.sendMode === 'delay' && options.delayMs) {
+        await sleep(options.delayMs);
+      }
+
+      const content = normalizeText(request.message);
+      if (!content) {
+        throw new Error('message must not be empty');
+      }
+
+      if (isInstructionLike(content)) {
+        throw new Error('instruction-like content rejected');
+      }
+
+      const phaseSnapshot = buildPhaseSnapshot(buildTaskSnapshot(request.taskId, request.phase, request.phaseSnapshot), request.phase).fields;
+      const historicalEvaluations = trimRecentPhaseEvaluations(request.taskId, request.phase, request.previousEvaluations);
+      const task = buildTaskSnapshot(request.taskId, request.phase, phaseSnapshot);
+      const expectedBaseRevision = buildPhaseRevision(task, request.phase);
+      const currentBaseRevision = request.baseRevision;
+      const updates = buildUpdatesFromMessage(request);
+      const draft = toMessageList(request, updates);
+
+      draft.baseRevision = currentBaseRevision;
+      if (currentBaseRevision !== expectedBaseRevision) {
+        draft.suggestions = [
+          'El contexto cambió; confirma el estado actual del formulario antes de continuar.',
+          ...draft.suggestions,
+        ];
+      }
+
+      if (historicalEvaluations.length > 0) {
+        const historyReasons = historicalEvaluations.flatMap((entry) => {
+          const reasons = entry.gateReasons;
+          return Array.isArray(reasons) ? reasons.filter((value) => typeof value === 'string').map((value) => String(value)) : [];
+        });
+        draft.suggestions = uniqueByPrefix([...historyReasons, ...draft.suggestions]);
+      }
+      draft.suggestions = uniqueByPrefix(draft.suggestions);
+
+      const response = chatResponseSchema.parse(draft) as ChatResponse;
+
+      if (options.sendMode === 'malformed') {
+        const malformed = { ...response, suggestions: [1] } as unknown as ChatResponse;
+        return chatResponseSchema.parse(malformed) as ChatResponse;
+      }
+
+      return response;
+    })().finally(() => {
+      inFlightSend.delete(request.requestId);
+    });
+
+    inFlightSend.set(request.requestId, resolved);
+    return resolved;
+  }
+
+  async function evaluate(request: EvaluationRequest): Promise<EvaluationResponse> {
+    const cached = inFlightEvaluation.get(request.requestId);
+    if (cached) return cached;
+
+    if (options.evaluateMode === 'unavailable') {
+      throw new Error('not available');
+    }
+
+    const resolved: Promise<EvaluationResponse> = (async () => {
+      if (options.evaluateMode === 'delay' && options.delayMs) {
+        await sleep(options.delayMs);
+      }
+
+      const historical = trimRecentPhaseEvaluations(request.taskId, request.phase, request.previousEvaluations);
+
+      const historyGateReasons = historical.flatMap((entry) => {
+        if (!entry || typeof entry !== 'object') return [];
+        const item = entry as Record<string, unknown>;
+        const reasons = item.gateReasons;
+        return Array.isArray(reasons) ? reasons.filter((value) => typeof value === 'string').map((value) => String(value)) : [];
+      });
+
+      const reasons = trimEntries(request.gateReasons);
+      const finalReasons = reasons.length > 0 ? reasons : trimEntries(historyGateReasons);
+
+      const expectedInstructionKey = getPhaseInstructionKey(request.phase);
+      const usesTrustedInstruction = isTrustedInstructionKey(request.phase, request.instructionKey);
+
+      if (!usesTrustedInstruction) {
+        return evaluationResponseSchema.parse({
+          id: buildEvaluationId(request.requestId, request.responseRevision, request.phase),
+          requestId: request.requestId,
+          taskId: request.taskId,
+          phase: request.phase,
+          responseRevision: request.responseRevision,
+          status: 'error',
+          weaknesses: [`Clave de instrucción inválida para la fase ${request.phase}.`],
+          recommendations: ['Usa una clave de instrucción del catálogo de fases para esta evaluación.'],
+          gatePassed: false,
+          gateReasons: ['Clave de instrucción inválida.'],
+          evaluatorVersion: 'mock-v1',
+        }) as EvaluationResponse;
+      }
+
+      if (!expectedInstructionKey) {
+        return evaluationResponseSchema.parse({
+          id: buildEvaluationId(request.requestId, request.responseRevision, request.phase),
+          requestId: request.requestId,
+          taskId: request.taskId,
+          phase: request.phase,
+          responseRevision: request.responseRevision,
+          status: 'error',
+          weaknesses: [`No hay instrucción de fase disponible para fase ${request.phase}.`],
+          recommendations: ['Reparar el catálogo interno de instrucciones y volver a intentar.'],
+          gatePassed: false,
+          gateReasons: ['Instrucción de fase ausente.'],
+          evaluatorVersion: 'mock-v1',
+        }) as EvaluationResponse;
+      }
+
+      if (finalReasons.length === 0) {
+        const response = {
+          id: buildEvaluationId(request.requestId, request.responseRevision, request.phase),
+          requestId: request.requestId,
+          taskId: request.taskId,
+          phase: request.phase,
+          responseRevision: request.responseRevision,
+          status: 'acceptable',
+          weaknesses: [],
+          recommendations: [],
+          gatePassed: true,
+          gateReasons: [],
+          evaluatorVersion: 'mock-v1',
+        };
+        if (options.evaluateMode === 'malformed') {
+          const malformed = { ...response, recommendations: 0 } as unknown as EvaluationResponse;
+          return evaluationResponseSchema.parse(malformed) as EvaluationResponse;
+        }
+        return evaluationResponseSchema.parse(response) as EvaluationResponse;
+      }
+
+      const payload = {
+        id: buildEvaluationId(request.requestId, request.responseRevision, request.phase),
+        requestId: request.requestId,
+        taskId: request.taskId,
+        phase: request.phase,
+        responseRevision: request.responseRevision,
+        status: 'needs-work' as const,
+        weaknesses: finalReasons.map((item) => `Debilidad: ${item}`),
+        recommendations: finalReasons.map((item) => `Recomendación: ${item}`),
+        gatePassed: false,
+        gateReasons: finalReasons,
+        evaluatorVersion: 'mock-v1',
+      };
+
+      if (options.evaluateMode === 'malformed') {
+        const malformed = { ...payload, recommendations: 0 } as unknown as EvaluationResponse;
+        return evaluationResponseSchema.parse(malformed) as EvaluationResponse;
+      }
+
+      return evaluationResponseSchema.parse(payload) as EvaluationResponse;
+    })().finally(() => {
+      inFlightEvaluation.delete(request.requestId);
+    });
+
+    inFlightEvaluation.set(request.requestId, resolved);
+    return resolved;
+  }
+
+  return { send, evaluate };
+}
+
+export const mockWorkspaceAssistant = createMockWorkspaceAssistant();

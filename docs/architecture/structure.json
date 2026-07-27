@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-27T21:28:43.149Z",
+  "sourceHash": "6ec1f53fd9511801920eed21ab9bc86905a511f89b93ec6b1262feadfc583c6d",
+  "modules": [
+    {
+      "id": "library",
+      "path": "app/features/library",
+      "purpose": "Owns library capability",
+      "owns": [
+        "library"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "reference",
+      "path": "app/features/reference",
+      "purpose": "Owns reference capability",
+      "owns": [
+        "reference"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "server",
+      "path": "server",
+      "purpose": "Owns server capability",
+      "owns": [
+        "server"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "shared",
+      "path": "shared",
+      "purpose": "Owns shared capability",
+      "owns": [
+        "shared"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "tasks",
+      "path": "app/features/tasks",
+      "purpose": "Owns tasks capability",
+      "owns": [
+        "tasks"
+      ],
+      "dependencies": []
+    }
+  ],
+  "edges": [
+    {
+      "from": "server",
+      "to": "shared",
+      "kind": "imports"
+    },
+    {
+      "from": "tasks",
+      "to": "shared",
+      "kind": "imports"
+    }
+  ]
+}

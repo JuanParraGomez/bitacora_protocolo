@@ -56,9 +56,9 @@ describe('task assistant rules', () => {
     const snapshot = buildPhaseSnapshot(task, 1);
 
     expect(snapshot.phase).toBe(1);
+    expect(snapshot.fields).toHaveProperty('analisisProblema');
     expect(snapshot.fields).not.toHaveProperty('promptOrientacion');
     expect(snapshot.fields).not.toHaveProperty('promptOrientacionPersonalizado');
-    expect(snapshot.fields.analisisProblema).toBeUndefined();
   });
 
   it('keeps functional field changes stable in revision when prompts change', () => {

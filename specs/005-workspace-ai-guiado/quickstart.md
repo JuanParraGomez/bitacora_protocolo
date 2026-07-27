@@ -56,8 +56,7 @@ npx vitest run app/features/tasks/domain/task-assistant.schema.test.ts
 npx vitest run app/features/tasks/domain/task-assistant-rules.test.ts
 ```
 
-Estado esperado en esta etapa: ambas pruebas deben fallar por ausencia de
-`task-assistant.schema.ts` y `task-assistant-rules.ts`.
+Estado esperado en esta etapa: las pruebas pasaron al implementar `task-assistant.schema.ts` y `task-assistant-rules.ts`.
 
 ### Persistence and compatibility
 
@@ -69,7 +68,12 @@ npx vitest run tests/migration/compatibility-store.test.ts
 Comprobar round-trip de mensajes/evaluaciones, ajustes sin secretos y tareas heredadas con prompts intactos pero ocultos.
 
 Estado esperado en esta etapa: las pruebas deben fallar en persistencia de `assistant`
-por no existir aún el parche de reparación/esquema en el store.
+hasta antes de la integración del mapa de persistencia.  
+Con `app/features/tasks/services/task-store.ts` actualizado, ahora pasan en verde con:
+
+- `assistant` agregado con reparación si falta, sin perder prompts heredados;
+- `assistant` sin secretos y con modo persistente (`codex`/`deepseek`);
+- tolerancia a JSON malformado y compatibilidad no destructiva.
 
 ### Browser
 

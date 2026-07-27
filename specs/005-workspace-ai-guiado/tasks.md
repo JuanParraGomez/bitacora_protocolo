@@ -37,13 +37,13 @@
 - [x] T006 [P] Write complete red rule tests for canonical phase snapshots, stable revisions, prompt exclusion, stale evaluations, gate-plus-evaluation continuation and response conflicts in `app/features/tasks/domain/task-assistant-rules.test.ts`.
 - [x] T007 [P] Write red compatibility and round-trip tests for assistant state, preserved legacy prompts, malformed assistant data and settings without secrets in `tests/integration/task-persistence.test.ts` and `tests/migration/compatibility-store.test.ts`.
 - [x] T008 Run the tests from T005–T007 and confirm they fail for missing assistant schemas, rules and persistence behavior before editing production files in `specs/005-workspace-ai-guiado/quickstart.md`.
-- [ ] T009 Implement closed schemas and repairable defaults for `AssistantMessage`, `FormUpdate`, `PhaseEvaluation`, `AssistantState` and `AssistanceSettings` in `app/features/tasks/domain/task-assistant.schema.ts`.
-- [ ] T010 Extend `Task` with repaired assistant state while preserving every legacy prompt and existing phase field in `app/features/tasks/domain/task.schema.ts`.
-- [ ] T011 [P] Normalize the trusted Socratic, phase-specific and AAR criteria from the legacy source into immutable application-owned entries in `app/features/tasks/domain/phase-instructions.ts`.
-- [ ] T012 Implement phase snapshots, stable revisions, typed update validation, current-evaluation selection, conflict detection and the combined continuation rule in `app/features/tasks/domain/task-assistant-rules.ts`.
-- [ ] T013 Integrate the combined continuation rule without weakening existing deterministic gates or finalization behavior in `app/features/tasks/domain/task-rules.ts`.
-- [ ] T014 Extend task persistence mapping for assistant state and safe defaults without adding settings, credentials or assistant-specific server endpoints in `app/features/tasks/services/task-store.ts`.
-- [ ] T015 Run `app/features/tasks/domain/task-assistant.schema.test.ts`, `app/features/tasks/domain/task-assistant-rules.test.ts`, `tests/integration/task-persistence.test.ts`, `tests/migration/compatibility-store.test.ts`, `app/features/tasks/domain/task-rules.test.ts` and `app/features/tasks/services/task-store.test.ts` until green.
+- [x] T009 Implement closed schemas and repairable defaults for `AssistantMessage`, `FormUpdate`, `PhaseEvaluation`, `AssistantState` and `AssistanceSettings` in `app/features/tasks/domain/task-assistant.schema.ts`.
+- [x] T010 Extend `Task` with repaired assistant state while preserving every legacy prompt and existing phase field in `app/features/tasks/domain/task.schema.ts`.
+- [x] T011 [P] Normalize the trusted Socratic, phase-specific and AAR criteria from the legacy source into immutable application-owned entries in `app/features/tasks/domain/phase-instructions.ts`.
+- [x] T012 Implement phase snapshots, stable revisions, typed update validation, current-evaluation selection, conflict detection and the combined continuation rule in `app/features/tasks/domain/task-assistant-rules.ts`.
+- [x] T013 Integrate the combined continuation rule without weakening existing deterministic gates or finalization behavior in `app/features/tasks/domain/task-rules.ts`.
+- [x] T014 Extend task persistence mapping for assistant state and safe defaults without adding settings, credentials or assistant-specific server endpoints in `app/features/tasks/services/task-store.ts`.
+- [x] T015 Run `app/features/tasks/domain/task-assistant.schema.test.ts`, `app/features/tasks/domain/task-assistant-rules.test.ts`, `tests/integration/task-persistence.test.ts`, `tests/migration/compatibility-store.test.ts`, `app/features/tasks/domain/task-rules.test.ts` and `app/features/tasks/services/task-store.test.ts` until green.
 
 **Checkpoint**: Legacy and new tasks share a safe model; evaluations can be proven current before enabling continuation.
 

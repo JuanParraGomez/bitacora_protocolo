@@ -1,7 +1,7 @@
 <!-- SPECKIT START -->
 For the current technology decisions, migration checkpoints, project structure,
 commands, contracts, and deferred service-extraction criteria, read
-`specs/003-mejorar-bitacora-iteraciones/plan.md`.
+`specs/005-workspace-ai-guiado/plan.md`.
 
 ## Mandatory Test-First Workflow
 

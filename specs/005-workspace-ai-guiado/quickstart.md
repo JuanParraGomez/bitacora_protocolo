@@ -49,6 +49,16 @@ Comprobar:
 - `acceptable` imposible con gate cerrado;
 - demora, error, respuesta inválida y reintento.
 
+#### T008 (fase fundacional red)
+
+```bash
+npx vitest run app/features/tasks/domain/task-assistant.schema.test.ts
+npx vitest run app/features/tasks/domain/task-assistant-rules.test.ts
+```
+
+Estado esperado en esta etapa: ambas pruebas deben fallar por ausencia de
+`task-assistant.schema.ts` y `task-assistant-rules.ts`.
+
 ### Persistence and compatibility
 
 ```bash
@@ -57,6 +67,9 @@ npx vitest run tests/migration/compatibility-store.test.ts
 ```
 
 Comprobar round-trip de mensajes/evaluaciones, ajustes sin secretos y tareas heredadas con prompts intactos pero ocultos.
+
+Estado esperado en esta etapa: las pruebas deben fallar en persistencia de `assistant`
+por no existir aún el parche de reparación/esquema en el store.
 
 ### Browser
 

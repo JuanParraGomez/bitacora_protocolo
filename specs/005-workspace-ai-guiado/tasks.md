@@ -33,10 +33,10 @@
 
 **⚠️ CRITICAL**: No user story implementation begins until this phase is green.
 
-- [ ] T005 [P] Write complete red schema tests for messages, typed field updates, evaluations, settings, invalid cross-task/cross-phase data and repair of tasks without assistant state in `app/features/tasks/domain/task-assistant.schema.test.ts`.
-- [ ] T006 [P] Write complete red rule tests for canonical phase snapshots, stable revisions, prompt exclusion, stale evaluations, gate-plus-evaluation continuation and response conflicts in `app/features/tasks/domain/task-assistant-rules.test.ts`.
-- [ ] T007 [P] Write red compatibility and round-trip tests for assistant state, preserved legacy prompts, malformed assistant data and settings without secrets in `tests/integration/task-persistence.test.ts` and `tests/migration/compatibility-store.test.ts`.
-- [ ] T008 Run the tests from T005–T007 and confirm they fail for missing assistant schemas, rules and persistence behavior before editing production files in `specs/005-workspace-ai-guiado/quickstart.md`.
+- [x] T005 [P] Write complete red schema tests for messages, typed field updates, evaluations, settings, invalid cross-task/cross-phase data and repair of tasks without assistant state in `app/features/tasks/domain/task-assistant.schema.test.ts`.
+- [x] T006 [P] Write complete red rule tests for canonical phase snapshots, stable revisions, prompt exclusion, stale evaluations, gate-plus-evaluation continuation and response conflicts in `app/features/tasks/domain/task-assistant-rules.test.ts`.
+- [x] T007 [P] Write red compatibility and round-trip tests for assistant state, preserved legacy prompts, malformed assistant data and settings without secrets in `tests/integration/task-persistence.test.ts` and `tests/migration/compatibility-store.test.ts`.
+- [x] T008 Run the tests from T005–T007 and confirm they fail for missing assistant schemas, rules and persistence behavior before editing production files in `specs/005-workspace-ai-guiado/quickstart.md`.
 - [ ] T009 Implement closed schemas and repairable defaults for `AssistantMessage`, `FormUpdate`, `PhaseEvaluation`, `AssistantState` and `AssistanceSettings` in `app/features/tasks/domain/task-assistant.schema.ts`.
 - [ ] T010 Extend `Task` with repaired assistant state while preserving every legacy prompt and existing phase field in `app/features/tasks/domain/task.schema.ts`.
 - [ ] T011 [P] Normalize the trusted Socratic, phase-specific and AAR criteria from the legacy source into immutable application-owned entries in `app/features/tasks/domain/phase-instructions.ts`.

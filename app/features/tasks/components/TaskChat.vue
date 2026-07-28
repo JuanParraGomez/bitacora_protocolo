@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch, type ComponentPublicInstance } from 'vue';
 import type { AssistantMessage, ProposalDecision } from '../domain/task-assistant.schema';
 
 type ChatSendStatus = 'ready' | 'submitted' | 'streaming' | 'error';
@@ -28,23 +28,41 @@ const props = withDefaults(defineProps<{
   disabled?: boolean;
   errorMessage?: string;
   workspaceLabel?: string;
+  draft?: string;
+  restoreMessageId?: string | null;
 }>(), {
   sendStatus: 'ready',
   suggestions: () => [],
   disabled: false,
   errorMessage: '',
   workspaceLabel: 'este espacio',
+  draft: undefined,
+  restoreMessageId: null,
 });
 
 const emit = defineEmits<{
   send: [text: string];
   retry: [messageId: string];
   proposalDecision: [decision: ProposalDecision];
+  updateDraft: [draft: string];
+  visibleMessage: [messageId: string | null];
 }>();
 
-const draft = ref('');
+const internalDraft = ref('');
+const messagesRoot = ref<HTMLElement | ComponentPublicInstance | null>(null);
 const proposalEdits = reactive<Record<string, string>>({});
 const proposalEditErrors = reactive<Record<string, string>>({});
+let visibleMessageFrame = 0;
+let restoreMessageFrame = 0;
+let restoreMessageTimer = 0;
+
+const draft = computed({
+  get: () => props.draft ?? internalDraft.value,
+  set: (value: string) => {
+    internalDraft.value = value;
+    emit('updateDraft', value);
+  },
+});
 
 const sortedMessages = computed<ChatMessage[]>(() => {
   return [...props.messages]
@@ -206,6 +224,73 @@ function retryLatest() {
     emit('retry', latestFailedMessage.value.id);
   }
 }
+
+function messageViewport(): HTMLElement | null {
+  const candidate = messagesRoot.value;
+  if (!candidate) return null;
+  if (candidate instanceof HTMLElement) return candidate;
+  return candidate.$el instanceof HTMLElement ? candidate.$el : null;
+}
+
+function restoreMessageAnchor() {
+  if (!props.restoreMessageId || typeof window === 'undefined') return;
+  void nextTick(() => {
+    window.cancelAnimationFrame(restoreMessageFrame);
+    window.clearTimeout(restoreMessageTimer);
+    const scrollToAnchor = () => {
+      const viewport = messageViewport();
+      const target = viewport?.querySelector<HTMLElement>(
+        `[data-message-id="${CSS.escape(props.restoreMessageId ?? '')}"]`,
+      );
+      target?.scrollIntoView({ block: 'center', behavior: 'auto' });
+    };
+    restoreMessageFrame = window.requestAnimationFrame(() => {
+      restoreMessageFrame = window.requestAnimationFrame(() => {
+        scrollToAnchor();
+        restoreMessageTimer = window.setTimeout(scrollToAnchor, 150);
+      });
+    });
+  });
+}
+
+function reportLastVisibleMessage() {
+  if (typeof window === 'undefined') return;
+  window.cancelAnimationFrame(visibleMessageFrame);
+  visibleMessageFrame = window.requestAnimationFrame(() => {
+    const viewport = messageViewport();
+    if (!viewport) return;
+    const viewportRect = viewport.getBoundingClientRect();
+    const messages = [...viewport.querySelectorAll<HTMLElement>('[data-message-id]')];
+    const visible = messages
+      .filter((message) => {
+        const rect = message.getBoundingClientRect();
+        return rect.bottom > viewportRect.top && rect.top < viewportRect.bottom;
+      });
+    const visibleMessageId = visible.at(-1)?.dataset.messageId;
+    if (visibleMessageId) {
+      emit('visibleMessage', visibleMessageId);
+    } else if (messages.length === 0) {
+      emit('visibleMessage', null);
+    }
+  });
+}
+
+watch(
+  () => [props.restoreMessageId, props.messages.length],
+  restoreMessageAnchor,
+);
+
+onMounted(() => {
+  restoreMessageAnchor();
+  reportLastVisibleMessage();
+});
+
+onBeforeUnmount(() => {
+  if (typeof window === 'undefined') return;
+  window.cancelAnimationFrame(visibleMessageFrame);
+  window.cancelAnimationFrame(restoreMessageFrame);
+  window.clearTimeout(restoreMessageTimer);
+});
 </script>
 
 <template>
@@ -213,9 +298,18 @@ function retryLatest() {
     <h3 class="task-chat__title">Asistente del workspace</h3>
     <p role="status" aria-live="polite" class="sr-only">{{ ariaStatus }}</p>
 
-    <UChatMessages :messages="sortedMessages" :status="props.sendStatus" class="task-chat__messages">
+    <UChatMessages
+      ref="messagesRoot"
+      :messages="sortedMessages"
+      :status="props.sendStatus"
+      class="task-chat__messages"
+      @scroll.passive="reportLastVisibleMessage"
+    >
       <template #content="{ message }">
-        <article :class="['task-chat__bubble', message.role === 'user' ? 'task-chat__bubble--user' : 'task-chat__bubble--assistant']">
+        <article
+          :class="['task-chat__bubble', message.role === 'user' ? 'task-chat__bubble--user' : 'task-chat__bubble--assistant']"
+          :data-message-id="message.id"
+        >
           <span v-if="message.role === 'assistant'" class="task-chat__avatar" aria-hidden="true">✦</span>
           <div class="task-chat__bubble-content">
             <p class="task-chat__message-body">{{ extractText(message) }}</p>
@@ -282,6 +376,10 @@ function retryLatest() {
         </ul>
       </template>
     </UChatMessages>
+
+    <div v-if="$slots.default" class="task-chat__inline-content">
+      <slot />
+    </div>
 
     <div v-if="visibleSuggestions.length" class="task-chat__suggestions" role="list" aria-label="Sugerencias rápidas">
       <button
@@ -468,6 +566,17 @@ function retryLatest() {
   justify-content: center;
   gap: 0.5rem;
   padding: .95rem 1.25rem 1.1rem;
+  border-top: 1px solid #dde3de;
+  background: #fff;
+}
+
+.task-chat__inline-content {
+  display: grid;
+  flex: 0 1 auto;
+  gap: .75rem;
+  max-height: min(46dvh, 34rem);
+  overflow: auto;
+  padding: .8rem 1.25rem;
   border-top: 1px solid #dde3de;
   background: #fff;
 }

@@ -14,8 +14,12 @@ test.describe('Nuxt task workflows', () => {
   test('shows an empty active-task dashboard', async ({ page }) => {
     await page.request.put('/api/storage/bitacora%3Aindex', { data: { value: JSON.stringify({ tareas: [], registros: [] }) } });
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Bitácora' })).toBeVisible();
-    await expect(page.getByText(/Todavía no hay tareas/)).toBeVisible();
+    await expect(page.locator('.workspace-shell')).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Navegación de tareas' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Sin tarea seleccionada' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Este proyecto todavía no tiene tareas/i }))
+      .toBeVisible();
+    await expect(page.getByRole('link', { name: 'Crear primera tarea' })).toBeVisible();
   });
 
   test('shows navigation and validates task intake', async ({ page }) => {
@@ -73,13 +77,13 @@ test.describe('Nuxt task workflows', () => {
     const visual = await page.evaluate(() => ({
       shellColumns: getComputedStyle(document.querySelector('.workspace-shell')!).gridTemplateColumns,
       chatBackground: getComputedStyle(document.querySelector('.task-chat__messages')!).backgroundImage,
-      sidebarBackground: getComputedStyle(document.querySelector('.task-sidebar')!).backgroundImage,
+      sidebarBackgroundColor: getComputedStyle(document.querySelector('.task-sidebar')!).backgroundColor,
       checkboxWidth: document.querySelector('input[type="checkbox"]')?.getBoundingClientRect().width,
     }));
 
-    expect(visual.shellColumns.split(' ').filter(Boolean).length).toBeGreaterThanOrEqual(3);
+    expect(visual.shellColumns.split(' ').filter(Boolean).length).toBe(2);
     expect(visual.chatBackground).not.toBe('none');
-    expect(visual.sidebarBackground).not.toBe('none');
+    expect(visual.sidebarBackgroundColor).not.toBe('rgba(0, 0, 0, 0)');
     expect(visual.checkboxWidth).toBeLessThanOrEqual(24);
   });
 
@@ -217,7 +221,7 @@ test.describe('Nuxt task workflows', () => {
       const formBox = await page.locator('.phase-workspace__form').first().boundingBox();
       expect(formBox).not.toBeNull();
       const desktopColumns = await page.locator('.workspace-shell').first().evaluate(element => getComputedStyle(element).gridTemplateColumns);
-      expect(desktopColumns.split(' ').filter(Boolean).length).toBeGreaterThanOrEqual(3);
+      expect(desktopColumns.split(' ').filter(Boolean).length).toBe(2);
 
       await page.setViewportSize({ width: 320, height: 1200 });
       await page.goto(`/tasks/${taskId}`);

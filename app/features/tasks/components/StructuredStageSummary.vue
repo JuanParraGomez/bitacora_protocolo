@@ -9,11 +9,16 @@ const props = withDefaults(defineProps<{
   evaluation?: PhaseEvaluation | null;
   isStaleEvaluation?: boolean;
   canContinue?: boolean;
+  state?: 'hidden' | 'collapsed' | 'expanded' | 'review';
 }>(), {
   evaluation: null,
   isStaleEvaluation: false,
   canContinue: false,
+  state: 'collapsed',
 });
+const emit = defineEmits<{
+  updateState: [state: 'collapsed' | 'expanded' | 'review'];
+}>();
 
 const phase = computed(() => props.task.fase);
 const phaseLabel = computed(() => phaseInstructions[phase.value as keyof typeof phaseInstructions]?.[0]?.title ?? `Fase ${phase.value}`);
@@ -29,6 +34,16 @@ const proposals = computed(() => currentMessages.value
   .filter((proposal) => proposal.status === 'proposed' || proposal.status === 'conflict'));
 const contradictions = computed(() => currentMessages.value.flatMap((message) => message.contradictions));
 const isUseful = computed(() => Boolean(primaryQuestion.value) || proposals.value.length > 0 || contradictions.value.length > 0);
+const isExpanded = computed(() => props.state === 'expanded' || props.state === 'review');
+const statusLabel = computed(() => {
+  if (props.state === 'review' || contradictions.value.length > 0) return 'Requiere revisión';
+  if (proposals.value.length > 0) return 'Propuestas pendientes';
+  return 'Contexto confirmado';
+});
+
+function toggleSummary() {
+  emit('updateState', isExpanded.value ? 'collapsed' : (contradictions.value.length > 0 ? 'review' : 'expanded'));
+}
 
 function fieldLabel(field: string): string {
   const labels: Record<string, string> = {
@@ -61,32 +76,56 @@ function valueText(value: unknown): string {
 <template>
   <section v-if="isUseful" class="structured-stage-summary" aria-label="Resumen estructurado">
     <header>
-      <h3>Resumen de etapa · {{ phaseLabel }}</h3>
-      <p class="structured-stage-summary__status structured-stage-summary__status--warn">Revisión contextual</p>
+      <button
+        type="button"
+        class="structured-stage-summary__toggle"
+        aria-label="Resumen estructurado"
+        :aria-expanded="isExpanded"
+        :aria-controls="`structured-summary-${props.task.id}`"
+        @click="toggleSummary"
+      >
+        <span>Resumen de etapa · {{ phaseLabel }}</span>
+        <small>{{ isExpanded ? 'Contraer' : 'Expandir' }}</small>
+      </button>
+      <p
+        :class="{
+          'structured-stage-summary__status': true,
+          'structured-stage-summary__status--warn': props.state === 'review' || proposals.length > 0 || contradictions.length > 0,
+          'structured-stage-summary__status--ok': props.state !== 'review' && proposals.length === 0 && contradictions.length === 0,
+        }"
+      >
+        {{ statusLabel }}
+      </p>
     </header>
 
-    <section v-if="primaryQuestion" class="structured-stage-summary__block">
-      <h4>Pregunta vigente</h4>
-      <p>{{ primaryQuestion }}</p>
-    </section>
+    <div
+      v-show="isExpanded"
+      :id="`structured-summary-${props.task.id}`"
+      class="structured-stage-summary__content"
+    >
+      <section v-if="primaryQuestion" class="structured-stage-summary__block">
+        <h4>Pregunta vigente</h4>
+        <p>{{ primaryQuestion }}</p>
+      </section>
 
-    <section v-if="proposals.length" class="structured-stage-summary__block">
-      <h4>Campos relacionados</h4>
-      <ul>
-        <li v-for="proposal in proposals" :key="proposal.id">
-          <strong>{{ fieldLabel(proposal.field) }}</strong>:
-          {{ valueText(proposal.previousValue) }} → {{ valueText(proposal.value) }}
-          <span v-if="proposal.status === 'conflict'">(conflicto)</span>
-        </li>
-      </ul>
-    </section>
+      <section v-if="proposals.length" class="structured-stage-summary__block">
+        <h4>Campos relacionados</h4>
+        <ul>
+          <li v-for="proposal in proposals" :key="proposal.id">
+            <strong>{{ fieldLabel(proposal.field) }}</strong>:
+            {{ valueText(proposal.previousValue) }} → {{ valueText(proposal.value) }}
+            <span v-if="proposal.status === 'conflict'">(conflicto)</span>
+          </li>
+        </ul>
+      </section>
 
-    <section v-if="contradictions.length" class="structured-stage-summary__block">
-      <h4>Contradicciones</h4>
-      <ul>
-        <li v-for="item in contradictions" :key="item.id">{{ item.message }}</li>
-      </ul>
-    </section>
+      <section v-if="contradictions.length" class="structured-stage-summary__block">
+        <h4>Contradicciones</h4>
+        <ul>
+          <li v-for="item in contradictions" :key="item.id">{{ item.message }}</li>
+        </ul>
+      </section>
+    </div>
   </section>
 </template>
 
@@ -109,13 +148,30 @@ function valueText(value: unknown): string {
   gap: 0.5rem;
 }
 
-.structured-stage-summary h3,
 .structured-stage-summary h4 {
   margin: 0;
 }
 
-.structured-stage-summary h3 {
+.structured-stage-summary__toggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  min-width: 12rem;
+  border: 0;
+  padding: 0;
+  color: #152019;
   font-size: .95rem;
+  font-weight: 760;
+  text-align: left;
+  background: transparent;
+}
+
+.structured-stage-summary__toggle small {
+  color: #526058;
+  font-size: .72rem;
+  font-weight: 650;
 }
 
 .structured-stage-summary h4 {
@@ -146,15 +202,11 @@ function valueText(value: unknown): string {
   gap: 0.35rem;
 }
 
-.structured-stage-summary__notice {
-  margin: 0;
-  color: #4b5750;
-  font-size: .82rem;
-}
-
-.structured-stage-summary__meta {
-  color: #4b5750;
-  font-size: .82rem;
+.structured-stage-summary__content {
+  display: grid;
+  gap: .7rem;
+  border-top: 1px solid #e0e7e2;
+  padding-top: .7rem;
 }
 
 .structured-stage-summary ul {

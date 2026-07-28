@@ -9,16 +9,39 @@ import { assistanceSettingsSchema, phaseEvaluationSchema } from '../domain/task-
 import { STORAGE_KEYS } from '../../../../shared/contracts/storage';
 import AssistantSettingsModal from './AssistantSettingsModal.vue';
 import { mockWorkspaceAssistant, type ChatRequest, type ChatResponse } from '../services/mock-workspace-assistant';
-import DashboardSidebar from './DashboardSidebar.vue';
+import type { Project } from '../domain/project.schema';
+import DashboardSidebar, { type WorkspaceProjectGroup } from './DashboardSidebar.vue';
 import GuidedPhaseForm from './GuidedPhaseForm.vue';
+import StructuredStageSummary from './StructuredStageSummary.vue';
 import TaskChat from './TaskChat.vue';
+import WorkspaceHeader from './WorkspaceHeader.vue';
 
 const props = withDefaults(defineProps<{
   task: Task;
-  activeTasks: TaskIndex['tareas'];
-  completedItems: TaskIndex['registros'];
+  projectGroups?: WorkspaceProjectGroup[];
+  activeProjectId?: string;
+  projectName?: string;
+  expandedProjectIds?: string[];
+  searchQuery?: string;
+  sidebarCollapsed?: boolean;
+  composerDraft?: string;
+  summaryState?: 'hidden' | 'collapsed' | 'expanded' | 'review';
+  lastVisibleMessageId?: string | null;
+  activeTasks?: TaskIndex['tareas'];
+  completedItems?: TaskIndex['registros'];
   saveTask?: () => Promise<boolean>;
 }>(), {
+  projectGroups: () => [],
+  activeProjectId: '',
+  projectName: '',
+  expandedProjectIds: () => [],
+  searchQuery: undefined,
+  sidebarCollapsed: undefined,
+  composerDraft: undefined,
+  summaryState: undefined,
+  lastVisibleMessageId: null,
+  activeTasks: () => [],
+  completedItems: () => [],
   saveTask: undefined,
 });
 
@@ -29,6 +52,17 @@ const emit = defineEmits<{
   requestEvaluationRetry: [];
   requestBack: [];
   requestContinue: [];
+  createProject: [name: string];
+  renameProject: [payload: { projectId: string; name: string }];
+  renameTask: [payload: { taskId: string; name: string }];
+  selectProject: [projectId: string];
+  selectTask: [payload: { projectId: string; taskId: string }];
+  toggleProject: [payload: { projectId: string; expanded: boolean }];
+  searchTasks: [query: string];
+  updateSidebarCollapsed: [collapsed: boolean];
+  updateDraft: [payload: { taskId: string; draft: string }];
+  updateSummaryState: [payload: { taskId: string; state: 'collapsed' | 'expanded' | 'review' }];
+  updateLastVisibleMessage: [payload: { taskId: string; messageId: string | null }];
 }>();
 const localTask = reactive(props.task);
 const chatSuggestions = ref<string[]>([]);
@@ -39,10 +73,13 @@ const evaluationState = ref<'idle' | 'evaluating'>('idle');
 const conversationContext = ref(0);
 const inFlightByRequest = new Map<string, Promise<void>>();
 const evaluationInFlight = new Map<string, Promise<void>>();
+const isCompact = ref(false);
 const isMobile = ref(false);
 const sidebarOpen = ref(false);
+const sidebarDrawerRef = ref<HTMLElement | null>(null);
+const sidebarCloseButtonRef = ref<HTMLButtonElement | null>(null);
 const mobileFormOpen = ref(false);
-const sidebarToggleRef = ref<HTMLElement | null>(null);
+const workspaceHeaderRef = ref<InstanceType<typeof WorkspaceHeader> | null>(null);
 const questionnaireButtonRef = ref<HTMLElement | null>(null);
 const settingsButtonRef = ref<HTMLElement | null>(null);
 const settingsOpen = ref(false);
@@ -50,6 +87,9 @@ const settingsSaving = ref(false);
 const settingsSaved = ref(false);
 const settingsError = ref('');
 const assistanceSettings = ref<AssistanceSettings>(assistanceSettingsSchema.parse({}));
+const fallbackSidebarCollapsed = ref(false);
+const fallbackDrafts = reactive<Record<string, string>>({});
+const fallbackSummaryStates = reactive<Record<string, 'collapsed' | 'expanded' | 'review'>>({});
 
 const phaseLabel = computed(() => `Fase ${localTask.fase}`);
 const phaseTitle = computed(() => {
@@ -61,7 +101,51 @@ const phaseTitle = computed(() => {
   };
   return titles[localTask.fase as TaskPhase];
 });
-const projectLabel = computed(() => `Proyecto ${localTask.tipo || 'General'}`);
+const fallbackProject = computed<Project>(() => ({
+  id: localTask.projectId || 'legacy',
+  name: props.projectName || (localTask.projectId === 'legacy' ? 'Tareas anteriores' : 'Proyecto'),
+  description: '',
+  status: 'active',
+  lastActiveTaskId: localTask.id,
+  createdAt: 0,
+  updatedAt: 0,
+}));
+const fallbackProjectGroup = computed<WorkspaceProjectGroup>(() => ({
+  project: fallbackProject.value,
+  activeTasks: props.activeTasks.filter((task) => task.estado === 'activa'),
+  pausedTasks: props.activeTasks.filter((task) => task.estado === 'pausada'),
+  completedTasks: props.activeTasks.filter((task) => task.estado === 'completada'),
+  completedItems: props.completedItems,
+  isEmpty: props.activeTasks.length === 0 && props.completedItems.length === 0,
+}));
+const projectGroups = computed(() => (
+  props.projectGroups.length > 0 ? props.projectGroups : [fallbackProjectGroup.value]
+));
+const selectedProjectId = computed(() => props.activeProjectId || localTask.projectId || 'legacy');
+const selectedProjectGroup = computed(() => (
+  projectGroups.value.find((group) => group.project.id === selectedProjectId.value) ?? null
+));
+const selectedProjectTasks = computed(() => {
+  const group = selectedProjectGroup.value;
+  return group
+    ? [...group.activeTasks, ...group.pausedTasks, ...group.completedTasks]
+    : [];
+});
+const selectedProjectHasLocalTask = computed(() => (
+  selectedProjectTasks.value.some((task) => task.id === localTask.id)
+  || (!selectedProjectGroup.value && selectedProjectId.value === localTask.projectId)
+));
+const activeProject = computed(() => (
+  selectedProjectGroup.value?.project
+  ?? projectGroups.value.find((group) => group.project.id === localTask.projectId)?.project
+  ?? fallbackProject.value
+));
+const projectLabel = computed(() => activeProject.value.name);
+const effectiveSidebarCollapsed = computed(() => props.sidebarCollapsed ?? fallbackSidebarCollapsed.value);
+const effectiveDraft = computed(() => props.composerDraft ?? fallbackDrafts[localTask.id] ?? '');
+const effectiveSummaryState = computed(() => (
+  props.summaryState ?? fallbackSummaryStates[localTask.id] ?? 'collapsed'
+));
 const phaseSnapshot = computed(() => buildPhaseSnapshot(localTask, localTask.fase).fields);
 const latestEvaluations = computed(() => localTask.assistant.evaluations
   .filter((evaluation) => evaluation.taskId === localTask.id && evaluation.phase === localTask.fase)
@@ -86,18 +170,19 @@ type EvaluationError = unknown;
 type InFlightEvaluationKey = string;
 type WorkspaceEvaluation = Awaited<ReturnType<typeof mockWorkspaceAssistant.evaluate>>;
 
-let mediaQuery: MediaQueryList | null = null;
-function updateMobileMode() {
-  isMobile.value = mediaQuery ? mediaQuery.matches : false;
-  if (!isMobile.value) {
+let compactMediaQuery: MediaQueryList | null = null;
+let mobileMediaQuery: MediaQueryList | null = null;
+function updateResponsiveMode() {
+  isCompact.value = compactMediaQuery ? compactMediaQuery.matches : false;
+  isMobile.value = mobileMediaQuery ? mobileMediaQuery.matches : false;
+  if (!isCompact.value) {
+    sidebarOpen.value = false;
     mobileFormOpen.value = false;
   }
 }
 
 function focusSidebarToggle() {
-  if (sidebarToggleRef.value) {
-    sidebarToggleRef.value.focus();
-  }
+  workspaceHeaderRef.value?.focusNavigation();
 }
 
 function resetWorkspaceScroll() {
@@ -161,26 +246,30 @@ watch(localTask, () => {
   emit('dirty', toRaw(localTask));
 }, { deep: true });
 
-watch(sidebarOpen, (next) => {
-  if (!next && isMobile.value) {
+watch(sidebarOpen, async (next) => {
+  await nextTick();
+  if (next) {
+    sidebarCloseButtonRef.value?.focus();
+  } else if (isCompact.value) {
     focusSidebarToggle();
   }
 });
 
 onMounted(() => {
   if (typeof window !== 'undefined') {
-    mediaQuery = window.matchMedia('(max-width: 767px)');
-    mediaQuery.addEventListener('change', updateMobileMode);
-    updateMobileMode();
+    compactMediaQuery = window.matchMedia('(max-width: 1023px)');
+    mobileMediaQuery = window.matchMedia('(max-width: 767px)');
+    compactMediaQuery.addEventListener('change', updateResponsiveMode);
+    mobileMediaQuery.addEventListener('change', updateResponsiveMode);
+    updateResponsiveMode();
     resetWorkspaceScroll();
     void loadAssistanceSettings();
   }
 });
 
 onBeforeUnmount(() => {
-  if (mediaQuery) {
-    mediaQuery.removeEventListener('change', updateMobileMode);
-  }
+  compactMediaQuery?.removeEventListener('change', updateResponsiveMode);
+  mobileMediaQuery?.removeEventListener('change', updateResponsiveMode);
 });
 
 function onTaskDirty() {
@@ -202,6 +291,69 @@ function onMobileFormClose() {
   });
 }
 
+function onSidebarKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    sidebarOpen.value = false;
+    return;
+  }
+  if (event.key !== 'Tab') return;
+
+  const drawer = sidebarDrawerRef.value;
+  if (!drawer) return;
+  const controls = Array.from(drawer.querySelectorAll<HTMLElement>([
+    'a[href]',
+    'button:not([disabled])',
+    'input:not([disabled])',
+    'textarea:not([disabled])',
+    'select:not([disabled])',
+    'summary',
+    '[tabindex]:not([tabindex="-1"])',
+  ].join(', '))).filter((element) => element.getClientRects().length > 0);
+  const first = controls[0];
+  const last = controls.at(-1);
+  if (!first || !last) return;
+
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  } else if (!drawer.contains(document.activeElement)) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function updateSidebarCollapsed(collapsed: boolean) {
+  fallbackSidebarCollapsed.value = collapsed;
+  emit('updateSidebarCollapsed', collapsed);
+}
+
+function updateDraft(draft: string) {
+  fallbackDrafts[localTask.id] = draft;
+  emit('updateDraft', { taskId: localTask.id, draft });
+}
+
+function updateSummaryState(state: 'collapsed' | 'expanded' | 'review') {
+  fallbackSummaryStates[localTask.id] = state;
+  emit('updateSummaryState', { taskId: localTask.id, state });
+}
+
+function updateLastVisibleMessage(messageId: string | null) {
+  emit('updateLastVisibleMessage', { taskId: localTask.id, messageId });
+}
+
+function onSelectTask(payload: { projectId: string; taskId: string }) {
+  emit('selectTask', payload);
+  if (isCompact.value) sidebarOpen.value = false;
+}
+
+function onSelectProject(projectId: string) {
+  emit('selectProject', projectId);
+}
+
 function markEvaluationError(message: string) {
   evaluationError.value = message;
   evaluationState.value = 'idle';
@@ -211,13 +363,21 @@ function readTextFromMessage(message: AssistantMessage): string {
   return message.parts.map((part: { type: string; text?: string }) => part.type === 'text' ? part.text ?? '' : '').join(' ').trim();
 }
 
-function setUserMessageStatus(messageId: string, status: AssistantMessage['status']) {
-  const index = localTask.assistant.messages.findIndex((message) => message.id === messageId);
+function setUserMessageStatus(
+  messageId: string,
+  status: AssistantMessage['status'],
+  targetTask: Task = localTask,
+) {
+  const index = targetTask.assistant.messages.findIndex((message) => message.id === messageId);
   if (index < 0) return;
-  localTask.assistant.messages[index] = {
-    ...localTask.assistant.messages[index],
+  targetTask.assistant.messages[index] = {
+    ...targetTask.assistant.messages[index],
     status,
   };
+}
+
+function cloneTask(task: Task): Task {
+  return JSON.parse(JSON.stringify(toRaw(task))) as Task;
 }
 
 function applyAssistantResponse(task: Task, response: ChatResponse, userMessageId: string) {
@@ -269,7 +429,7 @@ function applyAssistantResponse(task: Task, response: ChatResponse, userMessageI
 
   nextMessages.push(assistantMessage);
   mergedTask.assistant.messages = nextMessages;
-  Object.assign(localTask, mergedTask);
+  Object.assign(task, mergedTask);
 }
 
 function appendEvaluation(evaluation: WorkspaceEvaluation) {
@@ -368,6 +528,8 @@ async function handleSendMessage(text: string, options: { retryMessageId?: strin
     return;
   }
 
+  const originTask = cloneTask(localTask);
+  emit('save', originTask);
   chatSendState.value = 'submitted';
   chatError.value = '';
   chatSuggestions.value = [];
@@ -375,18 +537,27 @@ async function handleSendMessage(text: string, options: { retryMessageId?: strin
   const promise = (async () => {
     try {
       const response = await mockWorkspaceAssistant.send(request);
-      if (contextId !== conversationContext.value) return;
-
-      applyAssistantResponse(localTask, response, userMessageId);
-      emit('save', toRaw(localTask));
-      chatSuggestions.value = response.suggestions;
-      chatSendState.value = 'ready';
+      applyAssistantResponse(originTask, response, userMessageId);
+      const originIsCurrent = contextId === conversationContext.value
+        && localTask.id === originTask.id
+        && localTask.fase === originTask.fase;
+      if (originIsCurrent) {
+        Object.assign(localTask, originTask);
+        chatSuggestions.value = response.suggestions;
+        chatSendState.value = 'ready';
+      }
+      emit('save', originTask);
     } catch (cause: SendError) {
-      if (contextId !== conversationContext.value) return;
-
-      setUserMessageStatus(userMessageId, 'error');
-      chatSendState.value = 'error';
-      chatError.value = cause instanceof Error ? cause.message : 'No se pudo enviar el mensaje.';
+      setUserMessageStatus(userMessageId, 'error', originTask);
+      const originIsCurrent = contextId === conversationContext.value
+        && localTask.id === originTask.id
+        && localTask.fase === originTask.fase;
+      if (originIsCurrent) {
+        Object.assign(localTask, originTask);
+        chatSendState.value = 'error';
+        chatError.value = cause instanceof Error ? cause.message : 'No se pudo enviar el mensaje.';
+      }
+      emit('save', originTask);
     } finally {
       inFlightByRequest.delete(requestId);
       if (contextId === conversationContext.value && chatSendState.value === 'submitted') {
@@ -491,114 +662,161 @@ watch(() => [localTask.id, localTask.fase], () => {
 </script>
 
 <template>
-  <div class="workspace-shell">
-    <button
-      v-if="isMobile"
-      ref="sidebarToggleRef"
-      type="button"
-      class="task-sidebar__toggle"
-      data-focus-target="sidebar-toggle"
-      aria-label="Open"
-      @click="sidebarOpen = true"
-    >
-      Open
-    </button>
-
-    <div v-if="!isMobile" class="workspace-sidebar-frame">
+  <div
+    class="workspace-shell"
+    :class="{ 'workspace-shell--sidebar-collapsed': effectiveSidebarCollapsed || isCompact }"
+  >
+    <div v-if="!isCompact && !effectiveSidebarCollapsed" class="workspace-sidebar-frame">
       <DashboardSidebar
-        :project-name="projectLabel"
-        :active-tasks="activeTasks"
-        :completed-items="completedItems"
+        :project-groups="projectGroups"
+        :selected-project-id="selectedProjectId"
         :selected-task-id="localTask.id"
+        :expanded-project-ids="props.expandedProjectIds"
+        :search-query="props.searchQuery"
+        :collapsed="effectiveSidebarCollapsed"
         @open-settings="openSettings"
+        @create-project="emit('createProject', $event)"
+        @rename-project="emit('renameProject', $event)"
+        @rename-task="emit('renameTask', $event)"
+        @select-project="onSelectProject"
+        @select-task="onSelectTask"
+        @toggle-project="emit('toggleProject', $event)"
+        @search-tasks="emit('searchTasks', $event)"
+        @update-collapsed="updateSidebarCollapsed"
       />
     </div>
 
-    <UDashboardSidebar
-      v-if="isMobile"
-      v-model:open="sidebarOpen"
-      :mode="isMobile ? 'slideover' : 'drawer'"
-      :default-size="16"
-      :auto-close="true"
-      @update:open="(next) => (sidebarOpen = next)"
+    <div
+      v-if="isCompact && sidebarOpen"
+      ref="sidebarDrawerRef"
+      class="workspace-navigation-drawer"
+      :class="{ 'workspace-navigation-drawer--mobile': isMobile }"
+      role="dialog"
+      aria-label="Navegación del workspace"
+      :aria-modal="isMobile ? 'true' : 'false'"
+      @keydown="onSidebarKeydown"
     >
-      <template #content>
+      <button
+        ref="sidebarCloseButtonRef"
+        type="button"
+        class="workspace-navigation-drawer__close"
+        aria-label="Cerrar navegación"
+        @click="sidebarOpen = false"
+      >
+        ×
+      </button>
+      <div class="workspace-navigation-drawer__content">
         <DashboardSidebar
-          :project-name="projectLabel"
-          :active-tasks="activeTasks"
-          :completed-items="completedItems"
+          :project-groups="projectGroups"
+          :selected-project-id="selectedProjectId"
           :selected-task-id="localTask.id"
-          @open-settings="openSettings"
+          :expanded-project-ids="props.expandedProjectIds"
+          :search-query="props.searchQuery"
+          @open-settings="(event) => { openSettings(event); sidebarOpen = false; }"
+          @create-project="emit('createProject', $event)"
+          @rename-project="emit('renameProject', $event)"
+          @rename-task="emit('renameTask', $event)"
+          @select-project="onSelectProject"
+          @select-task="onSelectTask"
+          @toggle-project="emit('toggleProject', $event)"
+          @search-tasks="emit('searchTasks', $event)"
+          @update-collapsed="updateSidebarCollapsed"
         />
-      </template>
+      </div>
+    </div>
 
-      <template #default="{ collapse }">
-        <DashboardSidebar
-          :project-name="projectLabel"
-          :active-tasks="activeTasks"
-          :completed-items="completedItems"
-          :selected-task-id="localTask.id"
-          @open-settings="(event) => { openSettings(event); collapse(true); }"
-          @click="collapse(true)"
-        />
-      </template>
-    </UDashboardSidebar>
-
-    <div class="workspace-panel workspace-panel--chat">
+    <main
+      class="workspace-panel workspace-panel--conversation"
+      :inert="isMobile && sidebarOpen ? true : undefined"
+    >
       <section role="region" aria-label="Centro de conversación" class="workspace-section workspace-section--chat">
-        <header class="workspace-section__header">
-          <div>
-            <p class="workspace-section__eyebrow">{{ phaseLabel }}</p>
-            <h1>{{ localTask.nombre || 'Tarea' }}</h1>
-          </div>
-          <p>{{ phaseTitle }}</p>
-        </header>
+        <WorkspaceHeader
+          ref="workspaceHeaderRef"
+          :project-name="projectLabel"
+          :task-name="selectedProjectHasLocalTask ? localTask.nombre : 'Sin tarea seleccionada'"
+          :phase="localTask.fase"
+          :phase-title="selectedProjectHasLocalTask ? phaseTitle : 'Crea la primera tarea'"
+          :compact-navigation="isCompact"
+          :sidebar-collapsed="effectiveSidebarCollapsed"
+          @open-navigation="sidebarOpen = true"
+          @expand-sidebar="updateSidebarCollapsed(false)"
+        />
+
         <TaskChat
+          v-if="selectedProjectHasLocalTask"
           :messages="phaseMessages"
           :suggestions="chatSuggestions"
           :send-status="chatSendState"
           :disabled="false"
           :error-message="chatError"
           :workspace-label="projectLabel"
+          :draft="effectiveDraft"
+          :restore-message-id="props.lastVisibleMessageId"
           @send="onChatSubmit"
           @retry="onChatRetry"
           @proposal-decision="handleProposalDecision"
-        />
+          @update-draft="updateDraft"
+          @visible-message="updateLastVisibleMessage"
+        >
+          <StructuredStageSummary
+            :task="localTask"
+            :evaluation="latestEvaluation"
+            :is-stale-evaluation="isEvaluationStale"
+            :can-continue="canContinue"
+            :state="effectiveSummaryState"
+            @update-state="updateSummaryState"
+          />
 
-        <p v-if="isMobile" class="workspace-section__mobile-action">
-          <button type="button" ref="questionnaireButtonRef" data-focus-target="form" @click="openQuestionnaire">Cuestionario</button>
-        </p>
-      </section>
-    </div>
+          <details v-if="!isCompact" open class="workspace-guided-editor">
+            <summary>Editar datos de la etapa</summary>
+            <section role="region" aria-label="Formulario guiado">
+              <GuidedPhaseForm
+                :task="localTask"
+                :save-task="props.saveTask"
+                :evaluation="latestEvaluation"
+                :is-evaluating="isEvaluating"
+                :is-stale-evaluation="isEvaluationStale"
+                :can-continue="canContinue"
+                :evaluation-error="evaluationError"
+                :evaluation-history="evaluationHistory"
+                @dirty="onTaskDirty"
+                @save="onTaskSave"
+                @request-evaluate="onEvaluationRequest"
+                @request-evaluation-retry="onEvaluationRetry"
+                @request-back="onRequestBack"
+                @request-continue="onRequestContinue"
+              />
+            </section>
+          </details>
 
-    <div v-if="!isMobile" class="workspace-panel workspace-panel--form">
-      <section
-        role="region"
-        aria-label="Formulario guiado"
-        data-mobile-form-panel
-        class="workspace-section workspace-section--form"
-      >
-        <GuidedPhaseForm
-          :task="localTask"
-          :save-task="props.saveTask"
-          :evaluation="latestEvaluation"
-          :is-evaluating="isEvaluating"
-          :is-stale-evaluation="isEvaluationStale"
-          :can-continue="canContinue"
-          :evaluation-error="evaluationError"
-          :evaluation-history="evaluationHistory"
-          @dirty="onTaskDirty"
-          @save="onTaskSave"
-          @request-evaluate="onEvaluationRequest"
-          @request-evaluation-retry="onEvaluationRetry"
-          @request-back="onRequestBack"
-          @request-continue="onRequestContinue"
-        />
+          <p v-else class="workspace-section__mobile-action">
+            <button
+              ref="questionnaireButtonRef"
+              type="button"
+              data-focus-target="form"
+              @click="openQuestionnaire"
+            >
+              Cuestionario
+            </button>
+          </p>
+        </TaskChat>
+
+        <section v-else class="workspace-empty-context" aria-labelledby="workspace-empty-context-title">
+          <p class="workspace-empty-context__eyebrow">Proyecto activo</p>
+          <h2 id="workspace-empty-context-title">Este proyecto todavía no tiene tareas.</h2>
+          <p>Abre una conversación para definir el primer resultado de {{ projectLabel }}.</p>
+          <NuxtLink
+            :to="`/tasks/new?projectId=${encodeURIComponent(selectedProjectId)}`"
+            class="workspace-empty-context__action"
+          >
+            Crear primera tarea
+          </NuxtLink>
+        </section>
       </section>
-    </div>
+    </main>
 
     <USlideover
-      v-if="isMobile"
+      v-if="isCompact"
       v-model:open="mobileFormOpen"
       title="Formulario guiado"
       @update:open="(next) => {
@@ -612,7 +830,7 @@ watch(() => [localTask.id, localTask.fase], () => {
           role="region"
           aria-label="Formulario guiado"
           data-mobile-form-panel
-          class="workspace-section workspace-section--form"
+          class="workspace-guided-slideover"
         >
           <GuidedPhaseForm
             :task="localTask"
@@ -650,19 +868,23 @@ watch(() => [localTask.id, localTask.fase], () => {
 .workspace-shell {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(15rem, 18rem) minmax(0, 1.85fr) minmax(22rem, .95fr);
+  grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr);
   gap: 0;
   align-items: stretch;
   min-width: 0;
-  height: 100vh;
+  height: 100dvh;
   min-height: 0;
-  max-height: 100vh;
+  max-height: 100dvh;
   overflow: hidden;
   padding: .7rem;
   color: #171d19;
   background:
     linear-gradient(90deg, rgba(0, 122, 77, .035), transparent 32%),
     #f4f7f3;
+}
+
+.workspace-shell--sidebar-collapsed {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .workspace-sidebar-frame {
@@ -673,71 +895,91 @@ watch(() => [localTask.id, localTask.fase], () => {
 
 .workspace-section {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0;
   min-width: 0;
   min-height: 0;
-  height: calc(100vh - 1.4rem);
+  height: calc(100dvh - 1.4rem);
   overflow: hidden;
   border: 1px solid #d7ddd8;
+  border-radius: 0 .95rem .95rem 0;
   background: rgba(255, 255, 255, .88);
 }
 
-.workspace-section--chat,
-.workspace-section--form {
-  min-height: 100%;
+.workspace-shell--sidebar-collapsed .workspace-section {
+  border-radius: .95rem;
 }
 
 .workspace-section--chat {
-  border-radius: 0;
+  min-height: 100%;
 }
 
-.workspace-section--form {
-  border-left: 0;
-  border-radius: 0 .95rem .95rem 0;
+.workspace-section--chat :deep(.task-chat) {
+  min-height: 0;
 }
 
-.workspace-section__header {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 1rem;
-  min-width: 0;
-  padding: 1.25rem 1.65rem 1.05rem;
-  border-bottom: 1px solid #dde3de;
+.workspace-empty-context {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: .65rem;
+  width: min(100%, 42rem);
+  margin-inline: auto;
+  padding: clamp(1.5rem, 7vw, 5rem);
 }
 
-.workspace-section__header h1 {
+.workspace-empty-context h2,
+.workspace-empty-context p {
   margin: 0;
-  color: #0f1511;
-  font-size: 1.35rem;
-  font-weight: 760;
-  line-height: 1.15;
 }
 
-.workspace-section__header p {
-  margin: 0;
-  color: #59645d;
-  font-size: .85rem;
-}
-
-.workspace-section__eyebrow {
-  color: #007a4d !important;
-  font-size: .72rem !important;
-  font-weight: 800;
-  letter-spacing: .08em;
+.workspace-empty-context__eyebrow {
+  color: #08724c;
+  font-size: .78rem;
+  font-weight: 780;
+  letter-spacing: .06em;
   text-transform: uppercase;
+}
+
+.workspace-empty-context__action {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  margin-top: .5rem;
+  padding: .65rem 1rem;
+  border-radius: .65rem;
+  color: #fff;
+  font-weight: 760;
+  text-decoration: none;
+  background: #007a4d;
+}
+
+.workspace-guided-editor {
+  border: 1px solid #dce5df;
+  border-radius: .7rem;
+  background: #fff;
+}
+
+.workspace-guided-editor > summary {
+  padding: .75rem .85rem;
+  color: #26342b;
+  font-size: .82rem;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.workspace-guided-editor[open] > summary {
+  border-bottom: 1px solid #e0e7e2;
 }
 
 .workspace-section__mobile-action {
   margin: 0;
-  padding: .85rem 1rem;
-  border-top: 1px solid #dde3de;
-  background: #fff;
+  padding: 0;
 }
 
 .workspace-section__mobile-action button {
   width: 100%;
+  min-height: 2.75rem;
   border-color: #007a4d;
   color: #fff;
   background: #007a4d;
@@ -752,49 +994,80 @@ watch(() => [localTask.id, localTask.fase], () => {
   border-radius: .95rem 0 0 .95rem;
 }
 
+.workspace-navigation-drawer {
+  position: fixed;
+  z-index: 40;
+  inset: 0 auto 0 0;
+  width: min(22rem, 86vw);
+  border-right: 1px solid #ccd8d0;
+  background: #f8faf8;
+  box-shadow: 24px 0 60px rgba(17, 34, 24, .18);
+}
+
+.workspace-navigation-drawer--mobile {
+  width: min(100%, 24rem);
+}
+
+.workspace-navigation-drawer__close {
+  position: absolute;
+  z-index: 2;
+  top: max(.65rem, env(safe-area-inset-top));
+  right: .65rem;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid #cbd7d0;
+  border-radius: .6rem;
+  background: #fff;
+}
+
+.workspace-navigation-drawer__content {
+  height: 100dvh;
+  overflow: auto;
+}
+
 .workspace-panel {
   min-width: 0;
   min-height: 0;
   height: 100%;
 }
 
-.workspace-section--chat textarea {
-  min-height: 6rem;
-  width: 100%;
+.workspace-guided-slideover {
+  height: 100dvh;
+  overflow: auto;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #fff;
 }
 
 .workspace-panel :deep(.workspace-shell) {
   min-width: 0;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .workspace-shell {
     grid-template-columns: 1fr;
-    height: 100vh;
+    height: 100dvh;
     min-height: 0;
     padding: .5rem;
   }
 
   .workspace-section {
-    height: calc(100vh - 1rem);
+    height: calc(100dvh - 1rem);
     min-height: 0;
     border-radius: .8rem;
   }
+}
 
-  .workspace-section__header {
-    align-items: start;
-    flex-direction: column;
-    padding: 1rem;
+@media (max-width: 767px) {
+  .workspace-shell {
+    padding: 0;
   }
 
-  .task-sidebar__toggle {
-    position: fixed;
-    z-index: 20;
-    top: .8rem;
-    right: .8rem;
-    border-color: #007a4d;
-    color: #fff;
-    background: #007a4d;
+  .workspace-section {
+    height: 100dvh;
+    border-width: 0;
+    border-radius: 0;
   }
 }
 </style>

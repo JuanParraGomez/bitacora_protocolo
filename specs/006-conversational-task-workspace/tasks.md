@@ -122,19 +122,19 @@
 
 - [x] T044 [P] [US3] Write project-aware grouping tests for active, paused, completed, archived, empty and legacy tasks in `app/features/tasks/composables/useTaskIndex.test.ts`, run them, and record red
 - [x] T045 [P] [US3] Write workspace-state tests for project/task selection, draft, summary state, last-visible-message ID and late response isolation in `app/features/tasks/composables/useWorkspaceState.test.ts`, run them, and record red
-- [ ] T046 [P] [US3] Add Playwright red scenarios for create/rename projects, rename/search tasks, two-project navigation, project empty state, two-action task recovery and keyboard order in `tests/e2e/conversational-workspace.spec.ts`
+- [x] T046 [P] [US3] Add Playwright red scenarios for create/rename projects, rename/search tasks, two-project navigation, project empty state, two-action task recovery and keyboard order in `tests/e2e/conversational-workspace.spec.ts`
 - [x] T047 [US3] Extend atomic move-task persistence tests, including failure rollback and stale recentTaskId repair, in `app/features/tasks/services/project-store.test.ts`, run them, and record red
 
 ### Implementation
 
 - [x] T048 [US3] Implement project-aware task grouping and operational states in `app/features/tasks/composables/useTaskIndex.ts`
 - [x] T049 [US3] Implement per-task draft, summary and message-anchor restoration in `app/features/tasks/composables/useWorkspaceState.ts`
-- [ ] T050 [US3] Replace decorative phase rows with collapsible projects, create/rename project controls, rename/search task controls, useful summaries and complete keyboard order in `app/features/tasks/components/DashboardSidebar.vue`
-- [ ] T051 [P] [US3] Implement compact project/task/stage identity and mobile navigation triggers in `app/features/tasks/components/WorkspaceHeader.vue`
-- [ ] T052 [US3] Recompose `TaskWorkspace` as sidebar plus one conversation surface with no permanent third panel in `app/features/tasks/components/TaskWorkspace.vue`
-- [ ] T053 [US3] Load active project/recent task and persist project changes at the page composition root in `pages/tasks/[id].vue`
-- [ ] T054 [US3] Make `pages/index.vue` select the latest project/task or render the first-project-and-task empty state without a detached page
-- [ ] T055 [US3] Run US3 unit, persistence and Playwright suites at desktop, tablet, 320 px and 200% zoom and append green evidence in `specs/006-conversational-task-workspace/implementation-evidence.md`
+- [x] T050 [US3] Replace decorative phase rows with collapsible projects, create/rename project controls, rename/search task controls, useful summaries and complete keyboard order in `app/features/tasks/components/DashboardSidebar.vue`
+- [x] T051 [P] [US3] Implement compact project/task/stage identity and mobile navigation triggers in `app/features/tasks/components/WorkspaceHeader.vue`
+- [x] T052 [US3] Recompose `TaskWorkspace` as sidebar plus one conversation surface with no permanent third panel in `app/features/tasks/components/TaskWorkspace.vue`
+- [x] T053 [US3] Load active project/recent task and persist project changes at the page composition root in `pages/tasks/[id].vue`
+- [x] T054 [US3] Make `pages/index.vue` select the latest project/task or render the first-project-and-task empty state without a detached page
+- [x] T055 [US3] Run US3 unit, persistence and Playwright suites at desktop, tablet, 320 px and 200% zoom and append green evidence in `specs/006-conversational-task-workspace/implementation-evidence.md`
 
 **Checkpoint**: Project/task navigation behaves like a modern chat history and restores context by identifiers.
 

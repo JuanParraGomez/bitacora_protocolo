@@ -1,126 +1,318 @@
-<script setup lang="ts">
-import { computed } from 'vue';
+<script lang="ts">
+import type { Project } from '../domain/project.schema';
 import type { TaskIndex } from '../domain/task.schema';
 
-defineEmits<{
+export type WorkspaceProjectGroup = {
+  project: Project;
+  activeTasks: TaskIndex['tareas'];
+  pausedTasks: TaskIndex['tareas'];
+  completedTasks: TaskIndex['tareas'];
+  completedItems: TaskIndex['registros'];
+  isEmpty: boolean;
+};
+</script>
+
+<script setup lang="ts">
+import { computed, reactive, ref, watch } from 'vue';
+
+const props = withDefaults(defineProps<{
+  projectGroups: WorkspaceProjectGroup[];
+  selectedProjectId?: string;
+  selectedTaskId?: string;
+  expandedProjectIds?: string[];
+  searchQuery?: string;
+  collapsed?: boolean;
+}>(), {
+  selectedProjectId: '',
+  selectedTaskId: '',
+  expandedProjectIds: () => [],
+  searchQuery: undefined,
+  collapsed: false,
+});
+
+const emit = defineEmits<{
   openSettings: [Event];
+  createProject: [name: string];
+  renameProject: [payload: { projectId: string; name: string }];
+  renameTask: [payload: { taskId: string; name: string }];
+  selectProject: [projectId: string];
+  selectTask: [payload: { projectId: string; taskId: string }];
+  toggleProject: [payload: { projectId: string; expanded: boolean }];
+  searchTasks: [query: string];
+  updateCollapsed: [collapsed: boolean];
 }>();
 
-const phases = [
-  { phase: 1, label: 'Orientación' },
-  { phase: 2, label: 'Rastreo' },
-  { phase: 3, label: 'Qué hice' },
-  { phase: 4, label: 'Final del proyecto' },
-] as const;
+const createProjectOpen = ref(false);
+const createProjectName = ref('');
+const localSearch = ref('');
+const projectRename = reactive<Record<string, string>>({});
+const projectRenameOpen = reactive<Record<string, boolean>>({});
+const taskRename = reactive<Record<string, string>>({});
+const taskRenameOpen = reactive<Record<string, boolean>>({});
 
-const props = withDefaults(
-  defineProps<{
-    activeTasks: TaskIndex['tareas'];
-  completedItems: TaskIndex['registros'];
-  selectedTaskId?: string;
-  projectName?: string;
-  }>(),
-  {
-    selectedTaskId: '',
-    projectName: 'Proyecto',
-  },
-);
+watch(() => props.searchQuery, (next) => {
+  if (typeof next === 'string') localSearch.value = next;
+}, { immediate: true });
 
-const hasActiveTasks = computed(() => props.activeTasks.length > 0);
-const completedList = computed(() => props.completedItems);
-const hasCompleted = computed(() => completedList.value.length > 0);
-const selectedTaskLabel = computed(() => `Tarea activa: ${props.activeTasks.find((task) => task.id === props.selectedTaskId)?.nombre || 'Sin nombre'}`);
-const selectedTask = computed(() => props.activeTasks.find((task) => task.id === props.selectedTaskId));
+const effectiveSearch = computed(() => props.searchQuery ?? localSearch.value);
+const normalizedSearch = computed(() => effectiveSearch.value.trim().toLocaleLowerCase('es'));
+const activeGroups = computed(() => props.projectGroups.filter((group) => group.project.status === 'active'));
+const archivedGroups = computed(() => props.projectGroups.filter((group) => group.project.status === 'archived'));
+
+function taskStateLabel(state: string): string {
+  if (state === 'pausada') return 'Pausada';
+  if (state === 'completada') return 'Completada';
+  return 'Activa';
+}
+
+function projectTasks(group: WorkspaceProjectGroup) {
+  const tasks = [...group.activeTasks, ...group.pausedTasks, ...group.completedTasks];
+  if (!normalizedSearch.value) return tasks;
+  return tasks.filter((task) => (
+    task.nombre.toLocaleLowerCase('es').includes(normalizedSearch.value)
+    || task.id.toLocaleLowerCase('es').includes(normalizedSearch.value)
+  ));
+}
+
+function isExpanded(group: WorkspaceProjectGroup): boolean {
+  if (normalizedSearch.value && projectTasks(group).length > 0) return true;
+  return props.expandedProjectIds.includes(group.project.id)
+    || group.project.id === props.selectedProjectId;
+}
+
+function updateSearch(value: string) {
+  localSearch.value = value;
+  emit('searchTasks', value);
+}
+
+function submitProject() {
+  const name = createProjectName.value.trim();
+  if (!name) return;
+  emit('createProject', name);
+  createProjectName.value = '';
+  createProjectOpen.value = false;
+}
+
+function startProjectRename(group: WorkspaceProjectGroup) {
+  projectRename[group.project.id] = group.project.name;
+  projectRenameOpen[group.project.id] = true;
+}
+
+function submitProjectRename(group: WorkspaceProjectGroup) {
+  const name = (projectRename[group.project.id] ?? '').trim();
+  if (!name) return;
+  emit('renameProject', { projectId: group.project.id, name });
+  projectRenameOpen[group.project.id] = false;
+}
+
+function startTaskRename(task: TaskIndex['tareas'][number]) {
+  taskRename[task.id] = task.nombre || task.id;
+  taskRenameOpen[task.id] = true;
+}
+
+function submitTaskRename(task: TaskIndex['tareas'][number]) {
+  const name = (taskRename[task.id] ?? '').trim();
+  if (!name) return;
+  emit('renameTask', { taskId: task.id, name });
+  taskRenameOpen[task.id] = false;
+}
+
+function selectProject(group: WorkspaceProjectGroup) {
+  emit('selectProject', group.project.id);
+  emit('toggleProject', {
+    projectId: group.project.id,
+    expanded: !isExpanded(group),
+  });
+}
 </script>
 
 <template>
   <aside class="task-sidebar" role="navigation" aria-label="Navegación de tareas">
-    <div class="task-sidebar__brand">
-      <NuxtLink to="/" class="task-sidebar__brand-link">Nexus</NuxtLink>
-      <p>{{ projectName }}</p>
-    </div>
+    <header class="task-sidebar__brand">
+      <div>
+        <NuxtLink to="/" class="task-sidebar__brand-link">Nexus</NuxtLink>
+        <p>Espacio de trabajo</p>
+      </div>
+      <button
+        type="button"
+        class="task-sidebar__collapse"
+        aria-label="Contraer navegación"
+        @click="emit('updateCollapsed', true)"
+      >
+        ‹
+      </button>
+    </header>
 
     <nav class="task-sidebar__primary" aria-label="Accesos principales">
-      <NuxtLink to="/" class="task-sidebar__primary-link">
-        <span aria-hidden="true">□</span>
-        Tareas
-      </NuxtLink>
-      <NuxtLink to="/library" class="task-sidebar__primary-link" tabindex="-1">
-        <span aria-hidden="true">▱</span>
-        Biblioteca
-      </NuxtLink>
-      <NuxtLink to="/reference" class="task-sidebar__primary-link" tabindex="-1">
-        <span aria-hidden="true">⌑</span>
-        Referencias
-      </NuxtLink>
+      <NuxtLink to="/" class="task-sidebar__primary-link">Tareas</NuxtLink>
+      <NuxtLink to="/library" class="task-sidebar__primary-link">Biblioteca</NuxtLink>
+      <NuxtLink to="/reference" class="task-sidebar__primary-link">Referencias</NuxtLink>
     </nav>
 
-    <NuxtLink to="/tasks/new" class="task-sidebar__new-task" tabindex="-1">
-      <span aria-hidden="true">+</span>
-      Nueva tarea
-    </NuxtLink>
+    <section class="task-sidebar__tools" aria-label="Herramientas de proyectos">
+      <button
+        type="button"
+        class="task-sidebar__create-project"
+        @click="createProjectOpen = !createProjectOpen"
+      >
+        Crear proyecto
+      </button>
+      <form v-if="createProjectOpen" class="task-sidebar__inline-form" @submit.prevent="submitProject">
+        <label for="new-project-name">Nombre del proyecto</label>
+        <input id="new-project-name" v-model="createProjectName" maxlength="120" required>
+        <div>
+          <button type="button" @click="createProjectOpen = false">Cancelar</button>
+          <button type="submit">Guardar proyecto</button>
+        </div>
+      </form>
 
-    <section class="task-sidebar__group">
-      <h3>Proyecto</h3>
-      <div class="task-sidebar__phase-map" aria-label="Progreso por fases">
-        <details
-          v-for="phaseItem in phases"
-          :key="phaseItem.phase"
-          :open="selectedTask?.fase === phaseItem.phase"
-          :class="{ 'task-sidebar__phase': true, 'task-sidebar__phase--active': selectedTask?.fase === phaseItem.phase }"
+      <label for="task-search">Buscar tareas</label>
+      <input
+        id="task-search"
+        type="search"
+        :value="effectiveSearch"
+        placeholder="Nombre o identificador"
+        @input="updateSearch(($event.target as HTMLInputElement).value)"
+      >
+    </section>
+
+    <div class="task-sidebar__projects">
+      <section
+        v-for="group in activeGroups"
+        :key="group.project.id"
+        class="task-sidebar__project"
+        :class="{ 'task-sidebar__project--active': group.project.id === selectedProjectId }"
+      >
+        <header class="task-sidebar__project-header">
+          <button
+            type="button"
+            class="task-sidebar__project-toggle"
+            :aria-label="group.project.name"
+            :aria-expanded="isExpanded(group)"
+            :aria-controls="`project-tasks-${group.project.id}`"
+            @click="selectProject(group)"
+          >
+            {{ group.project.name }}
+          </button>
+          <button
+            type="button"
+            class="task-sidebar__icon-action"
+            :aria-label="`Renombrar ${group.project.name}`"
+            @click="startProjectRename(group)"
+          >
+            ✎
+          </button>
+        </header>
+        <p v-if="group.project.description" class="task-sidebar__project-description">
+          {{ group.project.description }}
+        </p>
+
+        <form
+          v-if="projectRenameOpen[group.project.id]"
+          class="task-sidebar__inline-form"
+          @submit.prevent="submitProjectRename(group)"
         >
-          <summary>
-            <span aria-hidden="true">⌄</span>
-            Fase {{ phaseItem.phase }} · {{ phaseItem.label }}
-            <small v-if="selectedTask?.fase === phaseItem.phase">En ejecución</small>
-          </summary>
-          <ol>
-            <li v-for="step in 3" :key="step" :class="{ 'task-sidebar__dot-row': true, 'task-sidebar__dot-row--done': selectedTask && selectedTask.fase > phaseItem.phase, 'task-sidebar__dot-row--current': selectedTask?.fase === phaseItem.phase && step === 1 }">
-              <span aria-hidden="true"></span>
-              <i aria-hidden="true"></i>
+          <label :for="`rename-project-${group.project.id}`">Nuevo nombre del proyecto</label>
+          <input
+            :id="`rename-project-${group.project.id}`"
+            v-model="projectRename[group.project.id]"
+            maxlength="120"
+            required
+          >
+          <div>
+            <button type="button" @click="projectRenameOpen[group.project.id] = false">Cancelar</button>
+            <button type="submit">Guardar nombre de proyecto</button>
+          </div>
+        </form>
+
+        <div
+          v-show="isExpanded(group)"
+          :id="`project-tasks-${group.project.id}`"
+          class="task-sidebar__project-content"
+        >
+          <NuxtLink
+            :to="`/tasks/new?projectId=${encodeURIComponent(group.project.id)}`"
+            class="task-sidebar__new-task"
+          >
+            Nueva tarea
+          </NuxtLink>
+
+          <p v-if="group.isEmpty" role="status">Este proyecto todavía no tiene tareas.</p>
+          <p v-else-if="projectTasks(group).length === 0" role="status">
+            No hay tareas que coincidan con la búsqueda.
+          </p>
+          <ul v-else class="task-sidebar__task-list">
+            <li v-for="task in projectTasks(group)" :key="task.id">
+              <div class="task-sidebar__task-row">
+                <NuxtLink
+                  :to="`/tasks/${encodeURIComponent(task.id)}`"
+                  :aria-label="task.nombre || task.id"
+                  :aria-current="task.id === selectedTaskId ? 'page' : undefined"
+                  :class="{ 'task-sidebar__task-link': true, 'task-sidebar__task-link--active': task.id === selectedTaskId }"
+                  @click.prevent="emit('selectTask', { projectId: group.project.id, taskId: task.id })"
+                >
+                  <span>{{ task.nombre || task.id }}</span>
+                  <small>{{ taskStateLabel(task.estado) }} · Etapa {{ task.fase }} de 4</small>
+                </NuxtLink>
+                <button
+                  type="button"
+                  class="task-sidebar__icon-action"
+                  :aria-label="`Renombrar ${task.nombre || task.id}`"
+                  @click="startTaskRename(task)"
+                >
+                  ✎
+                </button>
+              </div>
+              <form
+                v-if="taskRenameOpen[task.id]"
+                class="task-sidebar__inline-form"
+                @submit.prevent="submitTaskRename(task)"
+              >
+                <label :for="`rename-task-${task.id}`">Nuevo nombre de la tarea</label>
+                <input :id="`rename-task-${task.id}`" v-model="taskRename[task.id]" maxlength="160" required>
+                <div>
+                  <button type="button" @click="taskRenameOpen[task.id] = false">Cancelar</button>
+                  <button type="submit">Guardar nombre de tarea</button>
+                </div>
+              </form>
             </li>
-          </ol>
-        </details>
-      </div>
-    </section>
+          </ul>
 
-    <section class="task-sidebar__group task-sidebar__task-group">
-      <h3>Activas</h3>
-      <p v-if="!hasActiveTasks" role="status">No hay tareas activas</p>
-      <ul v-else>
-        <li v-for="task in props.activeTasks" :key="task.id">
-          <NuxtLink
-            :to="`/tasks/${encodeURIComponent(task.id)}`"
-            :aria-current="task.id === selectedTaskId ? 'page' : undefined"
-            :tabindex="task.id === selectedTaskId ? 0 : -1"
-            :class="{ 'task-sidebar__task-link': true, 'task-sidebar__task-link--active': task.id === selectedTaskId }"
-          >
-            <span>{{ task.nombre || task.id }}</span>
-            <span v-if="task.id === selectedTaskId" class="task-sidebar__active-indicator" aria-hidden="true">· activa</span>
-            <span class="sr-only" v-if="task.id === selectedTaskId">{{ selectedTaskLabel }}</span>
-          </NuxtLink>
-        </li>
-      </ul>
-    </section>
+          <details v-if="group.completedItems.length" class="task-sidebar__records">
+            <summary>Resultados guardados ({{ group.completedItems.length }})</summary>
+            <ul>
+              <li v-for="record in group.completedItems" :key="record.id">
+                <NuxtLink :to="`/tasks/${encodeURIComponent(record.tareaId || record.id)}`">
+                  {{ record.titulo || record.id }}
+                </NuxtLink>
+              </li>
+            </ul>
+          </details>
+        </div>
+      </section>
 
-    <section class="task-sidebar__group">
-      <h3>Completadas</h3>
-      <p v-if="!hasCompleted" role="status">No hay tareas completadas</p>
-      <ul v-else>
-        <li v-for="record in completedList" :key="record.id">
-          <NuxtLink
-            :to="`/tasks/${encodeURIComponent(record.tareaId || record.id)}`"
-            tabindex="-1"
-          >
-            {{ record.titulo || record.id }}
-          </NuxtLink>
-        </li>
-      </ul>
-    </section>
+      <details v-if="archivedGroups.length" class="task-sidebar__archived">
+        <summary>Proyectos archivados ({{ archivedGroups.length }})</summary>
+        <ul>
+          <li v-for="group in archivedGroups" :key="group.project.id">
+            <button type="button" @click="emit('selectProject', group.project.id)">
+              {{ group.project.name }}
+            </button>
+          </li>
+        </ul>
+      </details>
+    </div>
 
     <footer class="task-sidebar__footer">
-      <button type="button" class="task-sidebar__settings" data-focus-target="settings" @click="$emit('openSettings', $event)">Ajustes</button>
-      <a href="/legacy" tabindex="-1">Aprendizajes guardados</a>
+      <button
+        type="button"
+        class="task-sidebar__settings"
+        data-focus-target="settings"
+        @click="emit('openSettings', $event)"
+      >
+        Ajustes
+      </button>
+      <a href="/legacy">Aprendizajes guardados</a>
       <slot />
     </footer>
   </aside>
@@ -129,212 +321,237 @@ const selectedTask = computed(() => props.activeTasks.find((task) => task.id ===
 <style scoped>
 .task-sidebar {
   display: grid;
-  grid-template-rows: auto auto auto auto 1fr auto;
-  gap: 1.1rem;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  gap: 1rem;
   min-height: 100%;
-  padding: 1.35rem 1.25rem;
-  color: #161f1a;
-  background: linear-gradient(180deg, #fbfcfa 0%, #f7faf7 100%);
+  padding: 1rem;
+  color: #152019;
+  background: #f8faf8;
 }
 
-.task-sidebar__brand {
-  display: grid;
-  gap: .25rem;
-}
-
-.task-sidebar__brand-link {
-  color: #003f27;
-  font-size: 1.75rem;
-  font-weight: 850;
-  line-height: 1;
-  text-decoration: none;
+.task-sidebar__brand,
+.task-sidebar__project-header,
+.task-sidebar__task-row,
+.task-sidebar__inline-form div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
 }
 
 .task-sidebar__brand p,
-.task-sidebar__group p {
-  margin: 0;
-  color: #69746d;
-  font-size: .82rem;
+.task-sidebar__project-description,
+.task-sidebar__project-content > p {
+  margin: .2rem 0 0;
+  color: #68736c;
+  font-size: .78rem;
 }
 
-.task-sidebar__primary,
-.task-sidebar__group,
-.task-sidebar__footer {
-  display: grid;
-  gap: .55rem;
-}
-
-.task-sidebar__primary-link,
-.task-sidebar__new-task,
-.task-sidebar__task-link,
-.task-sidebar__settings,
-.task-sidebar__footer a,
-.task-sidebar__group a {
-  display: flex;
-  align-items: center;
-  gap: .65rem;
-  min-height: 2.35rem;
-  color: #1f2924;
+.task-sidebar__brand-link {
+  color: #063e28;
+  font-size: 1.45rem;
+  font-weight: 850;
   text-decoration: none;
 }
 
-.task-sidebar__settings {
-  width: 100%;
-  border: 1px solid #c7d8ce;
-  border-radius: .5rem;
-  padding: .35rem .5rem;
-  color: #003f27;
-  font-weight: 750;
-  background: #f7fffb;
-}
-
-.task-sidebar__primary-link span,
-.task-sidebar__new-task span {
+.task-sidebar__collapse,
+.task-sidebar__icon-action {
   display: grid;
   place-items: center;
-  width: 1.1rem;
-  color: #005f3e;
-  font-size: 1.1rem;
-}
-
-.task-sidebar__new-task {
-  justify-content: center;
-  border: 1px solid #005f3e;
-  border-radius: .45rem;
-  color: #003f27;
-  font-weight: 700;
-  background: #f7fffb;
-}
-
-.task-sidebar__group {
-  padding-top: .8rem;
-  border-top: 1px solid #dfe5df;
-}
-
-.task-sidebar__group h3 {
-  margin: 0;
-  color: #4f5b54;
-  font-size: .9rem;
-  font-weight: 650;
-}
-
-.task-sidebar__phase-map,
-.task-sidebar__group ul {
-  display: grid;
-  gap: .3rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.task-sidebar__phase {
-  border: 1px solid transparent;
-  border-radius: .45rem;
-  padding: .35rem .4rem;
-}
-
-.task-sidebar__phase--active {
-  border-color: #cddbd2;
-  border-left: 4px solid #007a4d;
-  background: #fbfefd;
-  box-shadow: 0 12px 28px rgba(0, 63, 39, .06);
-}
-
-.task-sidebar__phase summary {
-  display: flex;
-  align-items: center;
-  gap: .45rem;
-  color: #1e2822;
-  font-size: .86rem;
-  font-weight: 700;
-  cursor: default;
-  list-style: none;
-}
-
-.task-sidebar__phase summary::-webkit-details-marker {
-  display: none;
-}
-
-.task-sidebar__phase small {
-  margin-left: auto;
-  border: 1px solid #9ac7b2;
-  border-radius: .35rem;
-  padding: .1rem .35rem;
-  color: #005f3e;
-  font-size: .68rem;
-  font-weight: 700;
-}
-
-.task-sidebar__phase ol {
-  display: grid;
-  gap: .42rem;
-  margin: .55rem 0 .25rem 1.45rem;
-  padding: 0;
-  list-style: none;
-}
-
-.task-sidebar__dot-row {
-  display: grid;
-  grid-template-columns: 1rem minmax(3rem, 5rem);
-  align-items: center;
-  gap: .55rem;
-}
-
-.task-sidebar__dot-row span {
-  width: .52rem;
-  height: .52rem;
-  border: 1px solid #9fa8a1;
-  border-radius: 999px;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  border: 1px solid #d2dcd5;
+  border-radius: .55rem;
   background: #fff;
 }
 
-.task-sidebar__dot-row i {
-  display: block;
-  height: .25rem;
-  border-radius: 999px;
-  background: #c4c8ca;
+.task-sidebar__primary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
 }
 
-.task-sidebar__dot-row--done span,
-.task-sidebar__dot-row--current span {
-  border-color: #007a4d;
-  background: #007a4d;
+.task-sidebar__primary-link {
+  color: #34433a;
+  font-size: .78rem;
+  text-decoration: none;
 }
 
-.task-sidebar__dot-row--done i,
-.task-sidebar__dot-row--current i {
-  background: #7aa692;
+.task-sidebar__tools,
+.task-sidebar__inline-form {
+  display: grid;
+  gap: .5rem;
 }
 
-.task-sidebar__task-group {
-  align-self: start;
+.task-sidebar__tools {
+  padding-block: .75rem;
+  border-block: 1px solid #e0e6e2;
+}
+
+.task-sidebar__tools label,
+.task-sidebar__inline-form label {
+  color: #34433a;
+  font-size: .76rem;
+  font-weight: 720;
+}
+
+.task-sidebar__tools input,
+.task-sidebar__inline-form input {
+  width: 100%;
+  min-height: 2.5rem;
+  border: 1px solid #cbd7d0;
+  border-radius: .55rem;
+  padding: .55rem .65rem;
+  background: #fff;
+}
+
+.task-sidebar__create-project,
+.task-sidebar__new-task,
+.task-sidebar__settings {
+  min-height: 2.5rem;
+  border: 1px solid #9bc6b2;
+  border-radius: .55rem;
+  color: #06472e;
+  font-weight: 760;
+  background: #f4fcf8;
+}
+
+.task-sidebar__projects {
+  min-height: 0;
+  overflow: auto;
+}
+
+.task-sidebar__project {
+  padding: .65rem 0;
+  border-bottom: 1px solid #e0e6e2;
+}
+
+.task-sidebar__project--active {
+  border-left: 3px solid #087a50;
+  padding-left: .55rem;
+}
+
+.task-sidebar__project-toggle {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  padding: .4rem 0;
+  overflow: hidden;
+  color: #19261e;
+  font-weight: 790;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: transparent;
+}
+
+.task-sidebar__project-toggle::before {
+  margin-right: .45rem;
+  content: "›";
+}
+
+.task-sidebar__project-toggle[aria-expanded="true"]::before {
+  content: "⌄";
+}
+
+.task-sidebar__project-content {
+  display: grid;
+  gap: .55rem;
+  padding-top: .5rem;
+}
+
+.task-sidebar__new-task {
+  display: grid;
+  place-items: center;
+  color: #06472e;
+  font-size: .8rem;
+  text-decoration: none;
+}
+
+.task-sidebar__task-list,
+.task-sidebar__records ul,
+.task-sidebar__archived ul {
+  display: grid;
+  gap: .35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.task-sidebar__task-row {
+  align-items: stretch;
 }
 
 .task-sidebar__task-link {
-  border-radius: .45rem;
-  padding: .35rem .5rem;
-  font-size: .86rem;
-  font-weight: 650;
+  display: grid;
+  flex: 1;
+  gap: .15rem;
+  min-width: 0;
+  border-radius: .5rem;
+  padding: .5rem .6rem;
+  color: #243129;
+  text-decoration: none;
+}
+
+.task-sidebar__task-link span {
+  overflow: hidden;
+  font-size: .83rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-sidebar__task-link small {
+  color: #718078;
+  font-size: .68rem;
 }
 
 .task-sidebar__task-link--active {
-  color: #003f27;
-  background: #edf8f2;
+  color: #053c27;
+  background: #e7f5ee;
 }
 
-.task-sidebar__active-indicator {
-  margin-left: auto;
-  color: #007a4d;
+.task-sidebar__inline-form {
+  margin-top: .4rem;
+  border: 1px solid #d8e1db;
+  border-radius: .6rem;
+  padding: .65rem;
+  background: #fff;
+}
+
+.task-sidebar__inline-form button {
+  min-height: 2.25rem;
+  border-radius: .45rem;
+}
+
+.task-sidebar__records summary,
+.task-sidebar__archived summary {
+  padding: .45rem 0;
+  color: #526058;
   font-size: .75rem;
+  cursor: pointer;
 }
 
 .task-sidebar__footer {
-  padding-top: 1rem;
-  border-top: 1px solid #dfe5df;
+  display: grid;
+  gap: .55rem;
+  padding-top: .75rem;
+  border-top: 1px solid #e0e6e2;
 }
 
 .task-sidebar__footer a {
-  color: #46514b;
-  font-size: .84rem;
+  color: #526058;
+  font-size: .78rem;
+}
+
+@media (max-width: 1023px) {
+  .task-sidebar {
+    min-height: 100dvh;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .task-sidebar__collapse {
+    display: none;
+  }
 }
 </style>

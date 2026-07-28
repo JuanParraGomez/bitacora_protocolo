@@ -8,7 +8,6 @@ import GuidancePhase from './GuidancePhase.vue';
 import EvaluationFeedback from './EvaluationFeedback.vue';
 import OrientationPhase from './OrientationPhase.vue';
 import ReviewPhase from './ReviewPhase.vue';
-import StructuredStageSummary from './StructuredStageSummary.vue';
 
 const props = withDefaults(defineProps<{
   task: Task;
@@ -114,13 +113,6 @@ function onContinue() {
       </div>
     </header>
 
-    <StructuredStageSummary
-      :task="props.task"
-      :evaluation="props.evaluation"
-      :is-stale-evaluation="props.isStaleEvaluation"
-      :can-continue="props.canContinue"
-    />
-
     <EvaluationFeedback
       :latest-evaluation="props.evaluation"
       :is-evaluating="props.isEvaluating"
@@ -167,7 +159,7 @@ function onContinue() {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   min-height: 100%;
-  overflow: hidden;
+  overflow: visible;
   background: #fff;
 }
 

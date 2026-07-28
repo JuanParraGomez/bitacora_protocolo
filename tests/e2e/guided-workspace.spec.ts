@@ -38,7 +38,7 @@ async function getActiveFocusTarget(page: import('@playwright/test').Page) {
 }
 
 test.describe('Task workspace dashboard shell', () => {
-  test('renders the three regions, task groups, active task, new task action and safe switching', async ({ page }) => {
+  test('renders project navigation, active task, inline editor and safe switching', async ({ page }) => {
     await writeTask(page, {
       id: 'ws-alpha',
       nombre: 'Espacio Alpha',
@@ -101,12 +101,20 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(page.getByRole('region', { name: 'Formulario guiado' })).toBeVisible();
 
     const workspace = page.getByRole('navigation', { name: 'Navegación de tareas' });
-    await expect(workspace.getByRole('heading', { name: 'Activas' })).toBeVisible();
-    await expect(workspace.getByRole('heading', { name: 'Completadas' })).toBeVisible();
+    await expect(workspace.getByRole('button', {
+      name: /^(Tareas heredadas|Tareas anteriores)$/i,
+    }))
+      .toHaveAttribute('aria-expanded', 'true');
+    await expect(workspace.getByRole('heading', { name: 'Activas' })).toHaveCount(0);
+    await expect(workspace.getByRole('heading', { name: 'Completadas' })).toHaveCount(0);
     await expect(workspace.getByRole('link', { name: 'Espacio Alpha' })).toHaveAttribute('aria-current', 'page');
     await expect(workspace.getByRole('link', { name: 'Espacio Beta' })).toBeVisible();
+    await workspace.getByText(/Resultados guardados/).click();
     await expect(workspace.getByRole('link', { name: 'Registro Omega' })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Nueva tarea/i })).toBeVisible();
+    const newLegacyTask = workspace.locator(
+      'a.task-sidebar__new-task[href*="projectId=legacy"]',
+    );
+    await expect(newLegacyTask).toBeVisible();
 
     await page.getByRole('link', { name: 'Espacio Beta' }).click();
     await expect(page).toHaveURL(/\/tasks\/ws-beta$/);
@@ -115,19 +123,23 @@ test.describe('Task workspace dashboard shell', () => {
     await workspace.getByRole('link', { name: 'Espacio Alpha' }).click();
     await expect(page).toHaveURL(/\/tasks\/ws-alpha$/);
 
-    await page.getByRole('link', { name: /Nueva tarea/i }).click();
-    await expect(page).toHaveURL('/tasks/new');
+    await newLegacyTask.click();
+    await expect(page).toHaveURL(/\/tasks\/new\?projectId=legacy$/);
 
     await page.goBack();
     await expect(page.getByRole('navigation', { name: 'Navegación de tareas' })).toBeVisible();
 
-    await page.getByRole('link', { name: 'Espacio Alpha' }).focus();
-    await page.keyboard.press('Tab');
-    await expect.poll(async () => getActiveFocusTarget(page)).toBe('settings');
-    await page.keyboard.press('Tab');
-    await expect.poll(async () => getActiveFocusTarget(page)).toBe('chat');
-    await page.keyboard.press('Tab');
-    await expect.poll(async () => getActiveFocusTarget(page)).toBe('form');
+    const visibleControls = workspace.locator([
+      'a[href]:visible',
+      'button:visible:not([disabled])',
+      'input:visible:not([disabled])',
+      'summary:visible',
+    ].join(', '));
+    const controlCount = await visibleControls.count();
+    const tabIndexes = await visibleControls.evaluateAll((elements) => (
+      elements.map((element) => (element as HTMLElement).tabIndex)
+    ));
+    expect(tabIndexes).toEqual(Array(controlCount).fill(0));
   });
 
   test('adapts at 320px with zoom and questionnaire slideover without losing form state', async ({ page }) => {
@@ -169,7 +181,7 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(page.locator('[data-mobile-form-panel]')).toHaveCount(0);
     await expect(page.getByRole('region', { name: 'Formulario guiado' })).toBeHidden();
 
-    const sidebarToggle = page.getByRole('button', { name: 'Open' }).first();
+    const sidebarToggle = page.getByRole('button', { name: 'Abrir navegación' });
     await expect(sidebarToggle).toBeVisible();
     await sidebarToggle.click();
 

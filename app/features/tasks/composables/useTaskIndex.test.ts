@@ -189,6 +189,24 @@ describe('useTaskIndex project-aware grouping', () => {
     expect(taskIndex.error.value).toBe('');
   });
 
+  it('treats missing storage keys as an empty workspace instead of a load error', async () => {
+    const fetchMock = vi.fn(async () => {
+      throw Object.assign(new Error('Not Found'), { statusCode: 404 });
+    });
+    vi.stubGlobal('$fetch', fetchMock);
+
+    const taskIndex = useTaskIndex();
+    await taskIndex.refresh();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(taskIndex.projectGroups.value).toHaveLength(1);
+    expect(taskIndex.projectGroups.value[0]).toMatchObject({
+      project: { id: 'legacy', name: 'Tareas anteriores' },
+      isEmpty: true,
+    });
+    expect(taskIndex.error.value).toBe('');
+  });
+
   it('normalizes invalid task state, removes duplicate ids and isolates unknown projects in legacy', async () => {
     stubStorage({
       [STORAGE_KEYS.projects]: {

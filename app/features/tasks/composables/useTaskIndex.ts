@@ -200,6 +200,29 @@ function alignIndexToProjects(
   };
 }
 
+function isMissingStorageKey(cause: unknown): boolean {
+  if (!cause || typeof cause !== 'object') return false;
+  const candidate = cause as {
+    status?: number;
+    statusCode?: number;
+    response?: { status?: number };
+  };
+  return candidate.status === 404
+    || candidate.statusCode === 404
+    || candidate.response?.status === 404;
+}
+
+async function readStorageValue(key: string): Promise<{ value: string | null }> {
+  try {
+    return await $fetch<{ value: string | null }>(
+      `/api/storage/${encodeURIComponent(key)}`,
+    );
+  } catch (cause) {
+    if (isMissingStorageKey(cause)) return { value: null };
+    throw cause;
+  }
+}
+
 export type TaskProjectGroup = {
   project: Project;
   activeTasks: TaskIndex['tareas'];
@@ -250,8 +273,8 @@ export function useTaskIndex() {
     error.value = '';
     try {
       const [indexResponse, projectsResponse] = await Promise.all([
-        $fetch<{ value: string | null }>(`/api/storage/${encodeURIComponent(STORAGE_KEYS.index)}`),
-        $fetch<{ value: string | null }>(`/api/storage/${encodeURIComponent(STORAGE_KEYS.projects)}`),
+        readStorageValue(STORAGE_KEYS.index),
+        readStorageValue(STORAGE_KEYS.projects),
       ]);
       const next = alignIndexToProjects(
         parseTaskIndex(indexResponse.value),

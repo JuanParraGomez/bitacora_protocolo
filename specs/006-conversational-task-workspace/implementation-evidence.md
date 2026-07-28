@@ -60,3 +60,9 @@ evidence.
 
 The earlier “known out-of-phase baseline” note records the state observed before
 the independent-review correction; it is superseded by the green schema row above.
+
+## Phase 5: User Story 3 - Mantener el contexto al navegar
+
+| Task | Type | Command | Expected red cause | Green result | Status |
+|---|---|---|---|---|---|
+| T045 / T049 | Unit / workspace state | `npx vitest run app/features/tasks/composables/useWorkspaceState.test.ts` | El módulo `useWorkspaceState.ts` no existía y Vitest falló al importarlo | 12/12 pasan; selección, borrador, resumen, ancla por ID, reparación, reset y aislamiento por generación quedan cubiertos | ✅ COMPLETE |

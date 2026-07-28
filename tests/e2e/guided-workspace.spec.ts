@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { expectTopHitTarget } from './helpers/workspace-ux';
 
 const INDEX_KEY = 'bitacora:index';
 const SETTINGS_KEY = 'bitacora:assistant-settings';
@@ -98,6 +99,7 @@ test.describe('Task workspace dashboard shell', () => {
 
     await expect(page.getByRole('navigation', { name: 'Navegación de tareas' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Centro de conversación' })).toBeVisible();
+    await expect(page.locator('[data-hydrated="true"]')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Formulario guiado' })).toBeVisible();
 
     const workspace = page.getByRole('navigation', { name: 'Navegación de tareas' });
@@ -111,9 +113,14 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(workspace.getByRole('link', { name: 'Espacio Beta' })).toBeVisible();
     await workspace.getByText(/Resultados guardados/).click();
     await expect(workspace.getByRole('link', { name: 'Registro Omega' })).toBeVisible();
+    const activeProjectToggle = workspace.getByRole('button', {
+      name: /^(Tareas heredadas|Tareas anteriores)$/i,
+    });
+    const activeProjectTasksId = await activeProjectToggle.getAttribute('aria-controls');
+    expect(activeProjectTasksId).toBeTruthy();
     const newLegacyTask = workspace.locator(
-      'a.task-sidebar__new-task[href*="projectId=legacy"]',
-    );
+      `[id="${activeProjectTasksId}"]`,
+    ).getByRole('button', { name: 'Nueva tarea', exact: true });
     await expect(newLegacyTask).toBeVisible();
 
     await page.getByRole('link', { name: 'Espacio Beta' }).click();
@@ -124,7 +131,7 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(page).toHaveURL(/\/tasks\/ws-alpha$/);
 
     await newLegacyTask.click();
-    await expect(page).toHaveURL(/\/tasks\/new\?projectId=legacy$/);
+    await expect(page).toHaveURL(/\/tasks\/ws-alpha\?overlay=new-task&projectId=legacy$/);
 
     await page.goBack();
     await expect(page.getByRole('navigation', { name: 'Navegación de tareas' })).toBeVisible();
@@ -140,6 +147,94 @@ test.describe('Task workspace dashboard shell', () => {
       elements.map((element) => (element as HTMLElement).tabIndex)
     ));
     expect(tabIndexes).toEqual(Array(controlCount).fill(0));
+  });
+
+  test('keeps long sidebar lists, footer controls and 160-character renames reachable', async ({ page }) => {
+    const projectId = 'project-long-sidebar';
+    const longTaskName = 'Tarea '.padEnd(160, 'l');
+    const renamedTaskName = 'Renombrada '.padEnd(160, 'r');
+    expect(longTaskName).toHaveLength(160);
+    expect(renamedTaskName).toHaveLength(160);
+
+    const tasks = Array.from({ length: 8 }, (_, index) => {
+      const isLongTask = index === 7;
+      return {
+        id: isLongTask ? 'ws-long-sidebar' : `ws-long-${index}`,
+        nombre: isLongTask ? longTaskName : `Tarea ${index + 1}`,
+        directiva: `Directiva ${index + 1}`,
+        fase: 1,
+        estado: 'activa' as const,
+        projectId,
+        tipo: 'protocolo',
+        ...(isLongTask
+          ? {
+              f1: {
+                linaje: [{ origen: 'Origen largo', resultado: 'Resultado largo' }],
+                dudas: '',
+                checkMapeo: true,
+                confirmacion: true,
+                analisisProblema: {
+                  problemaDetectado: 'Problema largo',
+                  evidencia: 'Evidencia larga',
+                  analisis: 'Análisis largo',
+                  decision: 'mantener',
+                  justificacion: 'Cobertura de lista larga',
+                  problemaVigente: 'Problema vigente largo',
+                },
+                resultadoDeseado: 'Resultado deseado largo',
+                alcance: 'Alcance largo',
+                restricciones: 'Restricciones largas',
+                actores: ['Equipo'],
+                criterioExito: 'Criterio largo',
+              },
+            }
+          : {}),
+      };
+    });
+
+    for (const task of tasks) {
+      await writeTask(page, task);
+    }
+
+    await writeIndex(page, {
+      tareas: tasks.map((task) => ({
+        id: task.id,
+        nombre: task.nombre,
+        fase: task.fase,
+        estado: task.estado,
+        tipo: task.tipo ?? 'protocolo',
+      })),
+      registros: [],
+    });
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/tasks/ws-long-sidebar');
+
+    const sidebar = page.getByRole('navigation', { name: 'Navegación de tareas' });
+    const longTaskLink = sidebar.getByRole('link', { name: longTaskName });
+    const footerSettings = sidebar.locator('footer').getByRole('button', { name: 'Ajustes', exact: true });
+    const renameButton = longTaskLink.locator('xpath=../button[contains(@class, "task-sidebar__icon-action")]');
+
+    await expect(longTaskLink).toBeVisible();
+    await expectTopHitTarget(longTaskLink);
+    await longTaskLink.click();
+    await expect(page).toHaveURL(/\/tasks\/ws-long-sidebar$/);
+
+    await footerSettings.scrollIntoViewIfNeeded();
+    await expect(footerSettings).toBeVisible();
+    await expectTopHitTarget(footerSettings);
+
+    await expectTopHitTarget(renameButton);
+    await renameButton.click();
+
+    const renameInput = sidebar.getByLabel('Nuevo nombre de la tarea');
+    await expect(renameInput).toBeVisible();
+    await renameInput.fill(renamedTaskName);
+
+    const saveRename = sidebar.getByRole('button', { name: 'Guardar nombre de tarea' });
+    await expectTopHitTarget(saveRename);
+    await saveRename.click();
+    await expect(sidebar.getByRole('link', { name: renamedTaskName })).toBeVisible();
   });
 
   test('adapts at 320px with zoom and questionnaire slideover without losing form state', async ({ page }) => {
@@ -477,7 +572,7 @@ test.describe('Task workspace dashboard shell', () => {
     await writeAssistanceSettings(page, 'codex');
 
     await page.goto('/tasks/ws-settings');
-    const settingsTrigger = page.getByRole('button', { name: 'Ajustes' });
+    const settingsTrigger = page.locator('[data-focus-target="settings"]');
     await settingsTrigger.focus();
     await settingsTrigger.click();
 
@@ -504,7 +599,7 @@ test.describe('Task workspace dashboard shell', () => {
     await page.keyboard.press('Escape');
 
     await page.reload();
-    await page.getByRole('button', { name: 'Ajustes' }).click();
+    await page.locator('[data-focus-target="settings"]').click();
     await expect(page.getByRole('dialog', { name: 'Ajustes de asistencia' }).getByRole('radio', { name: 'Usar DeepSeek API' })).toBeChecked();
   });
 
@@ -541,14 +636,15 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(page.getByText('Paso actual: Fase 1')).toBeVisible();
     await expect(page.locator('[aria-live="polite"]')).toHaveCount(3);
 
-    await page.getByRole('button', { name: 'Ajustes' }).focus();
+    await page.locator('[data-focus-target="settings"]').focus();
     await page.keyboard.press('Enter');
     const dialog = page.getByRole('dialog', { name: 'Ajustes de asistencia' });
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Cerrar ajustes' }).focus();
     await page.keyboard.press('Shift+Tab');
     await expect(dialog.getByRole('button', { name: 'Guardar ajustes' })).toBeFocused();
-    await page.keyboard.press('Escape');
+    await dialog.getByRole('button', { name: 'Cerrar ajustes' }).click();
+    await expect(dialog).toBeHidden();
     await expect.poll(async () => getActiveFocusTarget(page)).toBe('settings');
 
     await page.setViewportSize({ width: 320, height: 860 });
@@ -560,9 +656,8 @@ test.describe('Task workspace dashboard shell', () => {
 
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.evaluate(() => { document.documentElement.style.zoom = ''; });
-    await page.getByLabel('Escribe tu mensaje').fill('Necesito revisar el estado');
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Enter');
+    await page.locator('#task-chat-composer-input').fill('Necesito revisar el estado');
+    await page.getByRole('button', { name: 'Send prompt' }).click();
     await expect(page.getByText('Necesito revisar el estado', { exact: true })).toBeVisible();
   });
 

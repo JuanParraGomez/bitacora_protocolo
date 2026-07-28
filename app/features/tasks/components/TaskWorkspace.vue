@@ -9,12 +9,17 @@ import { assistanceSettingsSchema, phaseEvaluationSchema } from '../domain/task-
 import { STORAGE_KEYS } from '../../../../shared/contracts/storage';
 import AssistantSettingsModal from './AssistantSettingsModal.vue';
 import { mockWorkspaceAssistant, type ChatRequest, type ChatResponse } from '../services/mock-workspace-assistant';
+import LibrarySlideover from '~/app/features/library/components/LibrarySlideover.vue';
 import type { Project } from '../domain/project.schema';
 import DashboardSidebar, { type WorkspaceProjectGroup } from './DashboardSidebar.vue';
 import GuidedPhaseForm from './GuidedPhaseForm.vue';
+import NewTaskModal from './NewTaskModal.vue';
+import NoticeRegion from './NoticeRegion.vue';
 import StructuredStageSummary from './StructuredStageSummary.vue';
 import TaskChat from './TaskChat.vue';
 import WorkspaceHeader from './WorkspaceHeader.vue';
+import type { WorkspaceNotice } from '../composables/useWorkspaceNotices';
+import type { WorkspaceOverlayState } from '../composables/useWorkspaceState';
 
 const props = withDefaults(defineProps<{
   task: Task;
@@ -30,6 +35,10 @@ const props = withDefaults(defineProps<{
   activeTasks?: TaskIndex['tareas'];
   completedItems?: TaskIndex['registros'];
   saveTask?: () => Promise<boolean>;
+  activeOverlay?: WorkspaceOverlayState;
+  overlayRecordId?: string | null;
+  overlayProjectId?: string | null;
+  notices?: WorkspaceNotice[];
 }>(), {
   projectGroups: () => [],
   activeProjectId: '',
@@ -43,6 +52,10 @@ const props = withDefaults(defineProps<{
   activeTasks: () => [],
   completedItems: () => [],
   saveTask: undefined,
+  activeOverlay: null,
+  overlayRecordId: null,
+  overlayProjectId: null,
+  notices: () => [],
 });
 
 const emit = defineEmits<{
@@ -63,6 +76,16 @@ const emit = defineEmits<{
   updateDraft: [payload: { taskId: string; draft: string }];
   updateSummaryState: [payload: { taskId: string; state: 'collapsed' | 'expanded' | 'review' }];
   updateLastVisibleMessage: [payload: { taskId: string; messageId: string | null }];
+  requestOverlay: [payload: { overlay: WorkspaceOverlayState; projectId?: string | null; recordId?: string | null }];
+  dismissNotice: [id: string];
+  retryNotice: [id: string];
+  libraryRecordLinked: [payload: {
+    recordId: string;
+    title: string;
+    status: 'linked' | 'already-linked' | 'error';
+    reason?: 'record-missing' | 'task-missing' | 'task-invalid' | 'write-failed';
+    task?: Record<string, unknown> | null;
+  }];
 }>();
 const localTask = reactive(props.task);
 const chatSuggestions = ref<string[]>([]);
@@ -211,10 +234,12 @@ function openSettings(event?: Event) {
   settingsButtonRef.value = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
   settingsSaved.value = false;
   settingsOpen.value = true;
+  emit('requestOverlay', { overlay: 'settings' });
 }
 
 function closeSettings(next: boolean) {
   settingsOpen.value = next;
+  emit('requestOverlay', { overlay: next ? 'settings' : null });
   if (!next) {
     nextTick(() => settingsButtonRef.value?.focus());
   }
@@ -242,6 +267,9 @@ async function saveAssistanceSettings(nextSettings: AssistanceSettings) {
 watch(() => props.task, next => {
   Object.assign(localTask, toRaw(next));
 }, { deep: true, immediate: true });
+watch(() => props.activeOverlay, (next) => {
+  settingsOpen.value = next === 'settings';
+}, { immediate: true });
 watch(localTask, () => {
   emit('dirty', toRaw(localTask));
 }, { deep: true });
@@ -352,6 +380,21 @@ function onSelectTask(payload: { projectId: string; taskId: string }) {
 
 function onSelectProject(projectId: string) {
   emit('selectProject', projectId);
+}
+
+function requestNewTask(projectId?: string) {
+  emit('requestOverlay', {
+    overlay: 'new-task',
+    projectId: projectId ?? selectedProjectId.value,
+  });
+}
+
+function requestLibrary(recordId?: string | null) {
+  emit('requestOverlay', {
+    overlay: 'library',
+    projectId: selectedProjectId.value,
+    recordId: recordId ?? null,
+  });
 }
 
 function markEvaluationError(message: string) {
@@ -675,6 +718,8 @@ watch(() => [localTask.id, localTask.fase], () => {
         :search-query="props.searchQuery"
         :collapsed="effectiveSidebarCollapsed"
         @open-settings="openSettings"
+        @open-new-task="requestNewTask"
+        @open-library="requestLibrary()"
         @create-project="emit('createProject', $event)"
         @rename-project="emit('renameProject', $event)"
         @rename-task="emit('renameTask', $event)"
@@ -713,6 +758,8 @@ watch(() => [localTask.id, localTask.fase], () => {
           :expanded-project-ids="props.expandedProjectIds"
           :search-query="props.searchQuery"
           @open-settings="(event) => { openSettings(event); sidebarOpen = false; }"
+          @open-new-task="(projectId) => { requestNewTask(projectId); sidebarOpen = false; }"
+          @open-library="() => { requestLibrary(); sidebarOpen = false; }"
           @create-project="emit('createProject', $event)"
           @rename-project="emit('renameProject', $event)"
           @rename-task="emit('renameTask', $event)"
@@ -725,8 +772,9 @@ watch(() => [localTask.id, localTask.fase], () => {
       </div>
     </div>
 
-    <main
+    <section
       class="workspace-panel workspace-panel--conversation"
+      aria-label="Panel principal del workspace"
       :inert="isMobile && sidebarOpen ? true : undefined"
     >
       <section role="region" aria-label="Centro de conversación" class="workspace-section workspace-section--chat">
@@ -740,6 +788,9 @@ watch(() => [localTask.id, localTask.fase], () => {
           :sidebar-collapsed="effectiveSidebarCollapsed"
           @open-navigation="sidebarOpen = true"
           @expand-sidebar="updateSidebarCollapsed(false)"
+          @open-new-task="requestNewTask()"
+          @open-library="requestLibrary()"
+          @open-settings="openSettings"
         />
 
         <TaskChat
@@ -805,15 +856,16 @@ watch(() => [localTask.id, localTask.fase], () => {
           <p class="workspace-empty-context__eyebrow">Proyecto activo</p>
           <h2 id="workspace-empty-context-title">Este proyecto todavía no tiene tareas.</h2>
           <p>Abre una conversación para definir el primer resultado de {{ projectLabel }}.</p>
-          <NuxtLink
-            :to="`/tasks/new?projectId=${encodeURIComponent(selectedProjectId)}`"
+          <button
+            type="button"
             class="workspace-empty-context__action"
+            @click="requestNewTask(selectedProjectId)"
           >
             Crear primera tarea
-          </NuxtLink>
+          </button>
         </section>
       </section>
-    </main>
+    </section>
 
     <USlideover
       v-if="isCompact"
@@ -860,6 +912,30 @@ watch(() => [localTask.id, localTask.fase], () => {
       :error-message="settingsError"
       @update:open="closeSettings"
       @save="saveAssistanceSettings"
+    />
+
+    <NewTaskModal
+      :open="props.activeOverlay === 'new-task'"
+      :project-groups="projectGroups"
+      :selected-project-id="props.overlayProjectId || selectedProjectId"
+      @update:open="emit('requestOverlay', { overlay: $event ? 'new-task' : null, projectId: selectedProjectId })"
+    />
+
+    <LibrarySlideover
+      :open="props.activeOverlay === 'library'"
+      :task-id="localTask.id"
+      :project-id="selectedProjectId"
+      :record-id="props.overlayRecordId"
+      :mobile="isMobile"
+      @update:open="emit('requestOverlay', { overlay: $event ? 'library' : null, projectId: selectedProjectId })"
+      @open-record="requestLibrary"
+      @record-linked="emit('libraryRecordLinked', $event)"
+    />
+
+    <NoticeRegion
+      :notices="props.notices"
+      @dismiss="emit('dismissNotice', $event)"
+      @retry="emit('retryNotice', $event)"
     />
   </div>
 </template>
@@ -947,10 +1023,10 @@ watch(() => [localTask.id, localTask.fase], () => {
   align-items: center;
   margin-top: .5rem;
   padding: .65rem 1rem;
+  border: 0;
   border-radius: .65rem;
   color: #fff;
   font-weight: 760;
-  text-decoration: none;
   background: #007a4d;
 }
 
@@ -988,7 +1064,7 @@ watch(() => [localTask.id, localTask.fase], () => {
 .workspace-sidebar-frame :deep(aside.task-sidebar) {
   height: 100%;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   border: 1px solid #d7ddd8;
   border-right: 0;
   border-radius: .95rem 0 0 .95rem;

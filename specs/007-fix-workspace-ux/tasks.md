@@ -18,9 +18,9 @@
 
 **Purpose**: Preparar evidencia y utilidades de prueba sin cambiar comportamiento.
 
-- [ ] T001 Crear la matriz de ejecucion y registro de rojo/verde en `specs/007-fix-workspace-ux/implementation-evidence.md`
-- [ ] T002 [P] Crear helpers de seed, viewports y deteccion de overflow/solape en `tests/e2e/helpers/workspace-ux.ts`
-- [ ] T003 [P] Crear el esqueleto de trazabilidad UX-001–UX-017 en `tests/e2e/workspace-ux-audit.spec.ts`
+- [X] T001 Crear la matriz de ejecucion y registro de rojo/verde en `specs/007-fix-workspace-ux/implementation-evidence.md`
+- [X] T002 [P] Crear helpers de seed, viewports y deteccion de overflow/solape en `tests/e2e/helpers/workspace-ux.ts`
+- [X] T003 [P] Crear el esqueleto de trazabilidad UX-001–UX-017 en `tests/e2e/workspace-ux-audit.spec.ts`
 
 ---
 
@@ -30,10 +30,10 @@
 
 **CRITICAL**: Esta fase debe completarse antes de implementar las historias modernas US1, US2, US3 y US5. US4 es una excepcion aislada porque solo modifica y prueba el flujo heredado.
 
-- [ ] T004 Escribir pruebas unitarias de estados `idle`, `invalid`, `submitting`, `succeeded` y `failed` en `app/features/tasks/components/TaskIntakeForm.test.ts`
-- [ ] T005 Ejecutar T004 y registrar el fallo rojo esperado en `specs/007-fix-workspace-ux/implementation-evidence.md`
-- [ ] T006 Implementar el bloqueo de envio repetido y la conservacion de datos tras fallo en `app/features/tasks/components/TaskIntakeForm.vue` y `app/features/tasks/components/task-intake.ts`
-- [ ] T007 Ejecutar las pruebas enfocadas de intake y registrar el verde en `specs/007-fix-workspace-ux/implementation-evidence.md`
+- [X] T004 Escribir pruebas unitarias de estados `idle`, `invalid`, `submitting`, `succeeded` y `failed` en `app/features/tasks/components/TaskIntakeForm.test.ts`
+- [X] T005 Ejecutar T004 y registrar el fallo rojo esperado en `specs/007-fix-workspace-ux/implementation-evidence.md`
+- [X] T006 Implementar el bloqueo de envio repetido y la conservacion de datos tras fallo en `app/features/tasks/components/TaskIntakeForm.vue` y `app/features/tasks/components/task-intake.ts`
+- [X] T007 Ejecutar las pruebas enfocadas de intake y registrar el verde en `specs/007-fix-workspace-ux/implementation-evidence.md`
 
 **Checkpoint**: El contrato de intake es estable y puede ser reutilizado por todas las entradas.
 
@@ -47,16 +47,16 @@
 
 ### Tests for User Story 1
 
-- [ ] T008 [P] [US1] Escribir escenarios E2E para cero proyectos, proyecto vacio, proyecto preseleccionado, proyecto archivado durante el formulario, conservacion de datos, validacion, cierre sucio, recarga y envio repetido en `tests/e2e/workspace-ux-audit.spec.ts`
-- [ ] T009 [P] [US1] Extender pruebas de overlay para clipping, foco, Escape y 390 x 844 en `tests/e2e/workspace-overlays.spec.ts`
+- [X] T008 [P] [US1] Escribir escenarios E2E para cero proyectos, proyecto vacio, proyecto preseleccionado, proyecto archivado durante el formulario, conservacion de datos, validacion, cierre sucio, recarga y envio repetido en `tests/e2e/workspace-ux-audit.spec.ts`
+- [X] T009 [P] [US1] Extender pruebas de overlay para clipping, foco, Escape y 390 x 844 en `tests/e2e/workspace-overlays.spec.ts`
 - [ ] T010 [US1] Ejecutar T008–T009 y registrar los fallos rojos UX-001, UX-004 y UX-007 en `specs/007-fix-workspace-ux/implementation-evidence.md`
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Extraer una unica operacion de creacion reutilizable en `app/features/tasks/components/NewTaskModal.vue` y `app/features/tasks/components/task-intake.ts`
-- [ ] T012 [US1] Conectar `Crear primera tarea` y acciones `Nueva tarea` al formulario compartido en `pages/index.vue` y `app/features/tasks/components/DashboardSidebar.vue`
-- [ ] T013 [US1] Convertir la carga directa de nueva tarea en un flujo funcional sin placeholder en `pages/tasks/new.vue`
-- [ ] T014 [US1] Ajustar geometria, cierre y campos del formulario movil en `app/features/tasks/components/NewTaskModal.vue`
+- [X] T011 [US1] Extraer una unica operacion de creacion reutilizable en `app/features/tasks/components/NewTaskModal.vue` y `app/features/tasks/components/task-intake.ts`
+- [X] T012 [US1] Conectar `Crear primera tarea` y acciones `Nueva tarea` al formulario compartido en `pages/index.vue` y `app/features/tasks/components/DashboardSidebar.vue`
+- [X] T013 [US1] Convertir la carga directa de nueva tarea en un flujo funcional sin placeholder en `pages/tasks/new.vue`
+- [X] T014 [US1] Ajustar geometria, cierre y campos del formulario movil en `app/features/tasks/components/NewTaskModal.vue`
 - [ ] T015 [US1] Ejecutar pruebas de intake, T008–T009 y regresion de creacion en `tests/e2e/nuxt-task-workflows.spec.ts`; registrar verde en `specs/007-fix-workspace-ux/implementation-evidence.md`
 
 **Checkpoint**: La primera tarea puede crearse desde cualquier entrada sin pantalla muerta ni duplicados.
@@ -71,16 +71,16 @@
 
 ### Tests for User Story 2
 
-- [ ] T016 [P] [US2] Escribir pruebas de click target para `Evaluar`, `Continuar`, `Avanzar`, enviar, crear y renombrar en `tests/e2e/workspace-ux-audit.spec.ts`
-- [ ] T017 [P] [US2] Escribir pruebas de lista larga, footer, renombrado y nombres de 160 caracteres en `tests/e2e/guided-workspace.spec.ts`
-- [ ] T018 [US2] Ejecutar T016–T017 y registrar los fallos rojos UX-002, UX-008 y UX-010 en `specs/007-fix-workspace-ux/implementation-evidence.md`
+- [X] T016 [P] [US2] Escribir pruebas de click target para `Evaluar`, `Continuar`, `Avanzar`, enviar, crear y renombrar en `tests/e2e/workspace-ux-audit.spec.ts`
+- [X] T017 [P] [US2] Escribir pruebas de lista larga, footer, renombrado y nombres de 160 caracteres en `tests/e2e/guided-workspace.spec.ts`
+- [X] T018 [US2] Ejecutar T016–T017 y registrar los fallos rojos UX-002, UX-008 y UX-010 en `specs/007-fix-workspace-ux/implementation-evidence.md`
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Definir filas estables y scroll independiente del shell en `app/features/tasks/components/TaskWorkspace.vue`
-- [ ] T020 [US2] Separar lista desplazable, footer y formularios inline en `app/features/tasks/components/DashboardSidebar.vue`
-- [ ] T021 [US2] Eliminar capas que interceptan chat, evaluacion y avance en `pages/tasks/[id].vue` y `app/features/tasks/components/TaskChat.vue`
-- [ ] T022 [US2] Ejecutar T016–T017 y las regresiones de workspace en `tests/e2e/conversational-workspace.spec.ts`; registrar verde en `specs/007-fix-workspace-ux/implementation-evidence.md`
+- [X] T019 [US2] Definir filas estables y scroll independiente del shell en `app/features/tasks/components/TaskWorkspace.vue`
+- [X] T020 [US2] Separar lista desplazable, footer y formularios inline en `app/features/tasks/components/DashboardSidebar.vue`
+- [X] T021 [US2] Eliminar capas que interceptan chat, evaluacion y avance en `pages/tasks/[id].vue` y `app/features/tasks/components/TaskChat.vue`
+- [X] T022 [US2] Ejecutar T016–T017 y las regresiones de workspace en `tests/e2e/conversational-workspace.spec.ts`; registrar verde en `specs/007-fix-workspace-ux/implementation-evidence.md`
 
 **Checkpoint**: Todo control visible del workspace recibe interaccion o explica por que esta deshabilitado.
 

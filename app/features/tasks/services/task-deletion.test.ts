@@ -10,4 +10,22 @@ describe('task deletion service', () => {
     expect(values.has('bitacora:t:one')).toBe(false);
     expect(values.get('bitacora:r:one')).toBe('# record');
   });
+
+  it('removes only the active entry from index and tolerates malformed index', async () => {
+    const values = new Map([['bitacora:index', '{malformed'], ['bitacora:t:one', '{}'], ['bitacora:r:one', '# record']]);
+    const storage = {
+      async get(key: string) { return values.get(key) ?? null; },
+      async set(key: string, value: string) { values.set(key, value); },
+      async delete(key: string) { values.delete(key); },
+      async batch(operations: Array<{ key: string }>) {
+        for (const operation of operations) {
+          if (operation.key === 'bitacora:t:one') values.delete(operation.key);
+          if (operation.key === 'bitacora:index') values.set(operation.key, JSON.stringify({ tareas: [], registros: [] }));
+        }
+      },
+    };
+    await deleteTask(storage, 'one', { confirm: true });
+    expect(values.has('bitacora:t:one')).toBe(false);
+    expect(values.get('bitacora:r:one')).toBe('# record');
+  });
 });

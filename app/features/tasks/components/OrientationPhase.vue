@@ -1,17 +1,31 @@
 <script setup lang="ts">
 import type { Task } from '../domain/task.schema';
-import { reactive, toRaw } from 'vue';
+import { computed, reactive, toRaw } from 'vue';
 
 const props = withDefaults(defineProps<{ task: Task; saveTask?: () => Promise<boolean> }>(), {
   saveTask: undefined,
 });
 const task = reactive(toRaw(props.task));
 const emit = defineEmits<{ save: []; dirty: [] }>();
+
+function normalizeTextLines(value: string): string[] {
+  return value
+    .split('\n')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+const actorRows = computed({
+  get: () => task.f1.actores.join('\n'),
+  set: (next) => {
+    task.f1.actores = normalizeTextLines(next);
+  },
+});
 </script>
 
 <template>
   <section aria-labelledby="phase-one-title" class="phase-workspace">
-    <h3 id="phase-one-title">Fase 1 · Orientación</h3>
+    <h3 id="phase-one-title">Fase 1 · Entender el problema</h3>
     <div class="phase-workspace__content">
       <div class="phase-workspace__form">
         <label for="lineage-source">Origen del linaje</label>
@@ -23,6 +37,17 @@ const emit = defineEmits<{ save: []; dirty: [] }>();
         <label for="lineage-result">Resultado del linaje</label>
         <input id="lineage-result" v-model="task.f1.linaje[0]!.resultado" />
         <label><input id="mapping-confirmed" v-model="task.f1.checkMapeo" type="checkbox" /> Confirmar mapeo</label>
+        <label><input id="mapping-accepted" v-model="task.f1.confirmacion" type="checkbox" /> Confirmación final</label>
+        <label for="desired-result">Resultado deseado</label>
+        <textarea id="desired-result" v-model="task.f1.resultadoDeseado" rows="2" />
+        <label for="problem-scope">Alcance</label>
+        <textarea id="problem-scope" v-model="task.f1.alcance" rows="3" />
+        <label for="problem-constraints">Restricciones</label>
+        <textarea id="problem-constraints" v-model="task.f1.restricciones" rows="2" />
+        <label for="problem-actors">Actores involucrados (uno por línea)</label>
+        <textarea id="problem-actors" v-model="actorRows" rows="3" />
+        <label for="success-criteria">Criterio de éxito</label>
+        <textarea id="success-criteria" v-model="task.f1.criterioExito" rows="2" />
         <fieldset aria-labelledby="problem-analysis-title">
           <legend id="problem-analysis-title">Protocolo analítico del problema</legend>
           <label for="problem-detected">Problema detectado</label>

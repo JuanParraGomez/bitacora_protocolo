@@ -1,12 +1,40 @@
 <script setup lang="ts">
 import type { Task } from '../domain/task.schema';
-import { reactive, toRaw } from 'vue';
+import { computed, reactive, toRaw } from 'vue';
 
 const props = withDefaults(defineProps<{ task: Task; saveTask?: () => Promise<boolean> }>(), {
   saveTask: undefined,
 });
 const task = reactive(toRaw(props.task));
 const emit = defineEmits<{ save: []; dirty: [] }>();
+
+function normalizeTextLines(value: string): string[] {
+  return value
+    .split('\n')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+const subproblemRows = computed({
+  get: () => task.f2.subproblemas.join('\n'),
+  set: (next) => {
+    task.f2.subproblemas = normalizeTextLines(next);
+  },
+});
+
+const openQuestionRows = computed({
+  get: () => task.f2.preguntasAbiertas.join('\n'),
+  set: (next) => {
+    task.f2.preguntasAbiertas = normalizeTextLines(next);
+  },
+});
+
+const riskRows = computed({
+  get: () => task.f2.riesgos.join('\n'),
+  set: (next) => {
+    task.f2.riesgos = normalizeTextLines(next);
+  },
+});
 
 function addCriterion() {
   task.f2.criterios.push({ id: `criterion-${Date.now().toString(36)}`, texto: '', comentario: '', prioridad: 'media', estado: 'pendiente', impacto: 'medio' });
@@ -16,7 +44,7 @@ function addCriterion() {
 
 <template>
   <section aria-labelledby="phase-two-title" class="phase-workspace">
-    <h3 id="phase-two-title">Fase 2 · Guía</h3>
+    <h3 id="phase-two-title">Fase 2 · Descomponer el camino</h3>
     <div class="phase-workspace__content">
       <div class="phase-workspace__form">
         <p>Propósito: convertir el análisis en una guía accionable.</p>
@@ -26,6 +54,10 @@ function addCriterion() {
         <label>Alcance <textarea v-model="task.f2.alcance" /></label>
         <label>No-objetivos <textarea v-model="task.f2.noObjetivos" /></label>
         <label>Pasos <textarea v-model="task.f2.pasos" /></label>
+        <label>Dependencias y orden entre pasos <textarea v-model="task.f2.guia" rows="2" /></label>
+        <label>Subproblemas <textarea v-model="subproblemRows" rows="3" /></label>
+        <label>Preguntas abiertas <textarea v-model="openQuestionRows" rows="3" /></label>
+        <label>Riesgos detectados <textarea v-model="riskRows" rows="3" /></label>
         <fieldset><legend>Predicciones</legend>
           <div v-for="(prediction, index) in task.f2.predicciones" :key="index">
             <label>Predicción {{ index + 1 }} <input v-model="prediction.texto" /></label>

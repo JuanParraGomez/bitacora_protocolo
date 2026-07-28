@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import type { AssistantMessage } from '../domain/task-assistant.schema';
+import { computed, reactive, ref } from 'vue';
+import type { AssistantMessage, ProposalDecision } from '../domain/task-assistant.schema';
 
 type ChatSendStatus = 'ready' | 'submitted' | 'streaming' | 'error';
 type ChatUpdate = {
   field: string;
   sourceMessageId: string;
+  id: string;
+  baseRevision: string;
+  previousValue?: unknown;
   value: unknown;
   status: 'applied' | 'rejected' | 'conflict' | 'proposed';
 };
@@ -36,9 +39,12 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   send: [text: string];
   retry: [messageId: string];
+  proposalDecision: [decision: ProposalDecision];
 }>();
 
 const draft = ref('');
+const proposalEdits = reactive<Record<string, string>>({});
+const proposalEditErrors = reactive<Record<string, string>>({});
 
 const sortedMessages = computed<ChatMessage[]>(() => {
   return [...props.messages]
@@ -89,6 +95,99 @@ function updateValueText(update: ChatUpdate): string {
   return typeof update.value === 'string' ? update.value.slice(0, 80) : String(update.value);
 }
 
+function fieldLabel(field: string): string {
+  const labels: Record<string, string> = {
+    'f1.analisisProblema.problemaDetectado': 'Problema detectado',
+    'f1.analisisProblema.evidencia': 'Evidencia',
+    'f1.analisisProblema.analisis': 'Análisis',
+    'f1.analisisProblema.decision': 'Decisión',
+    'f1.analisisProblema.justificacion': 'Justificación',
+    'f1.analisisProblema.problemaVigente': 'Formulación vigente',
+    'f1.resultadoDeseado': 'Resultado deseado',
+    'f1.alcance': 'Alcance',
+    'f1.restricciones': 'Restricciones',
+    'f1.actores': 'Actores',
+    'f1.criterioExito': 'Criterio de éxito',
+    'f2.decision': 'Decisión',
+    'f2.alcance': 'Alcance',
+    'f2.noObjetivos': 'No objetivos',
+    'f2.pasos': 'Pasos',
+    'f2.guia': 'Guía',
+    'f3.notas': 'Notas de iteración',
+    'f4.cambio': 'Cambio consolidado',
+    'f4.titulo': 'Título del método',
+  };
+  return labels[field] ?? field;
+}
+
+function previousValueText(update: ChatUpdate): string {
+  if (update.previousValue === undefined || update.previousValue === null || update.previousValue === '') {
+    return 'Sin valor confirmado';
+  }
+  if (typeof update.previousValue === 'string') return update.previousValue;
+  return JSON.stringify(update.previousValue);
+}
+
+function proposalEditValue(update: ChatUpdate): string {
+  if (!(update.id in proposalEdits)) {
+    proposalEdits[update.id] = typeof update.value === 'string' ? update.value : JSON.stringify(update.value);
+  }
+  return proposalEdits[update.id] ?? '';
+}
+
+function setProposalEdit(update: ChatUpdate, value: string) {
+  proposalEdits[update.id] = value;
+  delete proposalEditErrors[update.id];
+}
+
+function parseProposalEditValue(update: ChatUpdate): unknown {
+  const raw = proposalEditValue(update);
+  if (typeof update.value === 'string') return raw;
+
+  if (typeof update.value === 'boolean') {
+    if (raw.trim() === 'true') return true;
+    if (raw.trim() === 'false') return false;
+    throw new Error('Escribe true o false.');
+  }
+
+  if (typeof update.value === 'number') {
+    const parsed = Number(raw);
+    if (Number.isFinite(parsed)) return parsed;
+    throw new Error('Escribe un número válido.');
+  }
+
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    throw new Error('Escribe un valor JSON válido.');
+  }
+}
+
+function decide(update: ChatUpdate, action: ProposalDecision['action']) {
+  if (action === 'edit') {
+    let value: unknown;
+    try {
+      value = parseProposalEditValue(update);
+      delete proposalEditErrors[update.id];
+    } catch (cause) {
+      proposalEditErrors[update.id] = cause instanceof Error ? cause.message : 'Revisa el valor editado.';
+      return;
+    }
+    emit('proposalDecision', {
+      action,
+      proposalId: update.id,
+      value,
+      baseRevision: update.baseRevision,
+    });
+    return;
+  }
+  emit('proposalDecision', {
+    action,
+    proposalId: update.id,
+    baseRevision: update.baseRevision,
+  });
+}
+
 function onSendSubmit(event?: Event) {
   event?.preventDefault();
   const value = draft.value.trim();
@@ -120,6 +219,7 @@ function retryLatest() {
           <span v-if="message.role === 'assistant'" class="task-chat__avatar" aria-hidden="true">✦</span>
           <div class="task-chat__bubble-content">
             <p class="task-chat__message-body">{{ extractText(message) }}</p>
+            <p v-if="message.primaryQuestion" class="task-chat__primary-question">{{ message.primaryQuestion }}</p>
             <small>{{ new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</small>
           </div>
         </article>
@@ -137,11 +237,48 @@ function retryLatest() {
         </p>
 
         <ul v-if="message.role === 'assistant' && (message as ChatMessage).updates?.length" class="task-chat__updates">
-          <li v-for="update in (message as ChatMessage).updates" :key="updateKey(message as ChatMessage, update as ChatUpdate)">
-            <strong>{{ updateStatusLabel(update) }}</strong>
-            {{ (update as ChatUpdate).field }}:
-            <span>{{ updateValueText(update as ChatUpdate) }}</span>
+          <li
+            v-for="update in (message as ChatMessage).updates"
+            :key="updateKey(message as ChatMessage, update as ChatUpdate)"
+            role="group"
+            :aria-label="`Propuesta para ${fieldLabel((update as ChatUpdate).field)}`"
+            class="task-chat__proposal"
+          >
+            <header>
+              <strong>{{ fieldLabel((update as ChatUpdate).field) }}</strong>
+              <span>{{ updateStatusLabel(update as ChatUpdate) }}</span>
+            </header>
+            <p>Valor anterior: {{ previousValueText(update as ChatUpdate) }}</p>
+            <p>Valor propuesto: {{ updateValueText(update as ChatUpdate) }}</p>
+            <template v-if="(update as ChatUpdate).status === 'proposed'">
+              <label :for="`proposal-edit-${(update as ChatUpdate).id}`">
+                Editar propuesta para {{ fieldLabel((update as ChatUpdate).field) }}
+              </label>
+              <input
+                :id="`proposal-edit-${(update as ChatUpdate).id}`"
+                :value="proposalEditValue(update as ChatUpdate)"
+                :aria-invalid="proposalEditErrors[(update as ChatUpdate).id] ? 'true' : undefined"
+                :aria-describedby="proposalEditErrors[(update as ChatUpdate).id] ? `proposal-error-${(update as ChatUpdate).id}` : undefined"
+                @input="setProposalEdit(update as ChatUpdate, ($event.target as HTMLInputElement).value)"
+              >
+              <p
+                v-if="proposalEditErrors[(update as ChatUpdate).id]"
+                :id="`proposal-error-${(update as ChatUpdate).id}`"
+                role="alert"
+                class="task-chat__proposal-error"
+              >
+                {{ proposalEditErrors[(update as ChatUpdate).id] }}
+              </p>
+              <div class="task-chat__proposal-actions">
+                <button type="button" aria-label="Aceptar propuesta" @click="decide(update as ChatUpdate, 'accept')">Aceptar</button>
+                <button type="button" aria-label="Editar propuesta" @click="decide(update as ChatUpdate, 'edit')">Editar</button>
+                <button type="button" aria-label="Descartar propuesta" @click="decide(update as ChatUpdate, 'reject')">Descartar</button>
+              </div>
+            </template>
           </li>
+        </ul>
+        <ul v-if="message.role === 'assistant' && message.contradictions?.length" class="task-chat__contradictions">
+          <li v-for="item in message.contradictions" :key="item.id">{{ item.message }}</li>
         </ul>
       </template>
     </UChatMessages>
@@ -255,6 +392,11 @@ function retryLatest() {
   white-space: pre-wrap;
 }
 
+.task-chat__primary-question {
+  margin: .65rem 0 0;
+  font-weight: 650;
+}
+
 .task-chat__bubble small {
   display: block;
   margin-top: .35rem;
@@ -272,10 +414,52 @@ function retryLatest() {
 }
 
 .task-chat__updates {
-  margin-top: 0.5rem;
-  padding-left: 1rem;
-  list-style: disc;
+  display: grid;
+  gap: .6rem;
+  margin: .5rem 0 1rem 2.75rem;
+  padding: 0;
+  list-style: none;
   font-size: 0.85rem;
+}
+
+.task-chat__proposal {
+  display: grid;
+  gap: .45rem;
+  border: 1px solid #cfd9d3;
+  border-radius: .7rem;
+  padding: .8rem;
+  background: #fff;
+}
+
+.task-chat__proposal header,
+.task-chat__proposal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .45rem;
+}
+
+.task-chat__proposal p,
+.task-chat__proposal label {
+  margin: 0;
+}
+
+.task-chat__proposal input {
+  width: 100%;
+  border: 1px solid #b9c6be;
+  border-radius: .4rem;
+  padding: .55rem .65rem;
+}
+
+.task-chat__proposal-actions button {
+  flex: 1 1 7rem;
+  min-height: 2.25rem;
+}
+
+.task-chat__contradictions {
+  margin: .5rem 0 1rem 2.75rem;
+  color: #9a3412;
 }
 
 .task-chat__suggestions {

@@ -80,6 +80,35 @@ describe('compatibility store migration', () => {
     expect(assertNonDestructiveMigration(rows, roundtrip)).toBe(true);
   });
 
+  it('keeps empty and interrupted fixtures queryable while repairing missing keys', async () => {
+    const { inspectLegacyDatabase } = await import('../../scripts/migration-service.mjs');
+    const empty = await import('../../scripts/migration-service.mjs').then((module) => module.inspectLegacyDatabase(path.join(process.cwd(), 'tests/fixtures/legacy/empty.sqlite')));
+    const interrupted = await import('../../scripts/migration-service.mjs').then((module) => module.inspectLegacyDatabase(path.join(process.cwd(), 'tests/fixtures/legacy/interrupted.sqlite')));
+
+    expect(empty).toEqual(expect.any(Array));
+    expect(empty.every((entry: { key: string }) => typeof entry.key === 'string')).toBe(true);
+    expect(interrupted).toEqual(expect.any(Array));
+
+    const malformedRows = inspectLegacyDatabase(path.join(process.cwd(), 'tests/fixtures/legacy/malformed.sqlite'));
+    expect(malformedRows.find((entry: { key: string }) => entry.key === 'bitacora:index')?.value).toBe('{not-json');
+  });
+
+  it('repaints legacy pre-assistant tasks with schema-compatible assistant defaults', async () => {
+    const { inspectLegacyDatabase } = await import('../../scripts/migration-service.mjs');
+    const rows = inspectLegacyDatabase(path.join(process.cwd(), 'tests/fixtures/legacy/historical-pre-assistant.sqlite'));
+    const taskRow = rows.find((entry: { key: string }) => entry.key === 'bitacora:t:legacy-pre-assistant');
+    expect(taskRow).toBeDefined();
+
+    const task = JSON.parse(taskRow?.value ?? '{}');
+    const repaired = repairTask(task);
+    expect(repaired.assistant).toMatchObject({
+      schemaVersion: 1,
+      messages: [],
+      evaluations: [],
+      settings: { mode: 'codex', connectionStatus: 'deferred', schemaVersion: 1 },
+    });
+  });
+
   it('repairs every historical task shape with assistant defaults and no data loss', async () => {
     const { inspectLegacyDatabase } = await import('../../scripts/migration-service.mjs');
     const historicalFixtures = fixtureDatabases.filter((fixture) => fixtureName(fixture).startsWith('historical-'));

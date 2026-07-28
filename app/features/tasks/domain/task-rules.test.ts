@@ -6,6 +6,7 @@ import {
   canAdvance,
   canAdvanceWithAssistant,
   createBlankTask,
+  deriveMethodMaturity,
   deriveCriterionImprovements,
   addIteration,
   repairTask,
@@ -41,6 +42,11 @@ describe('task domain rules', () => {
     const task = createBlankTask('Tarea', 'Directiva');
     task.f1.linaje = [{ origen: 'brief', resultado: 'mapeado' }];
     task.f1.confirmacion = true;
+    task.f1.resultadoDeseado = 'Resultado esperado';
+    task.f1.alcance = 'Alcance';
+    task.f1.restricciones = 'Sin restricciones';
+    task.f1.actores = ['Actor'];
+    task.f1.criterioExito = 'Criterio de éxito';
     expect(canAdvance(task).reasons).toContain('Decide si mantienes o reformulas el problema.');
     task.f1.analisisProblema = {
       problemaDetectado: 'Problema inicial', evidencia: 'Evidencia', analisis: 'Análisis',
@@ -98,7 +104,23 @@ describe('task domain rules', () => {
       ],
     },
     f3: {
-      iteraciones: [{ id: 'i1', intento: 'Intento', resultado: 'Resultado', ajuste: 'Ajuste', criterioIds: ['c1'] }],
+      iteraciones: [{
+        id: 'i1',
+        intento: 'Intento',
+        resultado: 'Resultado',
+        ajuste: 'Ajuste',
+        criterioIds: ['c1'],
+        methodVersionId: 'method-1',
+        objective: 'Objetivo',
+        action: 'Acción',
+        tool: 'Herramienta',
+        input: 'Entrada',
+        result: 'Resultado',
+        evidence: [{ id: 'e-1', kind: 'note', label: 'Evidencia', value: 'Observación' }],
+        learning: 'Aprendizaje',
+        nextAdjustment: 'Ajuste',
+        applicableConditions: ['Condición'],
+      }],
       checkCompila: true,
       checkAuditado: true,
     },
@@ -129,14 +151,14 @@ describe('task domain rules', () => {
   it('buildPrompt builds complete guide prompt with only guide fields', () => {
     const task = repairTask(completePromptInput);
     const prompt = buildPrompt(task, 'guide');
-    ['Problema vigente: Problema vigente', 'Decisión: Decisión base', 'Alcance: Alcance', 'No-objetivos: No hace', 'Guía: [pendiente]', 'Predicciones:', '1. Predicción 1 | Umbral: 10', '1. Criterio A | Comentario: Comentario revisado'].forEach(value => expect(prompt).toContain(value));
+    ['Problema vigente: Problema vigente', 'Decisión: Decisión base', 'Alcance: Alcance', 'No-objetivos: No hace', 'Predicciones:', '1. Predicción 1 | Umbral: 10', '1. Criterio A | Comentario: Comentario revisado'].forEach(value => expect(prompt).toContain(value));
     ['Iteraciones:', 'Confrontaciones:', 'Mejoras:', 'Afirmación'].forEach(value => expect(prompt).not.toContain(value));
   });
 
   it('buildPrompt builds complete execution prompt with only execution fields', () => {
     const task = repairTask(completePromptInput);
     const prompt = buildPrompt(task, 'execution');
-    ['Problema vigente: Problema vigente', 'Criterios revisados:', '1. Intento: Intento | Resultado: Resultado | Ajuste: Ajuste', 'Compila: sí', 'Auditado: sí', 'Notas: [pendiente]'].forEach(value => expect(prompt).toContain(value));
+    ['Problema vigente: Problema vigente', 'Criterios revisados:', '1. Objetivo: Objetivo | Acción: Acción | Herramienta: Herramienta | Resultado: Resultado | Ajuste: Ajuste', 'Compila: sí', 'Auditado: sí', 'Notas: [pendiente]'].forEach(value => expect(prompt).toContain(value));
     ['Confrontaciones:', 'Predicciones:', 'Alcance:', 'Mejoras:'].forEach(value => expect(prompt).not.toContain(value));
   });
 
@@ -192,7 +214,6 @@ describe('task domain rules', () => {
     expect(prompt).toContain('No<script>');
     expect(prompt).toContain('Paso1 & Paso2');
     expect(prompt).toContain('P<red>1');
-    expect(prompt).toContain('Guía: [pendiente]');
   });
 
   it('buildPrompt in execution preserves special characters and punctuation', () => {
@@ -202,12 +223,23 @@ describe('task domain rules', () => {
         criterios: [{ id: 'c1', texto: 'Criterio & uno', comentario: 'C<>', prioridad: 'alta', estado: 'pendiente', impacto: 'medio' }],
       },
       f3: {
-        iteraciones: [{ intento: '<b>Intento</b>', resultado: 'Res&ultado', ajuste: 'A<j>uste', criterioIds: [] }],
+        iteraciones: [{
+          intento: '<b>Intento</b>',
+          objective: '<b>Objetivo</b>',
+          action: 'Acción <a>',
+          tool: 'Herramienta <t>',
+          result: 'Res&ultado',
+          nextAdjustment: 'A<j>uste',
+          criterioIds: [],
+          resultado: 'Resultado',
+          ajuste: 'Ajuste',
+          applicableConditions: ['Condición'],
+        }],
         notas: 'Nota <especial>',
       },
     });
     const prompt = buildPrompt(task, 'execution');
-    expect(prompt).toContain('<b>Intento</b>');
+    expect(prompt).toContain('<b>Objetivo</b>');
     expect(prompt).toContain('Res&ultado');
     expect(prompt).toContain('A<j>uste');
   });
@@ -238,7 +270,8 @@ describe('task domain rules', () => {
   it('preserves the closed vocabulary for criterion priority, status and impact', () => {
     const task = repairTask({ id: 'labels', f2: { criterios: [{ id: 'c1', texto: 'C', prioridad: 'alta', estado: 'en-progreso', impacto: 'bajo' }] } });
     expect(task.f2.criterios[0]).toMatchObject({ prioridad: 'alta', estado: 'en-progreso', impacto: 'bajo' });
-    expect(() => repairTask({ id: 'invalid-label', f2: { criterios: [{ prioridad: 'urgent' }] } })).toThrow();
+    const repairedInvalid = repairTask({ id: 'invalid-label', f2: { criterios: [{ prioridad: 'urgent' }] } });
+    expect(repairedInvalid.f2.criterios).toHaveLength(0);
   });
 
   it.each([0, 5, -1, Number.NaN])('rejects phase %s outside 1..4', (phase) => {
@@ -251,10 +284,497 @@ describe('task domain rules', () => {
     expect(advanceTask(task)).toMatchObject(task);
   });
 
+  it('requires FR-020 minimum fields for stage 1 continuity', () => {
+    const task = createBlankTask('Tarea', 'Directiva');
+    task.fase = 1;
+    task.f1 = {
+      ...task.f1,
+      linaje: [{ origen: 'brief', resultado: 'resolver' }],
+      checkMapeo: true,
+      confirmacion: true,
+      resultadoDeseado: 'Resultado esperado',
+      alcance: 'Limitado al caso base',
+      restricciones: 'No tocar producción',
+      actores: ['Equipo', 'Usuario'],
+      criterioExito: 'Entrega funcional y comprobable',
+      analisisProblema: {
+        ...task.f1.analisisProblema,
+        decision: 'mantener',
+        problemaDetectado: 'Fallo de automatización',
+        evidencia: 'Registros reproducidos',
+        analisis: 'El problema puede resolverse con método',
+        justificacion: 'Se confirmó el alcance',
+        problemaVigente: 'Problema vigente confirmado',
+      },
+    };
+
+    expect(canAdvance(task)).toEqual({ allowed: true, reasons: [] });
+  });
+
+  it('requires FR-021 minimum fields for stage 2 decomposition', () => {
+    const task = repairTask({
+      id: 't-stage-2-min',
+      fase: 2,
+      nombre: 'Tarea',
+      directiva: 'Directiva',
+      f2: {
+        decision: 'Decisión operativa',
+        alcance: 'Cobertura inicial',
+        noObjetivos: 'Sin impacto externo',
+        pasos: '1. Diagnóstico\n2. Ajuste',
+        predicciones: [
+          { texto: 'Predicción 1', umbral: '1', conf: 'alta' },
+          { texto: 'Predicción 2', umbral: '2', conf: 'media' },
+          { texto: 'Predicción 3', umbral: '3', conf: 'media' },
+        ],
+        subproblemas: ['Conectividad', 'Formato'],
+        preguntasAbiertas: ['¿Qué cambia si falla X?'],
+        riesgos: ['Riesgo de dependencia'],
+      },
+    });
+
+    expect(canAdvance(task).allowed).toBe(true);
+  });
+
+  it('requires FR-022 complete iteration fields and review checks in stage 3', () => {
+    const task = repairTask({
+      id: 't-stage-3-min',
+      fase: 3,
+      nombre: 'Tarea',
+      directiva: 'Directiva',
+      f3: {
+        iteraciones: [{
+          id: 'it-1',
+          intento: 'Primer intento',
+          resultado: 'Observación inicial',
+          ajuste: 'Ajuste del flujo',
+          criterioIds: [],
+          methodVersionId: 'method-1',
+          objective: 'Generar salida válida',
+          action: 'Ejecutar validación',
+          tool: 'CLI',
+          input: 'Datos de prueba',
+          result: 'Salida esperada',
+          evidence: [{ id: 'ev-1', kind: 'note', label: 'Hallazgo', value: 'Evidencia reproducible' }],
+          learning: 'La validación requiere entradas consistentes',
+          nextAdjustment: 'Corregir formato de salida',
+          applicableConditions: ['Misma versión', 'Entrada estable'],
+          success: true,
+          successCriteriaResults: [{ criterion: 'verificacion', passed: true }],
+          createdAt: 1,
+        }],
+        checkCompila: true,
+        checkAuditado: true,
+      },
+    });
+
+    expect(canAdvance(task).allowed).toBe(true);
+  });
+
+  it('derives documented-once and repeatable-method by version-matched successful iterations', () => {
+    const task = repairTask({
+      id: 't-maturity',
+      nombre: 'Tarea',
+      directiva: 'Directiva',
+      f3: {
+        iteraciones: [
+          {
+            id: 'it-1',
+            intento: 'Intento',
+            resultado: 'Resultado base',
+            ajuste: 'Ajuste inicial',
+            criterioIds: [],
+            methodVersionId: 'method-1',
+            objective: 'Objetivo',
+            action: 'Ejecutar',
+            tool: 'Script',
+            input: 'Input',
+            result: 'Output',
+            evidence: [{ id: 'ev-1', kind: 'note', label: 'Evidencia', value: 'Ajuste aplicado' }],
+            learning: 'Aprendizaje registrado',
+            nextAdjustment: 'Continuar al paso 2',
+            applicableConditions: ['Condición estable'],
+            success: true,
+            successCriteriaResults: [{ criterion: 'criterio', passed: true }],
+            createdAt: 1,
+          },
+        ],
+      },
+      methodVersions: [
+        {
+          id: 'method-1',
+          version: 1,
+          parentVersionId: null,
+          status: 'draft',
+          changeKind: 'initial',
+          preconditions: ['Entorno controlado'],
+          steps: [{
+            id: 'step-1',
+            title: 'Paso 1',
+            objective: 'Verificar la salida',
+            dependencies: [],
+            inputs: ['Entrada base'],
+            output: 'Salida',
+            tool: 'Script',
+            risk: 'Bajo',
+            successCriterion: 'Salida consistente',
+            sourceCriterionId: null,
+          }],
+          tools: ['Script'],
+          inputs: ['Entrada base'],
+          outputs: ['Salida'],
+          controls: ['Revisión humana'],
+          exceptions: [],
+          exceptionsReviewed: true,
+          successCriteria: ['Salida consistente'],
+          supportingIterationIds: ['it-1'],
+          createdAt: 1,
+        },
+      ],
+    });
+
+    expect(deriveMethodMaturity(task)).toBe('documented-once');
+
+    task.f3.iteraciones.push({
+      id: 'it-2',
+      intento: 'Segundo intento',
+      resultado: 'Resultado estable',
+      ajuste: 'Sin cambios',
+      criterioIds: [],
+      methodVersionId: 'method-1',
+      objective: 'Objetivo',
+      action: 'Ejecutar',
+      tool: 'Script',
+      input: 'Input',
+      result: 'Output',
+      evidence: [{ id: 'ev-2', kind: 'note', label: 'Evidencia', value: 'Ejecución correcta' }],
+      learning: 'Reproducción establecida',
+      nextAdjustment: 'No ajustar',
+      applicableConditions: ['Condición estable'],
+      success: true,
+      successCriteriaResults: [{ criterion: 'criterio', passed: true }],
+      createdAt: 2,
+    });
+
+    expect(deriveMethodMaturity(task)).toBe('repeatable-method');
+  });
+
+  it('resets maturity evidence when a new material method version becomes active', () => {
+    const task = repairTask({
+      id: 't-maturity-reset',
+      nombre: 'Tarea',
+      directiva: 'Directiva',
+      f3: {
+        iteraciones: [
+          {
+            id: 'it-1',
+            intento: 'Intento',
+            resultado: 'Resultado base',
+            ajuste: 'Ajuste inicial',
+            criterioIds: [],
+            methodVersionId: 'method-1',
+            objective: 'Objetivo',
+            action: 'Ejecutar',
+            tool: 'Script',
+            input: 'Input',
+            result: 'Output',
+            evidence: [{ id: 'ev-1', kind: 'note', label: 'Evidencia', value: 'A' }],
+            learning: 'Aprendizaje base',
+            nextAdjustment: 'Siguiente',
+            applicableConditions: ['Condición estable'],
+            success: true,
+            successCriteriaResults: [{ criterion: 'criterio', passed: true }],
+            createdAt: 1,
+          },
+          {
+            id: 'it-2',
+            intento: 'Segundo intento',
+            resultado: 'Resultado base',
+            ajuste: 'Ajuste fino',
+            criterioIds: [],
+            methodVersionId: 'method-1',
+            objective: 'Objetivo',
+            action: 'Ejecutar',
+            tool: 'Script',
+            input: 'Input',
+            result: 'Output',
+            evidence: [{ id: 'ev-2', kind: 'note', label: 'Evidencia', value: 'B' }],
+            learning: 'Aprendizaje estable',
+            nextAdjustment: 'Siguiente',
+            applicableConditions: ['Condición estable'],
+            success: true,
+            successCriteriaResults: [{ criterion: 'criterio', passed: true }],
+            createdAt: 2,
+          },
+          {
+            id: 'it-3',
+            intento: 'Nueva versión',
+            resultado: 'Resultado estable',
+            ajuste: 'Ajuste material',
+            criterioIds: [],
+            methodVersionId: 'method-2',
+            objective: 'Objetivo',
+            action: 'Ejecutar',
+            tool: 'CLI',
+            input: 'Input',
+            result: 'Salida',
+            evidence: [{ id: 'ev-3', kind: 'note', label: 'Evidencia', value: 'C' }],
+            learning: 'Aprendizaje actualizado',
+            nextAdjustment: 'Seguir',
+            applicableConditions: ['Nuevo flujo'],
+            success: true,
+            successCriteriaResults: [{ criterion: 'criterio', passed: true }],
+            createdAt: 3,
+          },
+        ],
+      },
+      methodVersions: [
+        {
+          id: 'method-1',
+          version: 1,
+          parentVersionId: null,
+          status: 'superseded',
+          changeKind: 'initial',
+          preconditions: ['Entorno base'],
+          steps: [{
+            id: 'step-1',
+            title: 'Paso 1',
+            objective: 'Verificar',
+            dependencies: [],
+            inputs: ['Input'],
+            output: 'Output',
+            tool: 'Script',
+            risk: 'Bajo',
+            successCriterion: 'Resultado esperado',
+            sourceCriterionId: null,
+          }],
+          tools: ['Script'],
+          inputs: ['Input'],
+          outputs: ['Output'],
+          controls: ['Revisión humana'],
+          exceptions: [],
+          exceptionsReviewed: true,
+          successCriteria: ['Resultado esperado'],
+          supportingIterationIds: ['it-1', 'it-2'],
+          createdAt: 1,
+        },
+        {
+          id: 'method-2',
+          version: 2,
+          parentVersionId: 'method-1',
+          status: 'draft',
+          changeKind: 'material',
+          preconditions: ['Entorno nuevo'],
+          steps: [{
+            id: 'step-2',
+            title: 'Paso 1',
+            objective: 'Verificar',
+            dependencies: [],
+            inputs: ['Input nuevo'],
+            output: 'Output nuevo',
+            tool: 'CLI',
+            risk: 'Medio',
+            successCriterion: 'Resultado mejorado',
+            sourceCriterionId: null,
+          }],
+          tools: ['CLI'],
+          inputs: ['Input nuevo'],
+          outputs: ['Output nuevo'],
+          controls: ['Revisión humana'],
+          exceptions: [],
+          exceptionsReviewed: true,
+          successCriteria: ['Resultado mejorado'],
+          supportingIterationIds: ['it-3'],
+          createdAt: 4,
+        },
+      ],
+    });
+
+    expect(deriveMethodMaturity(task)).toBe('documented-once');
+  });
+
+  it('ignores automation opportunities linked to non-active method versions in phase 4 gating', () => {
+    const task = repairTask({
+      id: 't-cross-version-opportunities',
+      nombre: 'Tarea',
+      directiva: 'Directiva',
+      fase: 4,
+      f4: {
+        aar: [{ pred: 'Pred', observado: 'Observado', causa: 'Causa', mia: true }],
+        cambio: 'Corrección de procedimiento',
+        titulo: 'Versión activa',
+      },
+      methodVersions: [
+        {
+          id: 'method-1',
+          version: 1,
+          parentVersionId: null,
+          status: 'draft',
+          changeKind: 'initial',
+          preconditions: ['Contexto base'],
+          steps: [{
+            id: 'step-1',
+            title: 'Paso base',
+            objective: 'Verificar',
+            dependencies: [],
+            inputs: ['Input'],
+            output: 'Output',
+            tool: 'CLI',
+            risk: 'Bajo',
+            successCriterion: 'Resultado esperado',
+            sourceCriterionId: null,
+          }],
+          tools: ['CLI'],
+          inputs: ['Input'],
+          outputs: ['Output'],
+          controls: ['Revisión humana'],
+          exceptions: [],
+          exceptionsReviewed: true,
+          successCriteria: ['Resultado esperado'],
+          supportingIterationIds: ['it-1'],
+          createdAt: 1,
+        },
+        {
+          id: 'method-2',
+          version: 2,
+          parentVersionId: 'method-1',
+          status: 'draft',
+          changeKind: 'material',
+          preconditions: ['Contexto nuevo'],
+          steps: [{
+            id: 'step-2',
+            title: 'Paso actualizado',
+            objective: 'Verificar nuevo',
+            dependencies: [],
+            inputs: ['Input nuevo'],
+            output: 'Output nuevo',
+            tool: 'CLI',
+            risk: 'Medio',
+            successCriterion: 'Resultado estable',
+            sourceCriterionId: null,
+          }],
+          tools: ['CLI'],
+          inputs: ['Input nuevo'],
+          outputs: ['Output nuevo'],
+          controls: ['Revisión humana'],
+          exceptions: [],
+          exceptionsReviewed: true,
+          successCriteria: ['Resultado estable'],
+          supportingIterationIds: [],
+          createdAt: 2,
+        },
+      ],
+      automationOpportunities: [
+        {
+          id: 'opp-cross',
+          methodVersionId: 'method-1',
+          stepIds: ['step-1'],
+          classification: 'manual',
+          frequency: 'Frecuente',
+          stability: 'Variable',
+          risk: 'Bajo',
+          humanJudgment: 'Revisar',
+          trigger: 'Salida completa',
+          inputs: ['Input'],
+          transformation: 'Normalizar',
+          output: 'Output',
+          candidateTool: 'Herramienta',
+          expectedFailures: ['Error transitorio'],
+          humanCheckpoint: 'Confirmar',
+          occurrenceIterationIds: ['it-1'],
+        },
+      ],
+    });
+
+    task.methodVersions = [...task.methodVersions].sort((left, right) => right.createdAt - left.createdAt);
+    const phase4Task = repairTask(task);
+    phase4Task.f4.methodVersionId = 'method-2';
+    expect(canAdvance(phase4Task).allowed).toBe(false);
+
+    phase4Task.automationOpportunities = [
+      {
+        id: 'opp-active',
+        methodVersionId: 'method-2',
+        stepIds: ['step-2'],
+        classification: 'manual',
+        frequency: 'Frecuente',
+        stability: 'Variable',
+        risk: 'Bajo',
+        humanJudgment: 'Revisar',
+        trigger: 'Salida completa',
+        inputs: ['Input nuevo'],
+        transformation: 'Normalizar',
+        output: 'Output nuevo',
+        candidateTool: 'Herramienta',
+        expectedFailures: ['Error transitorio'],
+        humanCheckpoint: 'Confirmar',
+        occurrenceIterationIds: ['it-1'],
+      },
+    ];
+
+    expect(canAdvance(phase4Task).allowed).toBe(true);
+  });
+
+  it('invalidates continuation when stage-2 delivery data changes after an acceptable outcome', () => {
+    const task = repairTask({
+      id: 't-stale-edit',
+      nombre: 'Tarea',
+      directiva: 'Directiva',
+      f2: {
+        decision: 'Decisión inicial',
+        alcance: 'Alcance',
+        noObjetivos: 'No objetivos',
+        pasos: 'Paso 1',
+        predicciones: [
+          { texto: 'Predicción 1', umbral: '10', conf: 'alta' },
+          { texto: 'Predicción 2', umbral: '20', conf: 'media' },
+          { texto: 'Predicción 3', umbral: '30', conf: 'media' },
+        ],
+        subproblemas: ['Problema'],
+        preguntasAbiertas: ['¿Por qué?'],
+        riesgos: ['Riesgo'],
+      },
+    });
+    task.fase = 2;
+
+    task.assistant = {
+      schemaVersion: 1,
+      messages: [],
+      evaluations: [
+        {
+          id: 'p2-ok',
+          taskId: task.id,
+          phase: 2,
+          responseRevision: buildPhaseRevision(task),
+          gateVersion: 'outcome-v2',
+          methodVersionId: null,
+          evaluatorVersion: 'mock-v1',
+          status: 'acceptable',
+          weaknesses: [],
+          recommendations: [],
+          gatePassed: true,
+          gateReasons: [],
+          createdAt: Date.now(),
+        },
+      ],
+      settings: { mode: 'codex', connectionStatus: 'deferred', schemaVersion: 1 },
+    };
+
+    expect(canAdvanceWithAssistant(task).allowed).toBe(true);
+
+    task.f2.decision = 'Nueva decisión';
+    expect(canAdvanceWithAssistant(task).allowed).toBe(false);
+  });
+
   it('allows each phase only after its gate is complete', () => {
     const task = createBlankTask('Tarea', 'Directiva');
     task.f1.confirmacion = true;
     task.f1.linaje = [{ origen: 'brief', resultado: 'mapeado' }];
+    task.f1.resultadoDeseado = 'Resultado esperado';
+    task.f1.alcance = 'Alcance';
+    task.f1.restricciones = 'Sin restricciones';
+    task.f1.actores = ['Actor'];
+    task.f1.criterioExito = 'Criterio de éxito';
     task.f1.analisisProblema = {
       problemaDetectado: 'Problema', evidencia: 'Evidencia', analisis: 'Análisis', decision: 'mantener',
       justificacion: 'Confirmado', problemaVigente: 'Problema',
@@ -266,6 +786,9 @@ describe('task domain rules', () => {
     phase2.f2.alcance = 'Alcance';
     phase2.f2.noObjetivos = 'No objetivos';
     phase2.f2.pasos = 'Pasos';
+    phase2.f2.subproblemas = ['Subproblema'];
+    phase2.f2.preguntasAbiertas = ['¿Por qué?'];
+    phase2.f2.riesgos = ['Riesgo'];
     phase2.f2.predicciones = [
       { texto: 'A', umbral: 'B', conf: 'media' },
       { texto: 'C', umbral: 'D', conf: 'media' },
@@ -282,6 +805,11 @@ describe('task domain rules', () => {
       linaje: [{ origen: 'brief', resultado: 'resultado' }],
       checkMapeo: true,
       confirmacion: true,
+      resultadoDeseado: 'Resultado esperado',
+      alcance: 'Alcance',
+      restricciones: 'Sin restricciones',
+      actores: ['Actor'],
+      criterioExito: 'Criterio de éxito',
       analisisProblema: {
         problemaDetectado: 'Detectado',
         evidencia: 'Evidencia',
@@ -303,6 +831,8 @@ describe('task domain rules', () => {
           taskId: task.id,
           phase: 1,
           responseRevision: buildPhaseRevision(task, 1),
+          gateVersion: 'outcome-v2',
+          methodVersionId: null,
           evaluatorVersion: 'mock-v1',
           status: 'acceptable',
           weaknesses: [],
@@ -324,15 +854,18 @@ describe('task domain rules', () => {
       fase: 2,
       directiva: 'Directiva',
       f1: { linaje: [{ origen: 'brief', resultado: 'meta' }], analisisProblema: { decision: 'mantener', problemaVigente: 'Problema' } },
-      f2: {
-        decision: 'Decisión', alcance: 'Alcance', noObjetivos: 'Sin objetivos', pasos: 'Paso 1',
-        predicciones: [
-          { texto: 'Predicción 1', umbral: '10', conf: 'alta' },
-          { texto: 'Predicción 2', umbral: '20', conf: 'media' },
-          { texto: 'Predicción 3', umbral: '30', conf: 'media' },
-        ],
-      },
-    });
+    f2: {
+      decision: 'Decisión', alcance: 'Alcance', noObjetivos: 'Sin objetivos', pasos: 'Paso 1',
+      predicciones: [
+        { texto: 'Predicción 1', umbral: '10', conf: 'alta' },
+        { texto: 'Predicción 2', umbral: '20', conf: 'media' },
+        { texto: 'Predicción 3', umbral: '30', conf: 'media' },
+      ],
+      subproblemas: ['Subproblema'],
+      preguntasAbiertas: ['¿Por qué?'],
+      riesgos: ['Riesgo'],
+    },
+  });
 
     task.assistant = {
       schemaVersion: 1,
@@ -343,6 +876,8 @@ describe('task domain rules', () => {
           taskId: task.id,
           phase: 2,
           responseRevision: `${buildPhaseRevision(task, 2)}-old`,
+          gateVersion: 'outcome-v2',
+          methodVersionId: null,
           evaluatorVersion: 'mock-v1',
           status: 'acceptable',
           weaknesses: [],
@@ -370,7 +905,23 @@ describe('task domain rules', () => {
       directiva: 'Directiva',
       f2: { criterios: [{ id: 'c1', texto: 'Criterio', comentario: '', prioridad: 'alta', estado: 'pendiente', impacto: 'alto' }] },
       f3: {
-        iteraciones: [{ id: 'i1', intento: 'Intento', resultado: 'Resultado', ajuste: 'Ajuste', criterioIds: ['c1'] }],
+        iteraciones: [{
+          id: 'i1',
+          intento: 'Intento',
+          resultado: 'Resultado',
+          ajuste: 'Ajuste',
+          criterioIds: ['c1'],
+          methodVersionId: 'method-1',
+          objective: 'Objetivo',
+          action: 'Ejecutar',
+          tool: 'CLI',
+          input: 'Entrada',
+          result: 'Salida',
+          evidence: [{ id: 'ev-1', kind: 'note', label: 'Evidencia', value: 'Ejecución completa' }],
+          learning: 'Aprendizaje registrado',
+          nextAdjustment: 'Continuar',
+          applicableConditions: ['Condición base'],
+        }],
         checkCompila: true,
         checkAuditado: true,
       },
@@ -385,6 +936,8 @@ describe('task domain rules', () => {
           taskId: task.id,
           phase: 3,
           responseRevision: buildPhaseRevision(task, 3),
+          gateVersion: 'outcome-v2',
+          methodVersionId: null,
           evaluatorVersion: 'mock-v1',
           status: 'acceptable',
           weaknesses: [],
@@ -406,6 +959,53 @@ describe('task domain rules', () => {
         cambio: 'Cambio',
         titulo: 'Título',
       },
+      methodVersions: [{
+        id: 'method-1',
+        version: 1,
+        parentVersionId: null,
+        status: 'draft',
+        changeKind: 'initial',
+        preconditions: ['Contexto base'],
+        steps: [{
+          id: 'step-1',
+          title: 'Paso inicial',
+          objective: 'Verificar resultado',
+          dependencies: [],
+          inputs: ['Entrada'],
+          output: 'Salida',
+          tool: 'CLI',
+          risk: 'Bajo',
+          successCriterion: 'Resultado esperado',
+          sourceCriterionId: null,
+        }],
+        tools: ['CLI'],
+        inputs: ['Entrada'],
+        outputs: ['Salida'],
+        controls: ['Revisión humana'],
+        exceptions: [],
+        exceptionsReviewed: true,
+        successCriteria: ['Resultado esperado'],
+        supportingIterationIds: [],
+        createdAt: 1,
+      }],
+      automationOpportunities: [{
+        id: 'opp-1',
+        methodVersionId: 'method-1',
+        stepIds: ['step-1'],
+        classification: 'manual',
+        frequency: 'Frecuente',
+        stability: 'Variable',
+        risk: 'Bajo',
+        humanJudgment: 'Revisar',
+        trigger: 'Ejecución completa',
+        inputs: ['Entrada'],
+        transformation: 'Normalizar',
+        output: 'Salida',
+        candidateTool: 'CLI',
+        expectedFailures: ['Error transitorio'],
+        humanCheckpoint: 'Confirmar',
+        occurrenceIterationIds: [],
+      }],
     });
     phase4Task.assistant = {
       schemaVersion: 1,
@@ -416,6 +1016,8 @@ describe('task domain rules', () => {
           taskId: phase4Task.id,
           phase: 4,
           responseRevision: buildPhaseRevision(phase4Task, 4),
+          gateVersion: 'outcome-v2',
+          methodVersionId: 'method-1',
           evaluatorVersion: 'mock-v1',
           status: 'acceptable',
           weaknesses: [],

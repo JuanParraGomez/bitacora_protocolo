@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, toRaw, watch } from 'vue';
 import type { Task, TaskIndex } from '../domain/task.schema';
-import type { AssistanceSettings, AssistantMessage, FormUpdate, PhaseEvaluation, TaskPhase } from '../domain/task-assistant.schema';
+import type { AssistanceSettings, AssistantMessage, FormUpdate, PhaseEvaluation, ProposalDecision, TaskPhase } from '../domain/task-assistant.schema';
 import { applyAssistantUpdates, buildPhaseRevision, buildPhaseSnapshot, canContinueByAssistant, getLatestCurrentEvaluation, isEvaluationCurrent } from '../domain/task-assistant-rules';
-import { gateReasons } from '../domain/task-rules';
+import { currentMethodVersion, gateReasons } from '../domain/task-rules';
 import { getPhaseInstructionKey } from '../domain/phase-instructions';
 import { assistanceSettingsSchema, phaseEvaluationSchema } from '../domain/task-assistant.schema';
 import { STORAGE_KEYS } from '../../../../shared/contracts/storage';
@@ -76,6 +76,10 @@ const isEvaluating = computed(() => evaluationState.value === 'evaluating');
 const phaseMessages = computed(() => localTask.assistant.messages
   .filter((message) => message.taskId === localTask.id && message.phase === localTask.fase)
   .sort((left, right) => left.createdAt - right.createdAt));
+const phasePendingProposals = computed(() => phaseMessages.value
+  .flatMap((message) => message.updates)
+  .filter((proposal) => proposal.status === 'proposed'));
+const phaseContradictions = computed(() => phaseMessages.value.flatMap((message) => message.contradictions));
 
 type SendError = unknown;
 type EvaluationError = unknown;
@@ -217,14 +221,22 @@ function setUserMessageStatus(messageId: string, status: AssistantMessage['statu
 }
 
 function applyAssistantResponse(task: Task, response: ChatResponse, userMessageId: string) {
-  const updateResult = applyAssistantUpdates(task, response.updates);
-  const applied = updateResult.applied.map((update) => ({ ...(update as FormUpdate), status: 'applied' as const }));
+  const responseContext = {
+    projectId: response.projectId,
+    taskId: response.taskId,
+    phase: response.phase,
+    methodVersionId: response.methodVersionId,
+    baseRevision: response.baseRevision,
+  };
+  const proposals = response.proposals ?? response.updates;
+  const updateResult = applyAssistantUpdates(task, proposals, { response: responseContext });
+  const pending = updateResult.pending.map((update) => ({ ...(update as FormUpdate), status: 'proposed' as const }));
   const rejected = updateResult.rejected.map((update) => ({
     ...(update as FormUpdate),
     status: (update.status === 'conflict' ? 'conflict' : 'rejected') as ChatUpdateStatus,
   }));
   const assistantUpdates: (FormUpdate & { status: ChatUpdateStatus })[] = [
-    ...applied,
+    ...pending,
     ...rejected,
   ];
 
@@ -241,12 +253,17 @@ function applyAssistantResponse(task: Task, response: ChatResponse, userMessageI
 
   const assistantMessage: AssistantMessage = {
     id: assistantMessageId,
+    projectId: response.projectId,
     taskId: localTask.id,
     phase: localTask.fase,
+    methodVersionId: response.methodVersionId,
+    baseRevision: response.baseRevision,
     role: 'assistant',
     parts: [{ type: 'text', text: response.message }],
     status: 'sent',
     createdAt: Date.now(),
+    primaryQuestion: response.primaryQuestion,
+    contradictions: response.contradictions,
     updates: assistantUpdates,
   };
 
@@ -269,7 +286,36 @@ function appendEvaluation(evaluation: WorkspaceEvaluation) {
   ];
 }
 
-type ChatUpdateStatus = 'applied' | 'rejected' | 'conflict';
+type ChatUpdateStatus = 'proposed' | 'applied' | 'rejected' | 'conflict';
+
+function handleProposalDecision(decision: ProposalDecision) {
+  const sourceMessage = localTask.assistant.messages.find((message: AssistantMessage) =>
+    message.role === 'assistant' && message.updates.some((proposal: FormUpdate) => proposal.id === decision.proposalId));
+  const proposal = sourceMessage?.updates.find((candidate: FormUpdate) => candidate.id === decision.proposalId);
+  if (!sourceMessage || !proposal) return;
+
+  const result = applyAssistantUpdates(localTask, [proposal], {
+    response: {
+      projectId: proposal.projectId,
+      taskId: proposal.taskId,
+      phase: proposal.phase,
+      methodVersionId: proposal.methodVersionId,
+      baseRevision: proposal.baseRevision,
+    },
+    decision,
+  });
+  const resolved = result.applied[0] ?? result.rejected[0] ?? result.pending[0];
+  if (!resolved) return;
+
+  const targetMessage = result.task.assistant.messages.find((message: AssistantMessage) => message.id === sourceMessage.id);
+  if (targetMessage) {
+    targetMessage.updates = targetMessage.updates.map((candidate: FormUpdate) =>
+      candidate.id === resolved.id ? resolved : candidate);
+  }
+  Object.assign(localTask, result.task);
+  emit('dirty', toRaw(localTask));
+  emit('save', toRaw(localTask));
+}
 
 async function handleSendMessage(text: string, options: { retryMessageId?: string } = {}) {
   if (chatSendState.value === 'submitted' || chatSendState.value === 'streaming') return;
@@ -281,12 +327,17 @@ async function handleSendMessage(text: string, options: { retryMessageId?: strin
   const userMessageId = options.retryMessageId || `message-${requestId}`;
   const request: ChatRequest = {
     requestId,
+    projectId: localTask.projectId,
     workspaceLabel: projectLabel.value,
     taskId: localTask.id,
     phase: localTask.fase as TaskPhase,
+    methodVersionId: currentMethodVersion(localTask)?.id ?? null,
     baseRevision: buildPhaseRevision(localTask, localTask.fase),
     message: normalized,
     phaseSnapshot: phaseSnapshot.value,
+    confirmedFields: phaseSnapshot.value,
+    pendingProposals: phasePendingProposals.value,
+    contradictions: phaseContradictions.value,
     recentMessages: phaseMessages.value,
     previousEvaluations: latestEvaluationsForRequest.value,
   };
@@ -297,12 +348,17 @@ async function handleSendMessage(text: string, options: { retryMessageId?: strin
   } else {
     const draftMessage: AssistantMessage = {
       id: userMessageId,
+      projectId: localTask.projectId,
       taskId: localTask.id,
       phase: localTask.fase,
+      methodVersionId: currentMethodVersion(localTask)?.id ?? null,
+      baseRevision: request.baseRevision,
       role: 'user',
       parts: [{ type: 'text', text: normalized }],
       status: 'sending',
       createdAt: Date.now(),
+      primaryQuestion: null,
+      contradictions: [],
       updates: [],
     };
     localTask.assistant.messages = [...localTask.assistant.messages, draftMessage];
@@ -361,6 +417,7 @@ async function performEvaluation() {
     gateReasons: gateReasons(localTask),
     instructionKey: getPhaseInstructionKey(localTask.fase as TaskPhase),
     previousEvaluations: relevantPreviousEvaluations,
+    activeMethodVersionId: currentMethodVersion(localTask)?.id ?? null,
   };
 
   const promise = (async () => {
@@ -462,7 +519,6 @@ watch(() => [localTask.id, localTask.fase], () => {
       v-model:open="sidebarOpen"
       :mode="isMobile ? 'slideover' : 'drawer'"
       :default-size="16"
-      toggle
       :auto-close="true"
       @update:open="(next) => (sidebarOpen = next)"
     >
@@ -506,6 +562,7 @@ watch(() => [localTask.id, localTask.fase], () => {
           :workspace-label="projectLabel"
           @send="onChatSubmit"
           @retry="onChatRetry"
+          @proposal-decision="handleProposalDecision"
         />
 
         <p v-if="isMobile" class="workspace-section__mobile-action">

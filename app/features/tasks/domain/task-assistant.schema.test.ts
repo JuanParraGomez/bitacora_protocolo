@@ -9,6 +9,7 @@ import {
   repairAssistantState,
   repairAssistantStateForTask,
 } from './task-assistant.schema';
+import { repairTask, taskIndexSchema } from './task.schema';
 
 describe('task assistant schema', () => {
   it('validates assistant messages with safe part payload and user/assistant role constraints', () => {
@@ -151,6 +152,54 @@ describe('task assistant schema', () => {
       gateReasons: ['sin debilidades'],
       createdAt: 1_720_000_000_002,
     })).toThrow();
+
+    const validOutcomeV2Phase4 = phaseEvaluationSchema.parse({
+      id: 'eval-4',
+      taskId: 'task-1',
+      phase: 4,
+      responseRevision: 'rev-4',
+      gateVersion: 'outcome-v2',
+      methodVersionId: 'method-1',
+      evaluatorVersion: 'mock-v1',
+      status: 'acceptable',
+      weaknesses: [],
+      recommendations: [],
+      gatePassed: true,
+      gateReasons: [],
+      createdAt: 1_720_000_000_003,
+    });
+    expect(validOutcomeV2Phase4.status).toBe('acceptable');
+
+    expect(() => phaseEvaluationSchema.parse({
+      id: 'eval-5',
+      taskId: 'task-1',
+      phase: 4,
+      responseRevision: 'rev-4',
+      gateVersion: 'outcome-v2',
+      evaluatorVersion: 'mock-v1',
+      status: 'acceptable',
+      weaknesses: [],
+      recommendations: [],
+      gatePassed: true,
+      gateReasons: [],
+      createdAt: 1_720_000_000_004,
+    })).toThrow();
+
+    const validLegacyPhase4 = phaseEvaluationSchema.parse({
+      id: 'eval-6',
+      taskId: 'task-1',
+      phase: 4,
+      responseRevision: 'rev-4',
+      gateVersion: 'legacy-v1',
+      evaluatorVersion: 'mock-v1',
+      status: 'needs-work',
+      weaknesses: ['Falta evidencia'],
+      recommendations: ['Agregar evidencia'],
+      gatePassed: false,
+      gateReasons: ['Sin evidencia'],
+      createdAt: 1_720_000_000_005,
+    });
+    expect(validLegacyPhase4.status).toBe('needs-work');
   });
 
   it('defaults and validates assistant settings without secret fields', () => {
@@ -306,5 +355,102 @@ describe('task assistant schema', () => {
     });
 
     expect(() => JSON.stringify(state)).not.toThrow();
+  });
+
+  it('adds task schema 2 defaults and legacy project id on repair', () => {
+    const repaired = repairTask({
+      id: 'legacy-task',
+      nombre: 'Migrar',
+      directiva: 'Validar defaults',
+      fase: 1,
+      estado: 'activa',
+      tipo: 'protocolo',
+    });
+    expect(repaired.schemaVersion).toBe(2);
+    expect(repaired.projectId).toBe('legacy');
+    expect(repaired.migrationEnvelope).toMatchObject({
+      sourceSchemaVersion: null,
+      unknownFields: {},
+      invalidFields: {},
+    });
+  });
+
+  it('preserves unknown and invalid fields in the migration envelope', () => {
+    const repaired = repairTask({
+      id: 'legacy-task',
+      nombre: 'Con diagnóstico',
+      directiva: 'Ver diagnóstico',
+      fase: 1,
+      estado: 'activa',
+      tipo: 'protocolo',
+      unknownRoot: 'valor visible',
+      f3: { iteraciones: 'invalid-type' },
+    });
+    expect(repaired.migrationEnvelope.unknownFields).toMatchObject({
+      unknownRoot: 'valor visible',
+    });
+    expect(repaired.migrationEnvelope.invalidFields).toMatchObject({
+      'f3.iteraciones': 'invalid-type',
+    });
+  });
+
+  it('redacts secret-like unknown fields recursively with case-insensitive and NFKC-aware matching', () => {
+    const repaired = repairTask({
+      id: 'legacy-task',
+      nombre: 'Con secretos',
+      directiva: 'Quitar secretos del diagnóstico',
+      fase: 1,
+      estado: 'activa',
+      tipo: 'protocolo',
+      nested: {
+        authorization: 'secreta',
+        Password: 'también',
+        'privateKey': 'muy sensible',
+        safe: 'visible',
+        wrapper: {
+          CLIENTSECRET: 'clave',
+          'cookie': 'sensible',
+          data: 'ok',
+        },
+      },
+    });
+    expect(repaired.migrationEnvelope.redactedFields).toEqual(expect.arrayContaining([
+      'nested.authorization',
+      'nested.Password',
+      'nested.privateKey',
+      'nested.wrapper.CLIENTSECRET',
+      'nested.wrapper.cookie',
+    ]));
+    expect(repaired).toMatchObject({ nested: { safe: 'visible' } });
+  });
+
+  it('supports idempotent repair for already normalized tasks', () => {
+    const source = repairTask({
+      id: 'legacy-task',
+      nombre: 'Idempotente',
+      directiva: 'Múltiples reparaciones',
+      schemaVersion: 2,
+      fase: 1,
+      estado: 'activa',
+      tipo: 'protocolo',
+      projectId: 'legacy',
+      taskIndex: [],
+    });
+    const firstRound = repairTask(source);
+    const secondRound = repairTask(firstRound);
+    expect(firstRound).toEqual(secondRound);
+  });
+
+  it('normalizes task index schema defaults and projectId inheritance', () => {
+    const repaired = taskIndexSchema.parse({
+      tareas: [
+        { id: 'legacy-1', nombre: 'Una', estado: 'activa', fase: 2 },
+        { id: 'legacy-2', nombre: 'Dos', estado: 'pausada', fase: 3 },
+      ],
+      registros: [{ id: 'record-1', tareaId: 'legacy-1' }],
+    });
+    expect(repaired.tareas[0]).toMatchObject({ id: 'legacy-1', projectId: 'legacy' });
+    expect(repaired.tareas[1]).toMatchObject({ id: 'legacy-2', projectId: 'legacy' });
+    expect(repaired.registros[0]).toMatchObject({ id: 'record-1', taskId: 'legacy-1', projectId: 'legacy' });
   });
 });

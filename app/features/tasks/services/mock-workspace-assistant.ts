@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { formUpdateSchema, type FormUpdate, type TaskPhase } from '../domain/task-assistant.schema';
+import {
+  assistantTurnSchema,
+  formUpdateSchema,
+  type Contradiction,
+  type FormUpdate,
+  type TaskPhase,
+} from '../domain/task-assistant.schema';
 import { buildPhaseRevision, buildPhaseSnapshot } from '../domain/task-assistant-rules';
 import { phaseInstructions, getPhaseInstructionKey } from '../domain/phase-instructions';
 import { repairTask, type Task } from '../domain/task.schema';
@@ -11,21 +17,31 @@ type TaskSnapshot = Record<string, unknown>;
 export type ChatRequest = {
   requestId: string;
   workspaceLabel: string;
+  projectId?: string;
   taskId: string;
   phase: TaskPhase;
+  methodVersionId?: string | null;
   baseRevision: string;
   message: string;
   phaseSnapshot: TaskSnapshot;
+  confirmedFields?: TaskSnapshot;
+  pendingProposals?: FormUpdate[];
+  contradictions?: Contradiction[];
   recentMessages: Array<unknown>;
   previousEvaluations: Array<unknown>;
 };
 
 export type ChatResponse = {
   requestId: string;
+  projectId: string;
   taskId: string;
   phase: TaskPhase;
+  methodVersionId: string | null;
   baseRevision: string;
   message: string;
+  primaryQuestion: string | null;
+  proposals: FormUpdate[];
+  contradictions: Contradiction[];
   suggestions: string[];
   updates: FormUpdate[];
 };
@@ -39,6 +55,7 @@ export type EvaluationRequest = {
   gateReasons: string[];
   instructionKey: string;
   previousEvaluations: Array<unknown>;
+  activeMethodVersionId?: string | null;
 };
 
 export type EvaluationResponse = {
@@ -47,12 +64,15 @@ export type EvaluationResponse = {
   taskId: string;
   phase: TaskPhase;
   responseRevision: string;
+  gateVersion: 'legacy-v1' | 'outcome-v2';
+  methodVersionId: string | null;
   status: 'acceptable' | 'needs-work' | 'error';
   weaknesses: string[];
   recommendations: string[];
   gatePassed: boolean;
   gateReasons: string[];
   evaluatorVersion: string;
+  createdAt: number;
 };
 
 export type WorkspaceAssistantAdapter = {
@@ -70,32 +90,21 @@ const MAX_SUGGESTIONS = 3;
 const MAX_PREVIOUS_ENTRIES = 5;
 const UPDATE_LIMIT = 180;
 
-const chatResponseSchema = z.object({
-  requestId: z.string().min(1),
-  taskId: z.string().min(1),
-  phase: z.number().int().min(1).max(4),
-  baseRevision: z.string(),
-  message: z.string(),
-  suggestions: z.array(z.string()).max(MAX_SUGGESTIONS),
-  updates: z.array(formUpdateSchema),
-}).transform((value) => ({
-  ...value,
-  suggestions: Array.from(new Set(value.suggestions)).slice(0, MAX_SUGGESTIONS),
-  updates: value.updates,
-}));
-
 const evaluationResponseSchema = z.object({
   id: z.string().min(1),
   requestId: z.string().min(1),
   taskId: z.string().min(1),
   phase: z.number().int().min(1).max(4),
   responseRevision: z.string(),
+  gateVersion: z.enum(['legacy-v1', 'outcome-v2']).default('outcome-v2'),
+  methodVersionId: z.string().nullable().default(null),
   status: z.enum(['acceptable', 'needs-work', 'error']),
   weaknesses: z.array(z.string()),
   recommendations: z.array(z.string()),
   gatePassed: z.boolean(),
   gateReasons: z.array(z.string()),
   evaluatorVersion: z.string().default('mock-v1'),
+  createdAt: z.number().int().min(0).default(() => Date.now()),
 });
 
 function normalizeText(value: string): string {
@@ -107,6 +116,52 @@ function normalizeText(value: string): string {
 
 function hasText(value: unknown): boolean {
   return typeof value === 'string' ? value.trim().length > 0 : value !== undefined && value !== null;
+}
+
+function hasConfirmedValue(value: unknown): boolean {
+  if (typeof value === 'string') return value.trim().length > 0 && value !== 'pendiente';
+  if (typeof value === 'boolean') return value;
+  if (Array.isArray(value)) return value.some(hasConfirmedValue);
+  if (value && typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => key !== 'id' && key !== 'createdAt')
+      .some(([, entry]) => hasConfirmedValue(entry));
+  }
+  return value !== undefined && value !== null;
+}
+
+function hasConfirmedFieldValue(field: string, value: unknown): boolean {
+  if (field === 'f2.predicciones') {
+    return Array.isArray(value)
+      && value.filter((entry) => (
+        entry
+        && typeof entry === 'object'
+        && hasConfirmedValue((entry as Record<string, unknown>).texto)
+        && hasConfirmedValue((entry as Record<string, unknown>).umbral)
+      )).length >= 3;
+  }
+
+  if (field === 'f3.iteraciones') {
+    return Array.isArray(value)
+      && value.some((entry) => (
+        entry
+        && typeof entry === 'object'
+        && hasConfirmedValue((entry as Record<string, unknown>).intento)
+        && hasConfirmedValue((entry as Record<string, unknown>).result)
+      ));
+  }
+
+  if (field === 'f4.aar') {
+    return Array.isArray(value)
+      && value.some((entry) => (
+        entry
+        && typeof entry === 'object'
+        && hasConfirmedValue((entry as Record<string, unknown>).observado)
+        && hasConfirmedValue((entry as Record<string, unknown>).causa)
+      ));
+  }
+
+  return hasConfirmedValue(value);
 }
 
 function sanitizeEvaluationValue(value: string): string {
@@ -155,6 +210,86 @@ function uniqueByPrefix(list: string[]): string[] {
   }
 
   return result;
+}
+
+function deterministicId(prefix: string, ...parts: string[]): string {
+  const source = parts.join('\u001f');
+  let hash = 0x811c9dc5;
+
+  for (const char of source) {
+    hash ^= char.codePointAt(0) ?? 0;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+
+  return `${prefix}-${hash.toString(36)}`;
+}
+
+function readFieldValue(snapshot: TaskSnapshot, field: string): unknown {
+  if (Object.prototype.hasOwnProperty.call(snapshot, field)) return snapshot[field];
+
+  const parts = field.split('.');
+  const path = /^f[1-4]$/.test(parts[0] ?? '') ? parts.slice(1) : parts;
+  let current: unknown = snapshot;
+
+  for (const part of path) {
+    if (!current || typeof current !== 'object') return undefined;
+    current = (current as Record<string, unknown>)[part];
+  }
+
+  return current;
+}
+
+type PrimaryQuestionCandidate = { field: string; question: string };
+
+const primaryQuestionCandidates: Record<TaskPhase, PrimaryQuestionCandidate[]> = {
+  1: [
+    { field: 'f1.resultadoDeseado', question: '¿Cuál es el resultado deseado que debe producir esta tarea?' },
+    { field: 'f1.alcance', question: '¿Cuál es el alcance concreto de este problema?' },
+    { field: 'f1.restricciones', question: '¿Qué restricciones debemos respetar?' },
+    { field: 'f1.actores', question: '¿Qué personas o actores están involucrados?' },
+    { field: 'f1.criterioExito', question: '¿Cómo sabremos que el problema quedó resuelto?' },
+    { field: 'f1.analisisProblema.problemaVigente', question: '¿Cómo describirías ahora el problema vigente en una frase verificable?' },
+    { field: 'f1.analisisProblema.evidencia', question: '¿Qué evidencia observable confirma que este problema existe?' },
+  ],
+  2: [
+    { field: 'f2.decision', question: '¿Qué decisión debe habilitar esta guía?' },
+    { field: 'f2.alcance', question: '¿Cuál es el alcance concreto que debe cubrir esta etapa?' },
+    { field: 'f2.noObjetivos', question: '¿Qué no debe intentar resolver esta etapa?' },
+    { field: 'f2.pasos', question: '¿Cuáles son los pasos esenciales de la guía?' },
+    { field: 'f2.subproblemas', question: '¿Qué subproblemas deben resolverse por separado?' },
+    { field: 'f2.preguntasAbiertas', question: '¿Qué preguntas siguen abiertas?' },
+    { field: 'f2.riesgos', question: '¿Qué riesgos podrían impedir el resultado?' },
+    { field: 'f2.predicciones', question: '¿Qué tres resultados medibles esperas observar?' },
+  ],
+  3: [
+    { field: 'f3.iteraciones', question: '¿Qué intento concreto debemos ejecutar y observar?' },
+    { field: 'f3.checkCompila', question: '¿La ejecución ya compila o funciona de extremo a extremo?' },
+    { field: 'f3.checkAuditado', question: '¿La evidencia de esta ejecución ya fue auditada?' },
+  ],
+  4: [
+    { field: 'f4.aar', question: '¿Qué diferencia hubo entre lo predicho y lo observado?' },
+    { field: 'f4.cambio', question: '¿Qué cambio procedimental deja este aprendizaje?' },
+    { field: 'f4.titulo', question: '¿Qué título resume la mejora validada?' },
+  ],
+};
+
+function findPrimaryGap(request: ChatRequest): PrimaryQuestionCandidate | null {
+  const confirmed = request.confirmedFields ?? request.phaseSnapshot;
+  const pendingFields = new Set<string>((request.pendingProposals ?? []).map((proposal) => proposal.field));
+  const candidate = primaryQuestionCandidates[request.phase].find(({ field }) => (
+    !hasConfirmedFieldValue(field, readFieldValue(confirmed, field)) && !pendingFields.has(field)
+  ));
+
+  return candidate ?? null;
+}
+
+function buildPrimaryQuestion(request: ChatRequest, contradictions: Contradiction[]): string | null {
+  const currentContradiction = contradictions[0];
+  if (currentContradiction) {
+    return `¿Puedes aclarar la contradicción en ${currentContradiction.field}?`;
+  }
+
+  return findPrimaryGap(request)?.question ?? null;
 }
 
 function suggestionFromPhaseSnapshot(phase: TaskPhase, snapshot: TaskSnapshot, message: string): string[] {
@@ -229,9 +364,79 @@ function buildTaskSnapshot(taskInput: string, phase: TaskPhase, snapshot: TaskSn
   });
 }
 
+function splitConversationalList(value: string): string[] {
+  return value
+    .split(/\r?\n|[;,]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function buildGapValue(request: ChatRequest, field: string): unknown {
+  const value = sanitizeEvaluationValue(request.message);
+
+  if (['f1.actores', 'f2.subproblemas', 'f2.preguntasAbiertas', 'f2.riesgos'].includes(field)) {
+    return splitConversationalList(value);
+  }
+
+  if (field === 'f2.predicciones') {
+    return splitConversationalList(value).map((entry) => ({
+      texto: entry,
+      umbral: entry,
+      conf: 'media',
+    }));
+  }
+
+  if (field === 'f3.checkCompila' || field === 'f3.checkAuditado') {
+    return !/\b(no|todav[ií]a no|false)\b/i.test(value);
+  }
+
+  if (field === 'f3.iteraciones') {
+    return [{
+      id: deterministicId('iteration', request.requestId),
+      intento: value,
+      resultado: value,
+      ajuste: 'Revisar la evidencia y ajustar el siguiente intento.',
+      criterioIds: [],
+      methodVersionId: request.methodVersionId ?? null,
+      objective: value,
+      action: value,
+      tool: 'Herramienta por confirmar',
+      input: 'Entrada descrita en la conversación',
+      result: value,
+      evidence: [{
+        id: deterministicId('evidence', request.requestId),
+        kind: 'observation',
+        label: 'Respuesta conversacional',
+        value,
+      }],
+      learning: value,
+      nextAdjustment: 'Revisar la evidencia y ajustar el siguiente intento.',
+      applicableConditions: ['Contexto confirmado en la conversación'],
+      success: false,
+      successCriteriaResults: [],
+      createdAt: 0,
+    }];
+  }
+
+  if (field === 'f4.aar') {
+    return [{
+      pred: 'Predicción por confirmar',
+      observado: value,
+      causa: value,
+      mia: false,
+    }];
+  }
+
+  return value;
+}
+
 function buildUpdatesFromMessage(request: ChatRequest): FormUpdate[] {
   const text = normalizeText(request.message).toLowerCase();
-  const updates: Array<{ field: string; value: string }> = [];
+  const updates: Array<{ field: string; value: unknown }> = [];
+  const projectId = request.projectId ?? 'legacy';
+  const methodVersionId = request.methodVersionId ?? null;
+  const confirmed = request.confirmedFields ?? request.phaseSnapshot;
+  const pendingFields = new Set<string>((request.pendingProposals ?? []).map((proposal) => proposal.field));
 
   if (request.phase === 1 && text.includes('problema')) {
     updates.push({ field: 'f1.analisisProblema.problemaDetectado', value: sanitizeEvaluationValue(request.message) });
@@ -262,17 +467,30 @@ function buildUpdatesFromMessage(request: ChatRequest): FormUpdate[] {
   }
 
   if (!updates.length && request.phase === 2) {
-    updates.push({ field: 'f2.guia', value: sanitizeEvaluationValue(request.message) });
+    const gap = findPrimaryGap(request);
+    if (gap) updates.push({ field: gap.field, value: buildGapValue(request, gap.field) });
+  }
+
+  if (!updates.length) {
+    const gap = findPrimaryGap(request);
+    if (gap) updates.push({ field: gap.field, value: buildGapValue(request, gap.field) });
   }
 
   return updates
     .slice(0, 2)
+    .filter((candidate) => !pendingFields.has(candidate.field))
     .map((candidate) => formUpdateSchema.parse({
+      id: deterministicId('proposal', request.requestId, candidate.field),
       sourceMessageId: request.requestId,
+      projectId,
+      taskId: request.taskId,
+      phase: request.phase,
+      methodVersionId,
       baseRevision: request.baseRevision,
       status: 'proposed',
       field: candidate.field,
       value: candidate.value,
+      previousValue: readFieldValue(confirmed, candidate.field),
     }));
 }
 
@@ -280,25 +498,48 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function toMessageList(request: ChatRequest, updates: FormUpdate[]): ChatResponse {
+function toMessageList(request: ChatRequest, proposals: FormUpdate[]): ChatResponse {
   const suggestions = suggestionFromPhaseSnapshot(request.phase, request.phaseSnapshot, request.message);
-
-  return {
+  const projectId = request.projectId ?? 'legacy';
+  const methodVersionId = request.methodVersionId ?? null;
+  const contradictions = (request.contradictions ?? []).filter((contradiction) => (
+    contradiction.projectId === projectId
+    && contradiction.taskId === request.taskId
+    && contradiction.phase === request.phase
+    && contradiction.methodVersionId === methodVersionId
+  ));
+  const turn = assistantTurnSchema.parse({
     requestId: request.requestId,
+    projectId,
     taskId: request.taskId,
     phase: request.phase,
+    methodVersionId,
     baseRevision: request.baseRevision,
     message: `Asistente activo en ${request.workspaceLabel || 'este proyecto'}: listo para orientar la fase ${request.phase}.`,
+    primaryQuestion: buildPrimaryQuestion(request, contradictions),
+    proposals,
+    contradictions,
     suggestions,
-    updates,
+  });
+
+  return {
+    ...turn,
+    phase: turn.phase as TaskPhase,
+    proposals: turn.proposals as FormUpdate[],
+    contradictions: turn.contradictions as Contradiction[],
+    updates: turn.proposals as FormUpdate[],
   };
 }
 
 export function createMockWorkspaceAssistant(options: MockWorkspaceAdapterOptions = {}): WorkspaceAssistantAdapter {
   const inFlightSend = new Map<string, Promise<ChatResponse>>();
+  const completedSend = new Map<string, ChatResponse>();
   const inFlightEvaluation = new Map<string, Promise<EvaluationResponse>>();
 
   async function send(request: ChatRequest): Promise<ChatResponse> {
+    const completed = completedSend.get(request.requestId);
+    if (completed) return completed;
+
     const cached = inFlightSend.get(request.requestId);
     if (cached) return cached;
 
@@ -325,8 +566,8 @@ export function createMockWorkspaceAssistant(options: MockWorkspaceAdapterOption
       const task = buildTaskSnapshot(request.taskId, request.phase, phaseSnapshot);
       const expectedBaseRevision = buildPhaseRevision(task, request.phase);
       const currentBaseRevision = request.baseRevision;
-      const updates = buildUpdatesFromMessage(request);
-      const draft = toMessageList(request, updates);
+      const proposals = buildUpdatesFromMessage(request);
+      const draft = toMessageList(request, proposals);
 
       draft.baseRevision = currentBaseRevision;
       if (currentBaseRevision !== expectedBaseRevision) {
@@ -345,14 +586,16 @@ export function createMockWorkspaceAssistant(options: MockWorkspaceAdapterOption
       }
       draft.suggestions = uniqueByPrefix(draft.suggestions);
 
-      const response = chatResponseSchema.parse(draft) as ChatResponse;
-
       if (options.sendMode === 'malformed') {
-        const malformed = { ...response, suggestions: [1] } as unknown as ChatResponse;
-        return chatResponseSchema.parse(malformed) as ChatResponse;
+        return assistantTurnSchema.parse({
+          ...draft,
+          updates: undefined,
+          primaryQuestion: [],
+        }) as unknown as ChatResponse;
       }
 
-      return response;
+      completedSend.set(request.requestId, draft);
+      return draft;
     })().finally(() => {
       inFlightSend.delete(request.requestId);
     });
@@ -428,6 +671,8 @@ export function createMockWorkspaceAssistant(options: MockWorkspaceAdapterOption
           taskId: request.taskId,
           phase: request.phase,
           responseRevision: request.responseRevision,
+          gateVersion: 'outcome-v2',
+          methodVersionId: request.phase === 4 ? request.activeMethodVersionId ?? null : null,
           status: 'acceptable',
           weaknesses: [],
           recommendations: [],

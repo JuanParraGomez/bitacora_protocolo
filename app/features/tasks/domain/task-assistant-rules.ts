@@ -1,5 +1,12 @@
 import { repairTask } from './task.schema';
-import { formUpdateSchema, type FormUpdate, phaseList, type TaskPhase, type PhaseEvaluation } from './task-assistant.schema';
+import {
+  formUpdateSchema,
+  type FormUpdate,
+  phaseList,
+  type TaskPhase,
+  type PhaseEvaluation,
+  type ProposalDecision,
+} from './task-assistant.schema';
 import type { Task } from './task.schema';
 
 type PhaseSnapshot = { phase: TaskPhase; fields: Record<string, unknown> };
@@ -13,9 +20,35 @@ type ResponseLike = {
 
 type AssistantUpdateResult = {
   task: Task;
+  pending: FormUpdate[];
   applied: Array<FormUpdate & { status: 'applied' }>;
   rejected: Array<FormUpdate>;
 };
+
+type ProposalResponseContext = {
+  projectId: string;
+  taskId: string;
+  phase: TaskPhase;
+  methodVersionId: string | null;
+  baseRevision: string;
+};
+
+type AssistantUpdateOptions = {
+  response: ProposalResponseContext;
+  decision?: ProposalDecision;
+};
+
+function currentMethodVersionId(task: Task): string | null {
+  const versions = [...task.methodVersions].filter((version) => version.status !== 'superseded');
+  if (!versions.length) return null;
+
+  const sorted = versions.sort((left, right) => {
+    if (left.version !== right.version) return right.version - left.version;
+    return right.createdAt - left.createdAt;
+  });
+
+  return sorted[0]?.id ?? null;
+}
 
 
 const hashSnapshot = (value: unknown): string => {
@@ -36,19 +69,67 @@ const hashSnapshot = (value: unknown): string => {
 
 function extractPhaseData(task: Task, phase: TaskPhase): Record<string, unknown> {
   if (phase === 1) {
-    const { linaje, dudas, checkMapeo, confirmacion, analisisProblema } = task.f1;
-    return { linaje, dudas, checkMapeo, confirmacion, analisisProblema };
+    const {
+      linaje,
+      dudas,
+      checkMapeo,
+      confirmacion,
+      analisisProblema,
+      resultadoDeseado,
+      alcance,
+      restricciones,
+      actores,
+      criterioExito,
+    } = task.f1;
+    return {
+      linaje,
+      dudas,
+      checkMapeo,
+      confirmacion,
+      analisisProblema,
+      resultadoDeseado,
+      alcance,
+      restricciones,
+      actores,
+      criterioExito,
+    };
   }
   if (phase === 2) {
-    const { decision, faqs, alcance, noObjetivos, pasos, descartadas, guia, criterios, predicciones } = task.f2;
-    return { decision, faqs, alcance, noObjetivos, pasos, descartadas, guia, criterios, predicciones };
+    const {
+      decision,
+      faqs,
+      alcance,
+      noObjetivos,
+      pasos,
+      descartadas,
+      guia,
+      criterios,
+      predicciones,
+      subproblemas,
+      preguntasAbiertas,
+      riesgos,
+    } = task.f2;
+    return {
+      decision,
+      faqs,
+      alcance,
+      noObjetivos,
+      pasos,
+      descartadas,
+      guia,
+      criterios,
+      predicciones,
+      subproblemas,
+      preguntasAbiertas,
+      riesgos,
+    };
   }
   if (phase === 3) {
     const { iteraciones, checkCompila, checkAuditado, notas } = task.f3;
     return { iteraciones, checkCompila, checkAuditado, notas };
   }
-  const { aar, cambio, patron, titulo, conexiones, mejorasCriterios } = task.f4;
-  return { aar, cambio, patron, titulo, conexiones, mejorasCriterios };
+  const { aar, cambio, patron, titulo, conexiones, mejorasCriterios, methodVersionId } = task.f4;
+  return { aar, cambio, patron, titulo, conexiones, mejorasCriterios, methodVersionId };
 }
 
 function normalizePhase(task: Task, phase?: Task['fase']): TaskPhase {
@@ -112,7 +193,15 @@ export function isEvaluationCurrent(taskInput: Task, evaluation: PhaseEvaluation
   if (!evaluation) return false;
   const task = repairTask(taskInput);
   const expectedRevision = buildPhaseRevision(task, task.fase);
-  return evaluation.taskId === task.id && evaluation.phase === task.fase && evaluation.responseRevision === expectedRevision;
+  if (evaluation.taskId !== task.id || evaluation.phase !== task.fase || evaluation.responseRevision !== expectedRevision) return false;
+  if (evaluation.gateVersion !== 'outcome-v2') return false;
+
+  if (task.fase === 4) {
+    const activeVersionId = currentMethodVersionId(task);
+    return Boolean(activeVersionId && evaluation.methodVersionId === activeVersionId);
+  }
+
+  return true;
 }
 
 export function classifyResponseConflict({ task, response }: { task: Task; response: ResponseLike }): boolean {
@@ -143,10 +232,11 @@ export function classifyUpdateConflict(taskInput: Task, updateInput: FormUpdate)
   return false;
 }
 
-export function applyAssistantUpdates(taskInput: Task, updatesInput: FormUpdate[]): AssistantUpdateResult {
+function stageAssistantUpdates(taskInput: Task, updatesInput: FormUpdate[]): AssistantUpdateResult {
   const task = repairTask(taskInput);
   const currentRevision = buildPhaseRevision(task, task.fase);
   const nextTask = repairTask(JSON.parse(JSON.stringify(task)));
+  const pending: FormUpdate[] = [];
   const applied: Array<FormUpdate & { status: 'applied' }> = [];
   const rejected: FormUpdate[] = [];
 
@@ -168,11 +258,134 @@ export function applyAssistantUpdates(taskInput: Task, updatesInput: FormUpdate[
       continue;
     }
 
-    assignByPath(nextTask, candidate.field, candidate.value);
-    applied.push({ ...candidate, status: 'applied' });
+    pending.push(candidate);
   }
 
-  return { task: nextTask, applied, rejected };
+  return { task: nextTask, pending, applied, rejected };
+}
+
+function proposalResponseIdentityMatches(
+  task: Task,
+  response: ProposalResponseContext,
+): boolean {
+  const expectedMethodVersionId = task.fase === 4 ? currentMethodVersionId(task) : null;
+  return response.projectId === task.projectId
+    && response.taskId === task.id
+    && response.phase === task.fase
+    && response.methodVersionId === expectedMethodVersionId;
+}
+
+function asApplied(update: FormUpdate): FormUpdate & { status: 'applied' } {
+  return { ...update, status: 'applied' };
+}
+
+function asRejected(update: FormUpdate): FormUpdate {
+  return { ...update, status: 'rejected' };
+}
+
+function asConflict(update: FormUpdate): FormUpdate {
+  return { ...update, status: 'conflict' };
+}
+
+function applyExplicitProposalDecision(
+  taskInput: Task,
+  updatesInput: FormUpdate[],
+  options: AssistantUpdateOptions,
+): AssistantUpdateResult {
+  const task = repairTask(taskInput);
+  const currentRevision = buildPhaseRevision(task, task.fase);
+  const nextTask = repairTask(JSON.parse(JSON.stringify(task)));
+  const pending: FormUpdate[] = [];
+  const applied: Array<FormUpdate & { status: 'applied' }> = [];
+  const rejected: FormUpdate[] = [];
+  const responseIdentityMatches = proposalResponseIdentityMatches(task, options.response);
+
+  for (const update of updatesInput) {
+    const parsed = formUpdateSchema.safeParse(update);
+    if (!parsed.success) {
+      rejected.push({ ...update, status: 'rejected' as const });
+      continue;
+    }
+
+    const candidate = parsed.data as FormUpdate;
+    const isDecisionTarget = options.decision?.proposalId === candidate.id;
+
+    if (!responseIdentityMatches) {
+      rejected.push(asConflict(candidate));
+      continue;
+    }
+
+    if (isDecisionTarget && candidate.status === 'applied') {
+      applied.push(asApplied(candidate));
+      continue;
+    }
+
+    if (isDecisionTarget && candidate.status === 'rejected') {
+      rejected.push(asRejected(candidate));
+      continue;
+    }
+
+    if (candidate.status === 'conflict') {
+      rejected.push(asConflict(candidate));
+      continue;
+    }
+
+    if (!isAllowedPhaseFieldPath(candidate.field, task.fase as TaskPhase)) {
+      rejected.push(asRejected(candidate));
+      continue;
+    }
+
+    if (candidate.status !== 'proposed') {
+      rejected.push(asConflict(candidate));
+      continue;
+    }
+
+    if (isDecisionTarget && options.decision?.action === 'reject') {
+      rejected.push(asRejected(candidate));
+      continue;
+    }
+
+    if (options.response.baseRevision !== currentRevision || candidate.baseRevision !== currentRevision) {
+      rejected.push(asConflict(candidate));
+      continue;
+    }
+
+    if (!options.decision || !isDecisionTarget) {
+      pending.push(candidate);
+      continue;
+    }
+
+    if (options.decision.baseRevision !== currentRevision) {
+      rejected.push(asConflict(candidate));
+      continue;
+    }
+
+    const value = options.decision.action === 'edit' ? options.decision.value : candidate.value;
+    const decided = formUpdateSchema.safeParse({
+      ...candidate,
+      value,
+      status: 'applied',
+    });
+    if (!decided.success) {
+      rejected.push(asRejected(candidate));
+      continue;
+    }
+
+    const appliedCandidate = asApplied(decided.data as FormUpdate);
+    assignByPath(nextTask, appliedCandidate.field, appliedCandidate.value);
+    applied.push(appliedCandidate);
+  }
+
+  return { task: nextTask, pending, applied, rejected };
+}
+
+export function applyAssistantUpdates(
+  taskInput: Task,
+  updatesInput: FormUpdate[],
+  options?: AssistantUpdateOptions,
+): AssistantUpdateResult {
+  if (!options) return stageAssistantUpdates(taskInput, updatesInput);
+  return applyExplicitProposalDecision(taskInput, updatesInput, options);
 }
 
 function isGateOpen(task: Task): boolean {
@@ -215,10 +428,10 @@ function isGateOpen(task: Task): boolean {
 
 export function isAllowedPhaseFieldPath(field: string, phase: TaskPhase): boolean {
   const available = {
-    1: ['f1.checkMapeo', 'f1.confirmacion', 'f1.linaje', 'f1.dudas', 'f1.analisisProblema.problemaDetectado', 'f1.analisisProblema.evidencia', 'f1.analisisProblema.analisis', 'f1.analisisProblema.decision', 'f1.analisisProblema.justificacion', 'f1.analisisProblema.problemaVigente'],
-    2: ['f2.decision', 'f2.faqs', 'f2.alcance', 'f2.noObjetivos', 'f2.pasos', 'f2.descartadas', 'f2.guia', 'f2.criterios', 'f2.predicciones'],
+    1: ['f1.checkMapeo', 'f1.confirmacion', 'f1.linaje', 'f1.dudas', 'f1.analisisProblema.problemaDetectado', 'f1.analisisProblema.evidencia', 'f1.analisisProblema.analisis', 'f1.analisisProblema.decision', 'f1.analisisProblema.justificacion', 'f1.analisisProblema.problemaVigente', 'f1.resultadoDeseado', 'f1.alcance', 'f1.restricciones', 'f1.actores', 'f1.criterioExito'],
+    2: ['f2.decision', 'f2.faqs', 'f2.alcance', 'f2.noObjetivos', 'f2.pasos', 'f2.descartadas', 'f2.guia', 'f2.criterios', 'f2.predicciones', 'f2.subproblemas', 'f2.preguntasAbiertas', 'f2.riesgos'],
     3: ['f3.iteraciones', 'f3.checkCompila', 'f3.checkAuditado', 'f3.notas'],
-    4: ['f4.aar', 'f4.cambio', 'f4.patron', 'f4.titulo', 'f4.conexiones', 'f4.mejorasCriterios'],
+    4: ['f4.aar', 'f4.cambio', 'f4.patron', 'f4.titulo', 'f4.conexiones', 'f4.mejorasCriterios', 'f4.methodVersionId'],
   } as const;
   return available[phase] ? (available[phase] as readonly string[]).includes(field) : false;
 }

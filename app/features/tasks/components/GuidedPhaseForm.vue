@@ -2,11 +2,13 @@
 import { computed } from 'vue';
 import type { Task } from '../domain/task.schema';
 import type { PhaseEvaluation } from '../domain/task-assistant.schema';
+import { phaseInstructions } from '../domain/phase-instructions';
 import ExecutionPhase from './ExecutionPhase.vue';
 import GuidancePhase from './GuidancePhase.vue';
 import EvaluationFeedback from './EvaluationFeedback.vue';
 import OrientationPhase from './OrientationPhase.vue';
 import ReviewPhase from './ReviewPhase.vue';
+import StructuredStageSummary from './StructuredStageSummary.vue';
 
 const props = withDefaults(defineProps<{
   task: Task;
@@ -36,8 +38,18 @@ const emit = defineEmits<{
 }>();
 
 const phase = computed(() => props.task.fase);
+const currentPhaseInstruction = computed(() => phaseInstructions[phase.value as keyof typeof phaseInstructions]?.[0]);
+const phaseLabel = computed(() => currentPhaseInstruction.value?.title ?? `Fase ${phase.value}`);
 const canGoBack = computed(() => props.task.fase > 1);
 const canContinue = computed(() => props.canContinue && !props.isStaleEvaluation && !!props.evaluation && props.evaluation.status === 'acceptable');
+const continueMessage = computed(() => {
+  if (!props.evaluation) return 'Requiere evaluar para continuar.';
+  if (props.isStaleEvaluation) return 'La evaluación está desfasada; vuelve a evaluar.';
+  if (props.evaluation.status !== 'acceptable') return 'Corrige y re-evalúa antes de continuar.';
+  if (props.evaluation.gateVersion !== 'outcome-v2') return 'Actualiza a outcome-v2 para habilitar el avance.';
+  return 'Puedes avanzar a la siguiente etapa.';
+});
+
 const progressSteps = computed(() => [1, 2, 3, 4].map((step) => ({
   step,
   current: step === phase.value,
@@ -73,7 +85,7 @@ function onContinue() {
   <div aria-labelledby="guided-form-title" class="guided-phase-form">
     <header class="guided-phase-form__header">
       <div>
-        <h3 id="guided-form-title">Preguntas de orientación</h3>
+        <h3 id="guided-form-title">{{ phaseLabel }}</h3>
         <p class="guided-phase-form__meta">Fase {{ phase }} de 4</p>
       </div>
       <ol class="guided-phase-form__progress" aria-label="Progreso de fases">
@@ -86,6 +98,7 @@ function onContinue() {
         </li>
       </ol>
       <p class="guided-phase-form__current-step" role="status" aria-live="polite">Paso actual: Fase {{ phase }}</p>
+      <p class="guided-phase-form__continue-message">{{ continueMessage }}</p>
       <div class="guided-phase-form__controls">
         <button v-if="canGoBack" type="button" @click="onBack">Atrás</button>
         <button
@@ -97,9 +110,16 @@ function onContinue() {
           {{ props.isEvaluating ? 'Evaluando…' : 'Evaluar' }}
         </button>
         <button v-if="props.evaluationError" type="button" @click="onRetryEvaluation">Reintentar</button>
-        <button type="button" :disabled="!canContinue" @click="onContinue">Continuar</button>
+        <button type="button" :disabled="!canContinue" :title="continueMessage" @click="onContinue">Continuar</button>
       </div>
     </header>
+
+    <StructuredStageSummary
+      :task="props.task"
+      :evaluation="props.evaluation"
+      :is-stale-evaluation="props.isStaleEvaluation"
+      :can-continue="props.canContinue"
+    />
 
     <EvaluationFeedback
       :latest-evaluation="props.evaluation"

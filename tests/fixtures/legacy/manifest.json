@@ -1,10 +1,17 @@
 {
-  "description": "Legacy fixture contract for migration tests",
+  "description": "Legacy and migration fixtures for feature 006",
   "files": {
     "bitacora.sqlite": "valid legacy database with kv_store rows",
     "empty.sqlite": "empty database with kv_store schema",
     "malformed.sqlite": "database containing invalid JSON values",
-    "interrupted.sqlite": "copy representing an interrupted migration"
+    "interrupted.sqlite": "copy representing an interrupted migration",
+    "historical-pre-assistant.sqlite": "legacy task without assistant state",
+    "historical-custom-prompts.sqlite": "legacy prompts in all historical phase prompts",
+    "historical-assistant-secrets.sqlite": "legacy assistant payload with secret-like values",
+    "two-projects.sqlite": "tasks and bitacora:projects spread across two active projects",
+    "legacy-project.sqlite": "single task with no explicit project key to force legacy synthesis",
+    "repeatable-v1.sqlite": "task with two successful iterations under method version 1",
+    "material-v2.sqlite": "task with an initial and a material method version"
   },
   "requiredKeys": ["bitacora:index"],
   "preservationRule": "keys and opaque string values must remain unchanged"

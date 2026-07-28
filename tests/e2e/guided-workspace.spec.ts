@@ -206,9 +206,17 @@ test.describe('Task workspace dashboard shell', () => {
         analisisProblema: {
           problemaDetectado: '', evidencia: '', analisis: '', decision: 'pendiente', justificacion: '', problemaVigente: '',
         },
+        resultadoDeseado: 'Reducir coste por iteración',
+        alcance: 'Proyecto piloto con alcance limitado',
+        restricciones: 'Sin dependencias externas',
+        actores: ['Equipo de pruebas'],
+        criterioExito: 'Reducir tiempo de resolución',
       },
       f2: {
         criterios: [],
+        subproblemas: ['Subproblema A'],
+        preguntasAbiertas: ['¿Qué dato faltó?'],
+        riesgos: ['Riesgo de alcance'],
         predicciones: [
           { texto: '', umbral: '', conf: 'media' },
           { texto: '', umbral: '', conf: 'media' },
@@ -216,13 +224,83 @@ test.describe('Task workspace dashboard shell', () => {
         ],
       },
       f3: {
-        iteraciones: [{ id: 'iter-1', intento: '', resultado: '', ajuste: '', criterioIds: [] }],
+        iteraciones: [{
+          id: 'iter-1',
+          intento: '',
+          resultado: '',
+          ajuste: '',
+          criterioIds: [],
+          methodVersionId: 'method-e2e-1',
+          objective: 'Probar la estrategia inicial',
+          action: 'Ejecutar validación de hipótesis',
+          tool: 'CLI de pruebas',
+          input: 'Entrada base del caso de prueba',
+          result: 'Resultado reproducible',
+          evidence: [{
+            id: 'evidence-iter-1',
+            kind: 'note',
+            label: 'Registro',
+            value: 'Evidencia observada en primera ejecución',
+          }],
+          learning: 'Aprendizaje inicial registrado',
+          nextAdjustment: 'Repetir con umbral 2',
+          applicableConditions: ['Condición estable'],
+        }],
         checkCompila: false,
         checkAuditado: false,
       },
       f4: {
         aar: [{ pred: '', observado: '', causa: '', mia: false }],
       },
+      methodVersions: [
+        {
+          id: 'method-e2e-1',
+          version: 1,
+          parentVersionId: null,
+          status: 'draft',
+          changeKind: 'initial',
+          preconditions: ['Problema visible y alcance definido'],
+          steps: [{
+            id: 'step-e2e-1',
+            title: 'Paso inicial',
+            objective: 'Verificar hipótesis',
+            dependencies: [],
+            inputs: ['Alcance del piloto'],
+            output: 'Resultado reproducible',
+            tool: 'Herramienta base',
+            risk: 'Bajo',
+            successCriterion: 'Entrega verificable',
+            sourceCriterionId: null,
+          }],
+          tools: ['Herramienta base'],
+          inputs: ['Alcance del piloto'],
+          outputs: ['Resultado reproducible'],
+          controls: ['Revisión humana'],
+          exceptions: [],
+          exceptionsReviewed: false,
+          successCriteria: ['Resultado reproducible'],
+          supportingIterationIds: ['iter-1'],
+          createdAt: 1704067200000,
+        },
+      ],
+      automationOpportunities: [{
+        id: 'opportunity-e2e-1',
+        methodVersionId: 'method-e2e-1',
+        stepIds: ['step-e2e-1'],
+        classification: 'assistable',
+        frequency: 'diaria',
+        stability: 'media',
+        risk: 'bajo',
+        humanJudgment: 'Revisión de salida',
+        trigger: 'Cambio de criterio',
+        inputs: ['Estado del piloto'],
+        transformation: 'Registro automatable',
+        output: 'Salida estandarizada',
+        candidateTool: 'Script interno',
+        expectedFailures: ['Falso positivo en fase 1'],
+        humanCheckpoint: 'Confirmación final',
+        occurrenceIterationIds: ['iter-1'],
+      }],
       tipo: 'protocolo',
     });
 
@@ -264,7 +342,7 @@ test.describe('Task workspace dashboard shell', () => {
     await page.getByLabel('Decisión').fill('Decisión de guía');
     await page.getByLabel('Alcance').fill('Alcance medible');
     await page.getByLabel('No-objetivos').fill('Lo que no haremos');
-    await page.getByLabel('Pasos').fill('Paso 1\nPaso 2');
+    await page.getByLabel('Pasos', { exact: true }).fill('Paso 1\nPaso 2');
     await page.getByLabel('Predicción 1').fill('Predicción base');
     await page.getByLabel('Umbral 1').fill('10');
     await page.getByLabel('Predicción 2').fill('Predicción soporte');
@@ -330,6 +408,11 @@ test.describe('Task workspace dashboard shell', () => {
           problemaDetectado: 'Detectado', evidencia: 'Evidencia', analisis: 'Análisis',
           decision: 'reformular', justificacion: 'Justificación', problemaVigente: 'Problema vigente',
         },
+        resultadoDeseado: 'Cerrar el flujo sin regresión',
+        alcance: 'Tarea puntual',
+        restricciones: 'Sin cambios',
+        actores: ['Validador'],
+        criterioExito: 'Evaluación estable',
       },
       tipo: 'protocolo',
     });
@@ -468,7 +551,7 @@ test.describe('Task workspace dashboard shell', () => {
     await page.getByLabel('Escribe tu mensaje').fill('Necesito revisar el estado');
     await page.keyboard.press('Tab');
     await page.keyboard.press('Enter');
-    await expect(page.getByText('Necesito revisar el estado')).toBeVisible();
+    await expect(page.getByText('Necesito revisar el estado', { exact: true })).toBeVisible();
   });
 
   test('trata HTML y prompts legacy como texto inerte dentro del workspace', async ({ page }) => {

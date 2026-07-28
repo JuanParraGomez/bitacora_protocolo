@@ -4,6 +4,7 @@ import { STORAGE_KEYS } from '~/shared/contracts/storage';
 import type { TaskIndex } from '../domain/task.schema';
 
 const ACTIVE_STATE = 'activa';
+const PAUSED_STATE = 'pausada';
 const COMPLETED_STATE = 'completada';
 
 const taskSummarySchema = z.object({
@@ -12,15 +13,20 @@ const taskSummarySchema = z.object({
   fase: z.number().int().min(1).max(4).default(1),
   estado: z.string().transform((value) => {
     const normalized = value.trim().toLowerCase();
-    return normalized === COMPLETED_STATE ? COMPLETED_STATE : ACTIVE_STATE;
+    if (normalized === COMPLETED_STATE) return COMPLETED_STATE;
+    if (normalized === PAUSED_STATE) return PAUSED_STATE;
+    return ACTIVE_STATE;
   }).default(ACTIVE_STATE),
   tipo: z.string().default('general'),
+  projectId: z.string().default('legacy'),
 });
 
 const recordSummarySchema = z.object({
   id: z.string().min(1),
   titulo: z.string().default(''),
-  tareaId: z.string().optional(),
+  tareaId: z.string().default(''),
+  taskId: z.string().default(''),
+  projectId: z.string().default('legacy'),
 });
 
 const fallbackTaskIndex: TaskIndex = {
@@ -49,7 +55,7 @@ function parseRecordSummary(entry: unknown) {
   return parsed.success ? parsed.data : null;
 }
 
-function isRecordLike(value: unknown): value is { id: string; titulo?: string; tareaId?: string } {
+function isRecordLike(value: unknown): value is { id: string; titulo?: string; tareaId?: string; taskId?: string; projectId?: string } {
   return Boolean(value && typeof value === 'object' && 'id' in value);
 }
 
@@ -70,7 +76,9 @@ function parseTaskIndex(raw: string | null | undefined): TaskIndex {
         .map((item) => parseRecordSummary({
           id: item.id,
           titulo: item.titulo ?? '',
-          tareaId: item.tareaId,
+          tareaId: item.tareaId ?? item.taskId ?? item.id,
+          taskId: item.taskId ?? item.tareaId ?? item.id,
+          projectId: item.projectId ?? 'legacy',
         }))
         .filter((record): record is NonNullable<ReturnType<typeof parseRecordSummary>> => Boolean(record)),
     );

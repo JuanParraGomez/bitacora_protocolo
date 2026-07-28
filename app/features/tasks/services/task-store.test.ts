@@ -95,4 +95,27 @@ describe('task persistence service', () => {
     expect(raw).not.toContain('also-secret');
     expect(JSON.parse(raw)).toEqual({ mode: 'deepseek', connectionStatus: 'deferred', schemaVersion: 1 });
   });
+
+  it('defaults task projectId and emits schemaVersion 2 on write/read', async () => {
+    const { createTaskStore } = await import('./task-store');
+    const values = new Map<string, string>();
+    const storage = { get: async (k: string) => values.get(k) ?? null, set: async (k: string, v: string) => { values.set(k, v); }, delete: async (k: string) => { values.delete(k); } };
+    const store = createTaskStore(storage);
+
+    await store.writeTask('legacy-task', {
+      id: 'legacy-task',
+      nombre: 'Legacy',
+      directiva: 'Proyecto implícito',
+      fase: 1,
+      estado: 'activa',
+      tipo: 'protocolo',
+    });
+    const raw = await store.readTask('legacy-task');
+    expect(raw).toMatchObject({
+      id: 'legacy-task',
+      schemaVersion: 2,
+      projectId: 'legacy',
+      migrationEnvelope: { sourceSchemaVersion: null },
+    });
+  });
 });

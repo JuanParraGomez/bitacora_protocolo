@@ -14,7 +14,7 @@ export const phaseInstructions: Record<TaskPhase, PhaseInstruction[]> = {
     {
       phase: 1,
       key: 'socratic',
-      title: 'Orientación socrática',
+      title: 'Entender el problema',
       criteria: [
         'Formula preguntas cerradas primero y mantiene foco en contexto funcional.',
         'No reutilizar texto de prompt* guardado como instrucción ejecutiva.',
@@ -26,7 +26,7 @@ export const phaseInstructions: Record<TaskPhase, PhaseInstruction[]> = {
     {
       phase: 2,
       key: 'guide-criteria',
-      title: 'Guía analítica',
+      title: 'Descomponer el camino',
       criteria: [
         'Prioriza decisión, alcance y no objetivos antes de proponer acciones.',
         'Valida consistencia entre predicciones y pasos.',
@@ -38,7 +38,7 @@ export const phaseInstructions: Record<TaskPhase, PhaseInstruction[]> = {
     {
       phase: 3,
       key: 'execution-checks',
-      title: 'Ejecución segura',
+      title: 'Ejecutar e iterar',
       criteria: [
         'Verifica compilación y hallazgos de auditoría con estado booleano.',
         'Conecta iteraciones con entradas funcionales de la fase.',
@@ -49,7 +49,7 @@ export const phaseInstructions: Record<TaskPhase, PhaseInstruction[]> = {
     {
       phase: 4,
       key: 'aar-signals',
-      title: 'AAR y registro permanente',
+      title: 'Consolidar y automatizar',
       criteria: [
         'Confronta observación y causa por cada predicción registrada.',
         'Confirma al menos un supuesto propio para cerrar revisión.',
@@ -62,4 +62,3 @@ export const getPhaseInstructionKey = (phase: TaskPhase): InstructionKey => {
   const first = phaseInstructions[phase][0];
   return first?.key ?? 'socratic';
 };
-

@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import { openDatabase, type DatabaseOptions } from '../utils/database';
 import { storageKeySchema } from '../../shared/schemas/storage';
 import type { StorageRow } from '../../shared/types/storage';
+import type { StorageBatchOperation } from '../../shared/contracts/storage';
 
 export class KvStoreRepository {
   readonly db: Database.Database;
@@ -32,6 +33,27 @@ export class KvStoreRepository {
   delete(key: string): void {
     storageKeySchema.parse(key);
     this.db.prepare('DELETE FROM kv_store WHERE key = ?').run(key);
+  }
+
+  executeBatch(operations: StorageBatchOperation[]): void {
+    this.transaction(() => {
+      for (const operation of operations) {
+        if (operation.type === 'set') {
+          if (!('value' in operation)) {
+            throw new Error('batch set operation requires value');
+          }
+          this.set(operation.key, typeof operation.value === 'string' ? operation.value : JSON.stringify(operation.value));
+          continue;
+        }
+
+        if (operation.type === 'delete') {
+          this.delete(operation.key);
+          continue;
+        }
+
+        throw new Error(`unsupported operation: ${operation.type}`);
+      }
+    });
   }
 
   transaction<T>(work: () => T): T {

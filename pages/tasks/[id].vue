@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { canAdvanceWithAssistant, advanceTask, buildMarkdown, repairTask } from '~/app/features/tasks/domain/task-rules';
+import { canAdvanceWithAssistant, advanceTask, repairTask } from '~/app/features/tasks/domain/task-rules';
 import type { Task } from '~/app/features/tasks/domain/task.schema';
 import { STORAGE_KEYS } from '~/shared/contracts/storage';
 import { useTaskIndex } from '~/app/features/tasks/composables/useTaskIndex';
+import { completeTask } from '~/app/features/tasks/services/task-completion';
 import SaveStatus from '~/app/components/shared/SaveStatus.vue';
 import TaskWorkspace from '~/app/features/tasks/components/TaskWorkspace.vue';
 
@@ -26,13 +27,14 @@ function snapshot(taskToSave: Task): Task {
 }
 
 function upsertTaskSummary(nextTask: Task) {
-  const summary = {
-    id: nextTask.id,
-    nombre: nextTask.nombre,
-    fase: nextTask.fase,
-    estado: nextTask.estado,
-    tipo: nextTask.tipo,
-  };
+    const summary = {
+      id: nextTask.id,
+      nombre: nextTask.nombre,
+      fase: nextTask.fase,
+      estado: nextTask.estado,
+      tipo: nextTask.tipo,
+      projectId: nextTask.projectId,
+    };
   const next = { ...index.value };
   const existing = next.tareas.findIndex((candidate) => candidate.id === nextTask.id);
   if (existing >= 0) {
@@ -111,23 +113,36 @@ async function save(nextTask?: Task): Promise<boolean> {
 }
 
 async function completeCurrentTask(nextTask: Task) {
-  await $fetch(`/api/storage/${encodeURIComponent(STORAGE_KEYS.record(nextTask.id))}`, {
-    method: 'PUT',
-    body: { value: buildMarkdown({ ...nextTask, estado: 'completada' }) },
-  });
-
-  const next = {
-    tareas: index.value.tareas.filter((candidate) => candidate.id !== nextTask.id),
-    registros: [
-      { id: nextTask.id, titulo: nextTask.f4.titulo || nextTask.nombre, tareaId: nextTask.id },
-      ...index.value.registros,
-    ],
+  const storage = {
+    async get(key: string) {
+      const response = await $fetch<{ value: string | null }>(`/api/storage/${encodeURIComponent(key)}`).catch(() => ({ value: null }));
+      return response.value;
+    },
+    async set(key: string, value: string) {
+      await $fetch(`/api/storage/${encodeURIComponent(key)}`, {
+        method: 'PUT',
+        body: { value },
+      });
+    },
+    async delete(key: string) {
+      await $fetch(`/api/storage/${encodeURIComponent(key)}`, {
+        method: 'DELETE',
+      }).catch(() => {});
+    },
+    async batch(operations: Array<{ type: 'set' | 'delete'; key: string; value?: string }>) {
+      await $fetch('/api/storage/batch', {
+        method: 'POST',
+        body: { operations },
+      });
+    },
   };
-  index.value = next;
-  await $fetch(`/api/storage/${encodeURIComponent(STORAGE_KEYS.index)}`, {
-    method: 'PUT',
-    body: { value: JSON.stringify(next) },
+
+  const nextIndex = await completeTask(storage, {
+    ...nextTask,
+    estado: 'completada',
+    projectId: nextTask.projectId || 'legacy',
   });
+  index.value = nextIndex;
   await refreshIndex();
 }
 
@@ -242,6 +257,11 @@ onMounted(() => {
 
 .task-page__status [role='alert'] {
   max-width: 42rem;
+  pointer-events: none;
+}
+
+.task-page__status [role='status'] {
+  pointer-events: none;
 }
 
 .task-page__status button {
@@ -253,10 +273,6 @@ onMounted(() => {
 
 .task-page__status button:disabled {
   pointer-events: none;
-}
-
-.task-page__status > * {
-  pointer-events: auto;
 }
 
 @media (max-width: 767px) {

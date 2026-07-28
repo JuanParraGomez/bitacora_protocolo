@@ -8,6 +8,7 @@ export type TaskPhase = (typeof phaseList)[number];
 export const assistantRoleSchema = z.enum(['user', 'assistant']);
 export const assistantMessageStatusSchema = z.enum(['sending', 'sent', 'error']);
 export const formUpdateStatusSchema = z.enum(['proposed', 'applied', 'rejected', 'conflict']);
+export const proposalDecisionActionSchema = z.enum(['accept', 'edit', 'reject']);
 export const phaseEvaluationStatusSchema = z.enum(['acceptable', 'needs-work', 'error']);
 export const assistanceModeSchema = z.enum(['codex', 'deepseek']);
 export const assistanceConnectionStatusSchema = z.literal('deferred');
@@ -38,12 +39,37 @@ const predictionSchema = z.object({
   conf: criterionConfSchema,
 }).strict();
 
+const evidenceReferenceSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(['note', 'link', 'artifact', 'observation']),
+  label: z.string().default(''),
+  value: z.string().default(''),
+}).strict();
+
+const successCriterionResultSchema = z.object({
+  criterion: z.string().default(''),
+  passed: z.boolean().default(false),
+}).strict();
+
 const iterationSchema = z.object({
   id: z.string().min(1),
   intento: z.string().default(''),
   resultado: z.string().default(''),
   ajuste: z.string().default(''),
   criterioIds: z.array(z.string()).default([]),
+  methodVersionId: z.string().nullable().default(null),
+  objective: z.string().default(''),
+  action: z.string().default(''),
+  tool: z.string().default(''),
+  input: z.string().default(''),
+  result: z.string().default(''),
+  evidence: z.array(evidenceReferenceSchema).default([]),
+  learning: z.string().default(''),
+  nextAdjustment: z.string().default(''),
+  applicableConditions: z.array(z.string()).default([]),
+  success: z.boolean().default(false),
+  successCriteriaResults: z.array(successCriterionResultSchema).default([]),
+  createdAt: z.number().int().min(0).default(0),
 }).strict();
 
 const criterionImprovementSchema = z.object({
@@ -77,8 +103,13 @@ export const assistanceSettingsSchema = z.object({
 const formUpdateCommon = {
   id: z.string().min(1).default(() => `update-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
   sourceMessageId: z.string().min(1),
+  projectId: z.string().default('legacy'),
+  taskId: z.string().default(''),
+  phase: taskPhaseSchema,
+  methodVersionId: z.string().nullable().default(null),
   baseRevision: z.string().default(''),
   status: formUpdateStatusSchema.default('proposed'),
+  previousValue: z.unknown().optional(),
 };
 
 const updateFieldMap = {
@@ -92,6 +123,11 @@ const updateFieldMap = {
   'f1.analisisProblema.decision': phaseDecisionSchema.default('pendiente'),
   'f1.analisisProblema.justificacion': z.string().default(''),
   'f1.analisisProblema.problemaVigente': z.string().default(''),
+  'f1.resultadoDeseado': z.string().default(''),
+  'f1.alcance': z.string().default(''),
+  'f1.restricciones': z.string().default(''),
+  'f1.actores': z.array(z.string()).default([]),
+  'f1.criterioExito': z.string().default(''),
   'f2.decision': z.string().default(''),
   'f2.faqs': z.string().default(''),
   'f2.alcance': z.string().default(''),
@@ -101,6 +137,9 @@ const updateFieldMap = {
   'f2.guia': z.string().default(''),
   'f2.criterios': z.array(criterionSchema).default([]),
   'f2.predicciones': z.array(predictionSchema).default([]),
+  'f2.subproblemas': z.array(z.string()).default([]),
+  'f2.preguntasAbiertas': z.array(z.string()).default([]),
+  'f2.riesgos': z.array(z.string()).default([]),
   'f3.iteraciones': z.array(iterationSchema).default([]),
   'f3.checkCompila': z.boolean().default(false),
   'f3.checkAuditado': z.boolean().default(false),
@@ -111,6 +150,7 @@ const updateFieldMap = {
   'f4.titulo': z.string().default(''),
   'f4.conexiones': z.string().default(''),
   'f4.mejorasCriterios': z.array(criterionImprovementSchema).default([]),
+  'f4.methodVersionId': z.string().default(''),
 } as const;
 
 const formUpdateUnionEntries = Object.entries(updateFieldMap).map(([field, valueSchema]) =>
@@ -124,14 +164,93 @@ const formUpdateUnionEntries = Object.entries(updateFieldMap).map(([field, value
 type FormUpdateUnionEntry = (typeof formUpdateUnionEntries)[number];
 export const formUpdateSchema = z.discriminatedUnion('field', formUpdateUnionEntries as [FormUpdateUnionEntry, ...FormUpdateUnionEntry[]]);
 
-export const assistantMessageSchema: z.ZodType<any> = z.object({
+export const contradictionSchema = z.object({
   id: z.string().min(1),
+  projectId: z.string().min(1),
   taskId: z.string().min(1),
   phase: taskPhaseSchema,
+  methodVersionId: z.string().nullable().default(null),
+  field: z.string().min(1),
+  confirmedValue: z.unknown(),
+  proposedValue: z.unknown(),
+  message: z.string().min(1),
+}).strict();
+
+export const proposalDecisionSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('accept'),
+    proposalId: z.string().min(1),
+    baseRevision: z.string(),
+  }).strict(),
+  z.object({
+    action: z.literal('edit'),
+    proposalId: z.string().min(1),
+    value: z.unknown(),
+    baseRevision: z.string(),
+  }).strict(),
+  z.object({
+    action: z.literal('reject'),
+    proposalId: z.string().min(1),
+    baseRevision: z.string(),
+  }).strict(),
+]);
+
+export const assistantTurnSchema = z.object({
+  requestId: z.string().min(1),
+  projectId: z.string().min(1),
+  taskId: z.string().min(1),
+  phase: taskPhaseSchema,
+  methodVersionId: z.string().nullable().default(null),
+  baseRevision: z.string(),
+  message: z.string(),
+  primaryQuestion: z.string().min(1).nullable().default(null),
+  proposals: z.array(formUpdateSchema).default([]),
+  contradictions: z.array(contradictionSchema).default([]),
+  suggestions: z.array(z.string()).max(3).default([]),
+}).strict().superRefine((turn, ctx) => {
+  for (const [index, proposal] of turn.proposals.entries()) {
+    if (
+      proposal.projectId !== turn.projectId
+      || proposal.taskId !== turn.taskId
+      || proposal.phase !== turn.phase
+      || proposal.methodVersionId !== turn.methodVersionId
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['proposals', index],
+        message: 'Proposal context must match the assistant turn.',
+      });
+    }
+  }
+  for (const [index, contradiction] of turn.contradictions.entries()) {
+    if (
+      contradiction.projectId !== turn.projectId
+      || contradiction.taskId !== turn.taskId
+      || contradiction.phase !== turn.phase
+      || contradiction.methodVersionId !== turn.methodVersionId
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['contradictions', index],
+        message: 'Contradiction context must match the assistant turn.',
+      });
+    }
+  }
+});
+
+export const assistantMessageSchema: z.ZodType<any> = z.object({
+  id: z.string().min(1),
+  projectId: z.string().default('legacy'),
+  taskId: z.string().min(1),
+  phase: taskPhaseSchema,
+  methodVersionId: z.string().nullable().default(null),
+  baseRevision: z.string().default(''),
   role: assistantRoleSchema,
   parts: z.array(assistantTextPartSchema).default([]),
   status: assistantMessageStatusSchema.default('sent'),
   createdAt: z.number().int().min(0).default(() => Date.now()),
+  primaryQuestion: z.string().min(1).nullable().default(null),
+  contradictions: z.array(contradictionSchema).default([]),
   updates: z.array(formUpdateSchema as z.ZodType<any>).default([]),
 }).strict().superRefine((message, ctx) => {
   if (message.role === 'assistant' && message.status !== 'sent') {
@@ -144,6 +263,8 @@ export const phaseEvaluationSchema = z.object({
   taskId: z.string().min(1),
   phase: taskPhaseSchema,
   responseRevision: z.string(),
+  gateVersion: z.enum(['legacy-v1', 'outcome-v2']).default('legacy-v1'),
+  methodVersionId: z.string().nullable().default(null),
   evaluatorVersion: z.string().default('mock-v1'),
   status: phaseEvaluationStatusSchema,
   weaknesses: z.array(z.string()).default([]),
@@ -154,6 +275,13 @@ export const phaseEvaluationSchema = z.object({
 }).strict().superRefine((evaluation, ctx) => {
   if (evaluation.status === 'acceptable' && (evaluation.weaknesses.length > 0 || evaluation.recommendations.length > 0 || evaluation.gateReasons.length > 0 || !evaluation.gatePassed)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'acceptable must have empty weaknesses/recommendations, no gate reasons and gatePassed true.' });
+  }
+  if (evaluation.gateVersion === 'outcome-v2' && evaluation.phase === 4 && !evaluation.methodVersionId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['methodVersionId'],
+      message: 'La fase 4 requiere methodVersionId en evaluación outcome-v2.',
+    });
   }
   if (evaluation.status !== 'acceptable' && (evaluation.weaknesses.length === 0 || evaluation.recommendations.length === 0)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'needs-work/error requires weaknesses and recommendations.' });
@@ -170,6 +298,9 @@ export const assistantStateSchema = z.object({
 export type AssistantTextPart = z.infer<typeof assistantTextPartSchema>;
 export type AssistantMessage = z.infer<typeof assistantMessageSchema>;
 export type FormUpdate = z.infer<typeof formUpdateSchema>;
+export type Contradiction = z.infer<typeof contradictionSchema>;
+export type ProposalDecision = z.infer<typeof proposalDecisionSchema>;
+export type AssistantTurn = z.infer<typeof assistantTurnSchema>;
 export type PhaseEvaluation = z.infer<typeof phaseEvaluationSchema>;
 export type AssistantState = z.infer<typeof assistantStateSchema>;
 export type AssistanceSettings = z.infer<typeof assistanceSettingsSchema>;

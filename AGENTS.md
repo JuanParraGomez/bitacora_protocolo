@@ -1,7 +1,8 @@
 <!-- SPECKIT START -->
-For the current technology decisions, migration checkpoints, project structure,
-commands, contracts, and deferred service-extraction criteria, read
-`specs/005-workspace-ai-guiado/plan.md`.
+For the current UX remediation decisions, project structure, commands, and
+contracts, read `specs/007-fix-workspace-ux/plan.md`. For migration checkpoints
+and deferred service-extraction criteria, retain
+`specs/001-evolution-ready-foundation/plan.md` as the architectural baseline.
 
 ## Mandatory Test-First Workflow
 

@@ -8,5 +8,6 @@ graph TD
   shared["shared"]
   tasks["tasks"]
   server -->|imports| shared
+  tasks -->|imports| library
   tasks -->|imports| shared
 ```

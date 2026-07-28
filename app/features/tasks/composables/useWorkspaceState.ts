@@ -2,8 +2,10 @@ import { ref } from 'vue';
 
 const WORKSPACE_STATE_STORAGE_KEY = 'bitacora:workspace-view-state';
 const SUMMARY_STATES = ['hidden', 'collapsed', 'expanded', 'review'] as const;
+const OVERLAY_STATES = ['new-task', 'library', 'settings'] as const;
 
 export type WorkspaceSummaryState = typeof SUMMARY_STATES[number];
+export type WorkspaceOverlayState = typeof OVERLAY_STATES[number] | null;
 
 export type WorkspaceContextDefinition = {
   projectId: string;
@@ -31,6 +33,9 @@ type StoredWorkspaceState = {
   draftByTask: Record<string, string>;
   summaryStateByTask: Record<string, WorkspaceSummaryState>;
   lastVisibleMessageByTask: Record<string, string>;
+  activeOverlay: WorkspaceOverlayState;
+  overlayProjectId: string | null;
+  overlayRecordId: string | null;
 };
 
 type UseWorkspaceStateOptions = {
@@ -45,6 +50,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isSummaryState(value: unknown): value is WorkspaceSummaryState {
   return typeof value === 'string'
     && (SUMMARY_STATES as readonly string[]).includes(value);
+}
+
+function isOverlayState(value: unknown): value is Exclude<WorkspaceOverlayState, null> {
+  return typeof value === 'string'
+    && (OVERLAY_STATES as readonly string[]).includes(value);
 }
 
 function nonEmptyString(value: unknown): value is string {
@@ -108,6 +118,9 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions) {
   const activeProjectId = ref<string | null>(storedProjectId);
   const activeTaskId = ref<string | null>(storedTaskId);
   const expandedProjectIds = ref<string[]>([]);
+  const activeOverlay = ref<WorkspaceOverlayState>(isOverlayState(stored.activeOverlay) ? stored.activeOverlay : null);
+  const overlayProjectId = ref<string | null>(isKnownProject(stored.overlayProjectId) ? stored.overlayProjectId : null);
+  const overlayRecordId = ref<string | null>(nonEmptyString(stored.overlayRecordId) ? stored.overlayRecordId : null);
   const draftByTask = new Map<string, string>();
   const summaryStateByTask = new Map<string, WorkspaceSummaryState>();
   const lastVisibleMessageByTask = new Map<string, string>();
@@ -154,6 +167,9 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions) {
       draftByTask: Object.fromEntries(draftByTask),
       summaryStateByTask: Object.fromEntries(summaryStateByTask),
       lastVisibleMessageByTask: Object.fromEntries(lastVisibleMessageByTask),
+      activeOverlay: activeOverlay.value,
+      overlayProjectId: overlayProjectId.value,
+      overlayRecordId: overlayRecordId.value,
     };
   }
 
@@ -267,10 +283,35 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions) {
     return true;
   }
 
+  function setActiveOverlay(
+    overlay: WorkspaceOverlayState,
+    options: { projectId?: string | null; recordId?: string | null } = {},
+  ): boolean {
+    if (overlay !== null && !isOverlayState(overlay)) return false;
+    if (options.projectId !== undefined && options.projectId !== null && !isKnownProject(options.projectId)) {
+      return false;
+    }
+    activeOverlay.value = overlay;
+    overlayProjectId.value = overlay ? options.projectId ?? activeProjectId.value ?? null : null;
+    overlayRecordId.value = overlay === 'library' ? options.recordId ?? null : null;
+    persist();
+    return true;
+  }
+
+  function closeOverlay() {
+    activeOverlay.value = null;
+    overlayProjectId.value = null;
+    overlayRecordId.value = null;
+    persist();
+  }
+
   function reset() {
     activeProjectId.value = null;
     activeTaskId.value = null;
     expandedProjectIds.value = [];
+    activeOverlay.value = null;
+    overlayProjectId.value = null;
+    overlayRecordId.value = null;
     draftByTask.clear();
     summaryStateByTask.clear();
     lastVisibleMessageByTask.clear();
@@ -316,6 +357,9 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions) {
     activeProjectId,
     activeTaskId,
     expandedProjectIds,
+    activeOverlay,
+    overlayProjectId,
+    overlayRecordId,
     selectProject,
     selectTask,
     setDraft,
@@ -325,6 +369,8 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions) {
     setLastVisibleMessage,
     lastVisibleMessageFor,
     setProjectExpanded,
+    setActiveOverlay,
+    closeOverlay,
     resetTask,
     reset,
     captureResponseOrigin,

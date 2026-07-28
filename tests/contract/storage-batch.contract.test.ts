@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { runStorageBatch } from '../../server/api/storage/batch.post';
 
-const base = process.env.TEST_BASE_URL ?? 'http://localhost:3000';
+const base = process.env.TEST_BASE_URL ?? 'http://127.0.0.1:3005';
 
 function request(path: string, init?: RequestInit) {
   return fetch(`${base}${path}`, init);

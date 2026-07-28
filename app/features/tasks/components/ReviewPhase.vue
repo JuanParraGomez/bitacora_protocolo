@@ -15,6 +15,11 @@ const activeOpportunities = computed(() => {
   if (!activeMethodVersion.value) return [];
   return task.automationOpportunities.filter((opportunity) => opportunity.methodVersionId === activeMethodVersion.value!.id);
 });
+function automationEvidenceLabel(opportunity: Task['automationOpportunities'][number]) {
+  return opportunity.occurrenceIterationIds.length >= 2
+    ? 'Candidato con evidencia'
+    : 'Hipotesis';
+}
 const methodSummary = computed(() => {
   const version = activeMethodVersion.value;
   if (!version) {
@@ -107,6 +112,7 @@ watch(() => task.f2.criterios.map(criterion => criterion.id), syncImprovements, 
         <article v-for="(opportunity, index) in activeOpportunities" :key="opportunity.id" class="phase-workspace__opportunity">
           <h5>Oportunidad {{ index + 1 }}</h5>
           <p><strong>Clasificación:</strong> {{ opportunity.classification }}</p>
+          <p><strong>Evidencia:</strong> {{ automationEvidenceLabel(opportunity) }}</p>
           <ul>
             <li><strong>Frecuencia:</strong> {{ opportunity.frequency || 'Sin frecuencia registrada' }}</li>
             <li><strong>Estabilidad:</strong> {{ opportunity.stability || 'Sin estabilidad registrada' }}</li>

@@ -1,14 +1,29 @@
 <script setup lang="ts">
-import LibraryRecordView from '~/app/features/library/components/LibraryRecordView.vue';
-import { createLibraryStore, type LibraryStorage } from '~/app/features/library/services/library-store';
-import type { LibraryRecord } from '~/app/features/library/domain/library-record.schema';
-
 const route = useRoute();
-const storage: LibraryStorage = { get: key => $fetch<{ value: string | null }>(`/api/storage/${encodeURIComponent(key)}`).then(result => result.value).catch(() => null), set: async () => {}, delete: async () => {} };
-const record = ref<LibraryRecord | null>(await createLibraryStore(storage).read(String(route.params.id)));
+const projectsResponse = await $fetch<{ value: string | null }>(`/api/storage/${encodeURIComponent('bitacora:projects')}`).catch(() => ({ value: null }));
+const indexResponse = await $fetch<{ value: string | null }>(`/api/storage/${encodeURIComponent('bitacora:index')}`).catch(() => ({ value: null }));
+const projects = projectsResponse.value ? JSON.parse(projectsResponse.value) as {
+  activeProjectId?: string | null;
+} : { activeProjectId: null };
+const index = indexResponse.value ? JSON.parse(indexResponse.value) as {
+  tareas?: Array<{ id: string; projectId?: string; estado?: string }>;
+} : { tareas: [] };
+const fallbackTask = (index.tareas || []).find((task) => task.projectId === projects.activeProjectId && task.estado !== 'completada')
+  || (index.tareas || []).find((task) => task.estado !== 'completada')
+  || (index.tareas || [])[0]
+  || null;
+
+if (fallbackTask?.id) {
+  await navigateTo({
+    path: `/tasks/${encodeURIComponent(fallbackTask.id)}`,
+    query: {
+      overlay: 'library',
+      record: String(route.params.id),
+    },
+  }, { replace: true });
+}
 </script>
 
 <template>
-  <main v-if="record"><LibraryRecordView :record="record" /></main>
-  <main v-else><h1>Registro no encontrado</h1><p>El registro no está disponible.</p></main>
+  <main><h1>Biblioteca</h1><p>Abre una tarea del workspace para revisar este registro en contexto.</p></main>
 </template>

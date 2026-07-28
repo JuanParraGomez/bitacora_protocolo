@@ -112,3 +112,24 @@ Human usability criteria in SC-002, SC-003 and SC-010 must be recorded separatel
 4. Save one repaired task and verify only additive fields.
 5. Exercise batch failure and confirm no key changed.
 6. Reopen all historical fixtures and compare preserved IDs/content.
+
+## Actual outcomes on Tuesday, July 28, 2026
+
+- `npx vitest run tests/migration/compatibility-store.test.ts`: green, 8/8. Confirms `schemaVersion: 2` round-trip for `repeatable-v1` and `material-v2`, `repeatable-method` on two same-version runs, and `documented-once` after the active material reset.
+- `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/conversational-workspace.spec.ts --grep "Phase 8 security regressions"`: green, 1/1. Hostile HTML remains inert text and does not execute.
+- `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/workspace-overlays.spec.ts --grep "preserves landmarks, keyboard order, modeless library and live regions across overlay states"`: green, 1/1 after removing a duplicated `main` landmark inside `TaskWorkspace.vue`.
+- `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/legacy-phase-workflows.spec.ts`: green, 3/3.
+- `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/legacy-task-workflows.spec.ts`: green, 4/4.
+- `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/nuxt-task-workflows.spec.ts`: green, 13/13 after aligning legacy seeds, preserved deep links (`/tasks/new`, `/library`, `/library/:id`) and the new-task modal navigation flow with the 006 shell.
+- `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/nuxt-task-workflows.spec.ts tests/e2e/legacy-phase-workflows.spec.ts tests/e2e/legacy-task-workflows.spec.ts`: green, 20/20 as the combined T080 compatibility checkpoint.
+- `npm run structure`: regenerated `docs/architecture/structure.json` and `docs/architecture/structure.md`.
+- `npm run structure:check`: green after regeneration.
+- `npm run graph:update`: regenerated the allowlisted Graphify output and backed up the curated graph under `graphify-out/2026-07-28/`.
+- `npm run graph:check`: green, graph current.
+- `npm run verify`: green. Completed `nuxt typecheck`, 221/221 unit tests, 20/20 contract tests, 8/8 migration tests, 37/37 integration tests, `structure:check`, `graph:update`, `graph:check` and `nuxt build`.
+- `npm run verify:e2e`: green, 45/45 against `http://127.0.0.1:3005`.
+- `npm run build`: green. Production build completed after the final 006 fixes; Nuxt Icon still reports runtime icon fallbacks but the build succeeds.
+
+## Human-only follow-up
+
+- SC-002, SC-003 and SC-010 still require the participant study recorded in `specs/006-conversational-task-workspace/usability-results.md`; automated verification cannot satisfy that evidence.

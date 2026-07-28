@@ -153,4 +153,213 @@ describe('task completion service', () => {
     expect(persistedTask.estado).toBe('completada');
     expect(persistedTask.methodVersions).toEqual([]);
   });
+
+  it('generates reusable method, tool and learning records for the completed task', async () => {
+    const values = new Map<string, string>([['bitacora:index', JSON.stringify({ tareas: [{ id: 'reuse-task', nombre: 'Metodo reusable', projectId: 'project-a' }], registros: [] })]]);
+    const storage = {
+      async get(key: string) { return values.get(key) ?? null; },
+      async set(key: string, value: string) { values.set(key, value); },
+      async delete() {},
+    };
+
+    const task: Task = {
+      ...createBlankTask('Metodo reusable', 'Directiva'),
+      id: 'reuse-task',
+      projectId: 'project-a',
+      estado: 'activa',
+      methodVersions: [{
+        id: 'method-v2',
+        version: 2,
+        parentVersionId: 'method-v1',
+        status: 'published',
+        changeKind: 'material',
+        preconditions: ['Datos listos'],
+        steps: [{
+          id: 'step-1',
+          title: 'Preparar datos',
+          objective: 'Ordenar insumos',
+          dependencies: [],
+          inputs: ['Brief'],
+          output: 'Datos listos',
+          tool: 'CLI local',
+          risk: 'Riesgo bajo',
+          successCriterion: 'Datos consistentes',
+          sourceCriterionId: null,
+        }],
+        tools: ['CLI local', 'Editor'],
+        inputs: ['Brief'],
+        outputs: ['Datos listos'],
+        controls: ['Revision humana'],
+        exceptions: ['Campos incompletos'],
+        exceptionsReviewed: true,
+        successCriteria: ['Datos consistentes'],
+        supportingIterationIds: ['iteration-1', 'iteration-2'],
+        createdAt: 1_000,
+      }],
+      f3: {
+        ...createBlankTask('Metodo reusable', 'Directiva').f3,
+        iteraciones: [{
+          id: 'iteration-1',
+          intento: 'Intento 1',
+          resultado: 'Parcial',
+          ajuste: 'Ajustar parser',
+          criterioIds: [],
+          methodVersionId: 'method-v2',
+          objective: 'Normalizar',
+          action: 'Ejecutar script',
+          tool: 'CLI local',
+          input: 'Brief',
+          result: 'Datos listos',
+          evidence: [{ id: 'e-1', kind: 'note', label: 'Captura', value: 'ok' }],
+          learning: 'Conviene validar columnas antes del parseo',
+          nextAdjustment: 'Repetir con otro brief',
+          applicableConditions: ['Brief estable'],
+          success: true,
+          successCriteriaResults: [],
+          createdAt: 1_100,
+        }],
+      },
+      f4: {
+        ...createBlankTask('Metodo reusable', 'Directiva').f4,
+        titulo: 'Metodo reusable',
+        cambio: 'Estandarizar el parseo',
+        conexiones: 'Se puede reusar en proyectos similares',
+        methodVersionId: 'method-v2',
+      },
+    };
+
+    const index = await completeTask(storage, task);
+
+    expect(index.registros).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'reuse-task',
+        resourceKind: 'method',
+        projectId: 'project-a',
+        sourceTaskId: 'reuse-task',
+        sourceMethodVersionId: 'method-v2',
+      }),
+      expect.objectContaining({
+        id: 'reuse-task:tool:cli-local',
+        resourceKind: 'tool',
+        projectId: 'project-a',
+      }),
+      expect.objectContaining({
+        id: 'reuse-task:learning',
+        resourceKind: 'learning',
+        projectId: 'project-a',
+      }),
+    ]));
+    expect(values.get('bitacora:r:reuse-task:tool:cli-local')).toContain('CLI local');
+    expect(values.get('bitacora:r:reuse-task:learning')).toContain('Conviene validar columnas');
+  });
+
+  it('stores automation candidates with hypothesis versus candidate-with-evidence labels', async () => {
+    const values = new Map<string, string>([['bitacora:index', JSON.stringify({ tareas: [{ id: 'candidate-task', nombre: 'Automatizar', projectId: 'project-b' }], registros: [] })]]);
+    const storage = {
+      async get(key: string) { return values.get(key) ?? null; },
+      async set(key: string, value: string) { values.set(key, value); },
+      async delete() {},
+    };
+
+    const task: Task = {
+      ...createBlankTask('Automatizar', 'Directiva'),
+      id: 'candidate-task',
+      projectId: 'project-b',
+      estado: 'activa',
+      methodVersions: [{
+        id: 'method-v1',
+        version: 1,
+        parentVersionId: null,
+        status: 'published',
+        changeKind: 'initial',
+        preconditions: ['Contexto'],
+        steps: [{
+          id: 'step-1',
+          title: 'Clasificar',
+          objective: 'Ordenar items',
+          dependencies: [],
+          inputs: ['Items'],
+          output: 'Items clasificados',
+          tool: 'Script local',
+          risk: 'Riesgo medio',
+          successCriterion: 'Categorias correctas',
+          sourceCriterionId: null,
+        }],
+        tools: ['Script local'],
+        inputs: ['Items'],
+        outputs: ['Items clasificados'],
+        controls: ['Revision humana'],
+        exceptions: [],
+        exceptionsReviewed: true,
+        successCriteria: ['Categorias correctas'],
+        supportingIterationIds: ['iteration-1', 'iteration-2'],
+        createdAt: 1_000,
+      }],
+      automationOpportunities: [
+        {
+          id: 'candidate-1',
+          methodVersionId: 'method-v1',
+          stepIds: ['step-1'],
+          classification: 'automatable',
+          frequency: 'Semanal',
+          stability: 'Alta',
+          risk: 'Medio',
+          humanJudgment: 'Revisar categorias dudosas',
+          trigger: 'Llegan nuevos items',
+          inputs: ['Items'],
+          transformation: 'Clasificar por reglas',
+          output: 'Items clasificados',
+          candidateTool: 'Script local',
+          expectedFailures: ['Categoria ambigua'],
+          humanCheckpoint: 'Validar resumen final',
+          occurrenceIterationIds: ['iteration-1'],
+        },
+        {
+          id: 'candidate-2',
+          methodVersionId: 'method-v1',
+          stepIds: ['step-1'],
+          classification: 'assistable',
+          frequency: 'Diaria',
+          stability: 'Alta',
+          risk: 'Bajo',
+          humanJudgment: 'Aprobar respuesta',
+          trigger: 'Llega solicitud',
+          inputs: ['Solicitud'],
+          transformation: 'Preparar borrador',
+          output: 'Borrador',
+          candidateTool: 'Asistente',
+          expectedFailures: ['Contexto incompleto'],
+          humanCheckpoint: 'Revisar borrador',
+          occurrenceIterationIds: ['iteration-1', 'iteration-2'],
+        },
+      ],
+      f4: {
+        ...createBlankTask('Automatizar', 'Directiva').f4,
+        titulo: 'Automatizar',
+        cambio: 'Automatizar lo repetido',
+        methodVersionId: 'method-v1',
+      },
+    };
+
+    const index = await completeTask(storage, task);
+
+    expect(index.registros).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'candidate-task:automation:candidate-1',
+        resourceKind: 'automation-candidate',
+        automationEvidence: {
+          status: 'hypothesis',
+          occurrenceCount: 1,
+        },
+      }),
+      expect.objectContaining({
+        id: 'candidate-task:automation:candidate-2',
+        resourceKind: 'automation-candidate',
+        automationEvidence: {
+          status: 'candidate-with-evidence',
+          occurrenceCount: 2,
+        },
+      }),
+    ]));
+  });
 });

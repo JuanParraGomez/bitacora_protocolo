@@ -32,6 +32,8 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   openSettings: [Event];
+  openNewTask: [projectId: string];
+  openLibrary: [];
   createProject: [name: string];
   renameProject: [payload: { projectId: string; name: string }];
   renameTask: [payload: { taskId: string; name: string }];
@@ -145,8 +147,9 @@ function selectProject(group: WorkspaceProjectGroup) {
 
     <nav class="task-sidebar__primary" aria-label="Accesos principales">
       <NuxtLink to="/" class="task-sidebar__primary-link">Tareas</NuxtLink>
-      <NuxtLink to="/library" class="task-sidebar__primary-link">Biblioteca</NuxtLink>
+      <button type="button" class="task-sidebar__primary-link" @click="emit('openLibrary')">Biblioteca</button>
       <NuxtLink to="/reference" class="task-sidebar__primary-link">Referencias</NuxtLink>
+      <button type="button" class="task-sidebar__primary-link" @click="emit('openSettings', $event)">Ajustes</button>
     </nav>
 
     <section class="task-sidebar__tools" aria-label="Herramientas de proyectos">
@@ -230,12 +233,13 @@ function selectProject(group: WorkspaceProjectGroup) {
           :id="`project-tasks-${group.project.id}`"
           class="task-sidebar__project-content"
         >
-          <NuxtLink
-            :to="`/tasks/new?projectId=${encodeURIComponent(group.project.id)}`"
+          <button
+            type="button"
             class="task-sidebar__new-task"
+            @click="emit('openNewTask', group.project.id)"
           >
             Nueva tarea
-          </NuxtLink>
+          </button>
 
           <p v-if="group.isEmpty" role="status">Este proyecto todavía no tiene tareas.</p>
           <p v-else-if="projectTasks(group).length === 0" role="status">

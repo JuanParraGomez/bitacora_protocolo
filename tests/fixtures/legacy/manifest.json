@@ -10,8 +10,8 @@
     "historical-assistant-secrets.sqlite": "legacy assistant payload with secret-like values",
     "two-projects.sqlite": "tasks and bitacora:projects spread across two active projects",
     "legacy-project.sqlite": "single task with no explicit project key to force legacy synthesis",
-    "repeatable-v1.sqlite": "task with two successful iterations under method version 1",
-    "material-v2.sqlite": "task with an initial and a material method version"
+    "repeatable-v1.sqlite": "schemaVersion 2 task with two successful same-version runs under applicable conditions",
+    "material-v2.sqlite": "schemaVersion 2 task with a superseded base method and one successful material-version reset run"
   },
   "requiredKeys": ["bitacora:index"],
   "preservationRule": "keys and opaque string values must remain unchanged"

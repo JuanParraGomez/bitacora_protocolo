@@ -14,3 +14,9 @@ data/
 backups/
 specs/
 .agents/
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/

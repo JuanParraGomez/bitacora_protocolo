@@ -280,12 +280,20 @@ const taskIndexRecordSchema = z.object({
   tareaId: z.string().default(''),
   taskId: z.string().default(''),
   projectId: z.string().default('legacy'),
+  resourceKind: z.enum(['method', 'tool', 'learning', 'automation-candidate']).default('learning'),
+  sourceTaskId: z.string().optional(),
+  sourceMethodVersionId: z.string().nullable().default(null),
+  automationEvidence: z.object({
+    status: z.enum(['hypothesis', 'candidate-with-evidence']),
+    occurrenceCount: z.number().int().min(0).default(0),
+  }).nullable().default(null),
 }).transform((record) => {
   const canonicalTaskId = record.taskId || record.tareaId;
   return {
     ...record,
     tareaId: canonicalTaskId,
     taskId: canonicalTaskId,
+    sourceTaskId: record.sourceTaskId || canonicalTaskId,
   };
 });
 

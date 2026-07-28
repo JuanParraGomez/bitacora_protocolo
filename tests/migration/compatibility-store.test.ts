@@ -6,8 +6,9 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import { KvStoreRepository } from '../../server/repositories/kv-store.repository';
 import { repairTask } from '../../app/features/tasks/domain/task.schema';
+import { deriveMethodMaturity } from '../../app/features/tasks/domain/task-rules';
 
-const fixtureDatabases = ['bitacora', 'empty', 'interrupted', 'malformed', 'historical-pre-assistant', 'historical-custom-prompts', 'historical-assistant-secrets'].map((name) =>
+const fixtureDatabases = ['bitacora', 'empty', 'interrupted', 'malformed', 'historical-pre-assistant', 'historical-custom-prompts', 'historical-assistant-secrets', 'two-projects', 'legacy-project', 'repeatable-v1', 'material-v2'].map((name) =>
   path.join(process.cwd(), 'tests/fixtures/legacy', `${name}.sqlite`),
 );
 
@@ -135,6 +136,35 @@ describe('compatibility store migration', () => {
         if (original.f4?.promptAar) expect(repaired.f4.promptAar).toBe(original.f4.promptAar);
       }
     }
+  });
+
+  it('round-trips schemaVersion 2 fixtures and preserves method maturity boundaries', async () => {
+    const { inspectLegacyDatabase } = await import('../../scripts/migration-service.mjs');
+    const fixtures = ['repeatable-v1', 'material-v2'] as const;
+
+    for (const name of fixtures) {
+      const rows = inspectLegacyDatabase(path.join(process.cwd(), 'tests/fixtures/legacy', `${name}.sqlite`));
+      const taskRow = rows.find((entry: { key: string }) => entry.key.startsWith('bitacora:t:'));
+      expect(taskRow, name).toBeDefined();
+
+      const parsed = JSON.parse(taskRow?.value ?? '{}');
+      const repaired = repairTask(parsed);
+      expect(repaired.schemaVersion, name).toBe(2);
+      expect(repaired.projectId, name).toBe('legacy');
+      expect(repairTask(repaired)).toEqual(repaired);
+    }
+
+    const repeatableRows = inspectLegacyDatabase(path.join(process.cwd(), 'tests/fixtures/legacy/repeatable-v1.sqlite'));
+    const repeatableTask = repairTask(JSON.parse(
+      repeatableRows.find((entry: { key: string }) => entry.key === 'bitacora:t:repeatable-v1-task')?.value ?? '{}',
+    ));
+    expect(deriveMethodMaturity(repeatableTask)).toBe('repeatable-method');
+
+    const materialRows = inspectLegacyDatabase(path.join(process.cwd(), 'tests/fixtures/legacy/material-v2.sqlite'));
+    const materialTask = repairTask(JSON.parse(
+      materialRows.find((entry: { key: string }) => entry.key === 'bitacora:t:material-v2-task')?.value ?? '{}',
+    ));
+    expect(deriveMethodMaturity(materialTask)).toBe('documented-once');
   });
 
   it('upserts, timestamps, deletes, and commits compatible legacy values transactionally', () => {

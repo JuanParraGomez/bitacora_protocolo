@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Task } from '../domain/task.schema';
-import { computed, reactive, toRaw } from 'vue';
+import { computed, reactive, toRaw, watch } from 'vue';
 
 const props = withDefaults(defineProps<{ task: Task; saveTask?: () => Promise<boolean> }>(), {
   saveTask: undefined,
@@ -40,6 +40,11 @@ function addCriterion() {
   task.f2.criterios.push({ id: `criterion-${Date.now().toString(36)}`, texto: '', comentario: '', prioridad: 'media', estado: 'pendiente', impacto: 'medio' });
   emit('dirty');
 }
+
+watch(() => task.f2, () => {
+  emit('dirty');
+  emit('save');
+}, { deep: true });
 </script>
 
 <template>

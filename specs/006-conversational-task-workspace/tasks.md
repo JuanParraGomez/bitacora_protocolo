@@ -148,20 +148,20 @@
 
 ### Tests first
 
-- [ ] T056 [P] [US4] Add isolated red component tests for TaskIntakeForm validation/emission in `app/features/tasks/components/TaskIntakeForm.test.ts` and Playwright red scenarios for New task project requirement, name-or-problem alternatives, length boundaries, invalid input, unsaved close protection, focus trap/restore and successful composer focus in `tests/e2e/workspace-overlays.spec.ts`
-- [ ] T057 [P] [US4] Add Playwright red scenarios for modeless desktop Library, full-width mobile Library, query/deep-link compatibility and Back/Forward in `tests/e2e/workspace-overlays.spec.ts`
-- [ ] T058 [P] [US4] Add Playwright red scenarios for Settings context preservation/focus lifecycle and nonmodal success/error notices, maximum three, dismiss/retry and no focus movement in `tests/e2e/workspace-overlays.spec.ts`
+- [X] T056 [P] [US4] Add isolated red component tests for TaskIntakeForm validation/emission in `app/features/tasks/components/TaskIntakeForm.test.ts` and Playwright red scenarios for New task project requirement, name-or-problem alternatives, length boundaries, invalid input, unsaved close protection, focus trap/restore and successful composer focus in `tests/e2e/workspace-overlays.spec.ts`
+- [X] T057 [P] [US4] Add Playwright red scenarios for modeless desktop Library, full-width mobile Library, query/deep-link compatibility and Back/Forward in `tests/e2e/workspace-overlays.spec.ts`
+- [X] T058 [P] [US4] Add Playwright red scenarios for Settings context preservation/focus lifecycle and nonmodal success/error notices, maximum three, dismiss/retry and no focus movement in `tests/e2e/workspace-overlays.spec.ts`
 
 ### Implementation
 
-- [ ] T059 [US4] Refactor `TaskIntakeForm` to emit validated data without navigation or persistence in `app/features/tasks/components/TaskIntakeForm.vue`
-- [ ] T060 [US4] Implement project-aware New task modal, dirty confirmation and focus lifecycle in `app/features/tasks/components/NewTaskModal.vue`
-- [ ] T061 [US4] Implement notice queue, live-region semantics and bounded visible notices in `app/features/tasks/components/NoticeRegion.vue` and `app/features/tasks/composables/useWorkspaceNotices.ts`
-- [ ] T062 [US4] Implement modeless desktop/full-width mobile Library composition in `app/features/library/components/LibrarySlideover.vue`
-- [ ] T063 [US4] Coordinate exactly one active overlay and query history in `app/features/tasks/composables/useWorkspaceState.ts` and `pages/tasks/[id].vue`
-- [ ] T064 [US4] Preserve `/tasks/new`, `/library` and `/library/[id]` as shell-deep-link entry points in `pages/tasks/new.vue`, `pages/library/index.vue` and `pages/library/[id].vue`
-- [ ] T065 [US4] Align Settings with the common dialog/focus contract without changing provider persistence in `app/features/tasks/components/AssistantSettingsModal.vue`
-- [ ] T066 [US4] Run the complete overlay Playwright file with keyboard, mobile viewport and dirty-state cases and append green evidence in `specs/006-conversational-task-workspace/implementation-evidence.md`
+- [X] T059 [US4] Refactor `TaskIntakeForm` to emit validated data without navigation or persistence in `app/features/tasks/components/TaskIntakeForm.vue`
+- [X] T060 [US4] Implement project-aware New task modal, dirty confirmation and focus lifecycle in `app/features/tasks/components/NewTaskModal.vue`
+- [X] T061 [US4] Implement notice queue, live-region semantics and bounded visible notices in `app/features/tasks/components/NoticeRegion.vue` and `app/features/tasks/composables/useWorkspaceNotices.ts`
+- [X] T062 [US4] Implement modeless desktop/full-width mobile Library composition in `app/features/library/components/LibrarySlideover.vue`
+- [X] T063 [US4] Coordinate exactly one active overlay and query history in `app/features/tasks/composables/useWorkspaceState.ts` and `pages/tasks/[id].vue`
+- [X] T064 [US4] Preserve `/tasks/new`, `/library` and `/library/[id]` as shell-deep-link entry points in `pages/tasks/new.vue`, `pages/library/index.vue` and `pages/library/[id].vue`
+- [X] T065 [US4] Align Settings with the common dialog/focus contract without changing provider persistence in `app/features/tasks/components/AssistantSettingsModal.vue`
+- [X] T066 [US4] Run the complete overlay Playwright file with keyboard, mobile viewport and dirty-state cases and append green evidence in `specs/006-conversational-task-workspace/implementation-evidence.md`
 
 **Checkpoint**: Auxiliary actions no longer replace the workspace; only real decisions block the background.
 
@@ -175,19 +175,19 @@
 
 ### Tests first
 
-- [ ] T067 [P] [US5] Write library record schema tests for method, tool, learning, automation candidate, project origin, missing source and inert content in `app/features/library/domain/library-record.schema.test.ts`, run them, and record red
-- [ ] T068 [P] [US5] Write library-store tests for search, type/project filters, source preservation, missing record and reference-only linking in `app/features/library/services/library-store.test.ts`, run them, and record red
-- [ ] T069 [P] [US5] Add Playwright red scenarios for search, list/detail, link without overwrite, empty/error recovery and automation evidence labels in `tests/e2e/workspace-library.spec.ts`
+- [X] T067 [P] [US5] Write library record schema tests for method, tool, learning, automation candidate, project origin, missing source and inert content in `app/features/library/domain/library-record.schema.test.ts`, run them, and record red
+- [X] T068 [P] [US5] Write library-store tests for search, type/project filters, source preservation, missing record and reference-only linking in `app/features/library/services/library-store.test.ts`, run them, and record red
+- [X] T069 [P] [US5] Add Playwright red scenarios for search, list/detail, link without overwrite, empty/error recovery and automation evidence labels in `tests/e2e/workspace-library.spec.ts`
 
 ### Implementation
 
-- [ ] T070 [US5] Extend library records with resource kind, projectId, source task/method and automation evidence in `app/features/library/domain/library-record.schema.ts`
-- [ ] T071 [US5] Implement project/type search and idempotent reference linking without task-field mutation in `app/features/library/services/library-store.ts`
-- [ ] T072 [US5] Adapt Library list and detail to selection events, filters and source/evidence presentation in `app/features/library/components/LibraryList.vue` and `app/features/library/components/LibraryRecordView.vue`
-- [ ] T073 [US5] Wire LibrarySlideover search, detail and Link actions to the active task at the page root in `app/features/library/components/LibrarySlideover.vue` and `pages/tasks/[id].vue`
-- [ ] T074 [US5] Generate reusable method, tool, learning and candidate records from consolidated task data in `app/features/tasks/services/task-completion.ts`
-- [ ] T075 [US5] Render manual/assistable/automatable classifications and hypothesis/candidate-with-evidence labels in `app/features/tasks/components/ReviewPhase.vue`
-- [ ] T076 [US5] Run US5 library unit, integration and Playwright suites and append green evidence in `specs/006-conversational-task-workspace/implementation-evidence.md`
+- [X] T070 [US5] Extend library records with resource kind, projectId, source task/method and automation evidence in `app/features/library/domain/library-record.schema.ts`
+- [X] T071 [US5] Implement project/type search and idempotent reference linking without task-field mutation in `app/features/library/services/library-store.ts`
+- [X] T072 [US5] Adapt Library list and detail to selection events, filters and source/evidence presentation in `app/features/library/components/LibraryList.vue` and `app/features/library/components/LibraryRecordView.vue`
+- [X] T073 [US5] Wire LibrarySlideover search, detail and Link actions to the active task at the page root in `app/features/library/components/LibrarySlideover.vue` and `pages/tasks/[id].vue`
+- [X] T074 [US5] Generate reusable method, tool, learning and candidate records from consolidated task data in `app/features/tasks/services/task-completion.ts`
+- [X] T075 [US5] Render manual/assistable/automatable classifications and hypothesis/candidate-with-evidence labels in `app/features/tasks/components/ReviewPhase.vue`
+- [X] T076 [US5] Run US5 library unit, integration and Playwright suites and append green evidence in `specs/006-conversational-task-workspace/implementation-evidence.md`
 
 **Checkpoint**: Knowledge is reusable and automation claims remain explicitly evidence-bounded.
 
@@ -197,15 +197,15 @@
 
 **Purpose**: Prove compatibility, safety, accessibility, architecture freshness and complete documentation.
 
-- [ ] T077 [P] Expand fixture generation with schemaVersion 2 round-trip, two successful same-version runs and material-version reset in `scripts/create-legacy-fixtures.mjs` and `tests/fixtures/legacy/manifest.json`
-- [ ] T078 [P] Add security regressions for inert HTML, prompt injection, unsafe links, forbidden batch keys and secret-like assistant settings in `tests/e2e/conversational-workspace.spec.ts` and `tests/migration/compatibility-store.test.ts`
-- [ ] T079 [P] Add accessibility regressions for landmarks, keyboard order, dialog focus, modeless Library, live regions, reduced motion and 200% zoom in `tests/e2e/workspace-overlays.spec.ts`
-- [ ] T080 Run all historical Nuxt and legacy workflow suites, update only expectations intentionally superseded by 006, and document preserved deep links in `tests/e2e/nuxt-task-workflows.spec.ts`, `tests/e2e/legacy-phase-workflows.spec.ts` and `tests/e2e/legacy-task-workflows.spec.ts`
-- [ ] T081 Update capability ownership, new batch contract, project key, migration checkpoints and deferred automation/provider criteria in `app/features/README.md`, `docs/architecture/README.md` and `docs/architecture/migration-checkpoints.md`
-- [ ] T082 Update generated structure evidence and its regression expectation via `scripts/generate-structure.mjs`, `docs/architecture/structure.md` and `tests/integration/structure-snapshot.test.ts`
-- [ ] T083 Refresh the allowlisted Graphify code graph and verify it is current using `scripts/graphify-workflow.mjs` and `graphify-out/`
-- [ ] T084 Run every focused command and migration checkpoint from `specs/006-conversational-task-workspace/quickstart.md` and record actual outcomes in that file
-- [ ] T085 Run `npm run verify` and `npm run verify:e2e`, correct regressions within 006 scope, and record final automated evidence in `specs/006-conversational-task-workspace/quickstart.md`
+- [X] T077 [P] Expand fixture generation with schemaVersion 2 round-trip, two successful same-version runs and material-version reset in `scripts/create-legacy-fixtures.mjs` and `tests/fixtures/legacy/manifest.json`
+- [X] T078 [P] Add security regressions for inert HTML, prompt injection, unsafe links, forbidden batch keys and secret-like assistant settings in `tests/e2e/conversational-workspace.spec.ts` and `tests/migration/compatibility-store.test.ts`
+- [X] T079 [P] Add accessibility regressions for landmarks, keyboard order, dialog focus, modeless Library, live regions, reduced motion and 200% zoom in `tests/e2e/workspace-overlays.spec.ts`
+- [X] T080 Run all historical Nuxt and legacy workflow suites, update only expectations intentionally superseded by 006, and document preserved deep links in `tests/e2e/nuxt-task-workflows.spec.ts`, `tests/e2e/legacy-phase-workflows.spec.ts` and `tests/e2e/legacy-task-workflows.spec.ts`
+- [X] T081 Update capability ownership, new batch contract, project key, migration checkpoints and deferred automation/provider criteria in `app/features/README.md`, `docs/architecture/README.md` and `docs/architecture/migration-checkpoints.md`
+- [X] T082 Update generated structure evidence and its regression expectation via `scripts/generate-structure.mjs`, `docs/architecture/structure.md` and `tests/integration/structure-snapshot.test.ts`
+- [X] T083 Refresh the allowlisted Graphify code graph and verify it is current using `scripts/graphify-workflow.mjs` and `graphify-out/`
+- [X] T084 Run every focused command and migration checkpoint from `specs/006-conversational-task-workspace/quickstart.md` and record actual outcomes in that file
+- [X] T085 Run `npm run verify` and `npm run verify:e2e`, correct regressions within 006 scope, and record final automated evidence in `specs/006-conversational-task-workspace/quickstart.md`
 - [ ] T086 Conduct the human study required by SC-002, SC-003 and SC-010 with at least 10 participants and record method, raw outcomes and pass/fail without substituting automated evidence in `specs/006-conversational-task-workspace/usability-results.md`
 
 ---

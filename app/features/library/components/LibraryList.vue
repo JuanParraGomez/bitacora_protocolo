@@ -1,17 +1,76 @@
 <script setup lang="ts">
 import type { LibraryRecordSummary } from '../domain/library-record.schema';
-defineProps<{ records: LibraryRecordSummary[] }>();
+defineProps<{
+  records: LibraryRecordSummary[];
+  selectedRecordId?: string | null;
+}>();
+
+const emit = defineEmits<{
+  select: [id: string];
+}>();
+
+function labelForRecordKind(kind: LibraryRecordSummary['resourceKind']): string {
+  switch (kind) {
+    case 'method':
+      return 'Metodo';
+    case 'tool':
+      return 'Herramienta';
+    case 'automation-candidate':
+      return 'Automatizacion';
+    default:
+      return 'Aprendizaje';
+  }
+}
 </script>
 
 <template>
   <section aria-labelledby="library-list-title">
     <h2 id="library-list-title">Registros permanentes</h2>
     <p v-if="!records.length">Todavía no hay registros.</p>
-    <ul v-else>
+    <ul v-else class="library-list">
       <li v-for="record in records" :key="record.id">
-        <NuxtLink :to="`/library/${encodeURIComponent(record.id)}`">{{ record.titulo }}</NuxtLink>
-        <span v-if="record.tarea"> · {{ record.tarea }}</span>
+        <button
+          type="button"
+          class="library-list__item"
+          :class="{ 'library-list__item--selected': selectedRecordId === record.id }"
+          @click="emit('select', record.id)"
+        >
+          <strong>{{ record.titulo }}</strong>
+          <span>{{ labelForRecordKind(record.resourceKind) }}</span>
+          <span v-if="record.tarea"> · {{ record.tarea }}</span>
+        </button>
       </li>
     </ul>
   </section>
 </template>
+
+<style scoped>
+.library-list {
+  display: grid;
+  gap: .5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.library-list__item {
+  display: grid;
+  gap: .2rem;
+  width: 100%;
+  text-align: left;
+  border: 1px solid #d7e4db;
+  border-radius: .8rem;
+  padding: .7rem .8rem;
+  background: #fff;
+}
+
+.library-list__item--selected {
+  border-color: #007a4d;
+  background: #f2fbf6;
+}
+
+.library-list__item span {
+  color: #536057;
+  font-size: .88rem;
+}
+</style>

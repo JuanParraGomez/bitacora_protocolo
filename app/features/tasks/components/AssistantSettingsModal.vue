@@ -21,10 +21,19 @@ const closeButtonRef = ref<HTMLButtonElement | null>(null);
 
 const statusText = computed(() => props.errorMessage || (props.saved ? 'Preferencia guardada.' : 'La conexión real está diferida para este MVP.'));
 
+function onDocumentKeydown(event: KeyboardEvent) {
+  if (!props.open || event.key !== 'Escape') return;
+  event.preventDefault();
+  close();
+}
+
 watch(() => props.open, (next) => {
   if (next) {
     selectedMode.value = props.settings.mode;
+    document.addEventListener('keydown', onDocumentKeydown);
     nextTick(() => closeButtonRef.value?.focus());
+  } else {
+    document.removeEventListener('keydown', onDocumentKeydown);
   }
 });
 
@@ -60,7 +69,10 @@ function trapFocus(event: KeyboardEvent) {
   focusable[nextIndex]?.focus();
 }
 
-onBeforeUnmount(() => close());
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onDocumentKeydown);
+});
+
 </script>
 
 <template>
@@ -74,6 +86,7 @@ onBeforeUnmount(() => close());
         aria-labelledby="assistant-settings-title"
         aria-describedby="assistant-settings-status"
         class="assistant-settings__dialog"
+        @keydown.esc.stop.prevent="close"
         @keydown.tab.prevent="trapFocus"
       >
         <header class="assistant-settings__header">

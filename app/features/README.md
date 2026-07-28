@@ -13,7 +13,17 @@ The `example-capability` directory is intentionally removable and demonstrates t
 
 ## Current capabilities
 
-`tasks` owns the guided workspace: task intake, active/completed navigation, four phase forms, deterministic gates, assistant chat state, assistant evaluations, provider-mode preference, persistence repair, and completion into library records. The assistant adapter is intentionally deterministic and local in this MVP; it never reads credentials, opens network connections, or treats persisted `prompt*` fields as trusted instructions.
+`tasks` owns the guided workspace: task intake, active/completed navigation, project grouping, four phase forms, deterministic gates, assistant chat state, assistant evaluations, provider-mode preference, persistence repair, overlay routing, and completion into library records. The assistant adapter is intentionally deterministic and local in this MVP; it never reads credentials, opens network connections, or treats persisted `prompt*` fields as trusted instructions.
+
+The capability persists its workspace shell with the compatibility batch contract only:
+
+- `bitacora:index` for active/completed navigation summaries.
+- `bitacora:projects` for project ownership, expansion, and last-active task selection.
+- `bitacora:assistant-settings` for the non-secret provider preference.
+- `bitacora:t:<id>` for task payloads.
+- `bitacora:r:<id>` for completed record payloads.
+
+The guided shell preserves deep links instead of mounting a separate legacy page. `/tasks/new` opens the new-task overlay on top of the active workspace, `/library` opens the library overlay over the current task route, and `/library/:id` keeps record-specific access through the shared shell contracts.
 
 `library` owns completed Markdown records, record browsing, downloads, and template reuse.
 
@@ -21,7 +31,7 @@ The `example-capability` directory is intentionally removable and demonstrates t
 
 ## Deferred provider removal criteria
 
-The mock workspace assistant can be removed only after a real Codex or DeepSeek adapter satisfies the same request/response contract, validates all output with the existing schemas, preserves the deterministic continuation gate, runs without client-side secrets, exposes timeout/cancellation/retry behavior, and passes the guided workspace browser, domain, persistence, migration, structure, and graph checks.
+The mock workspace assistant can be removed only after a real Codex or DeepSeek adapter satisfies the same request/response contract, validates all output with the existing schemas, preserves the deterministic continuation gate, runs without client-side secrets, exposes timeout/cancellation/retry behavior, and passes the guided workspace browser, domain, persistence, migration, structure, graph, aggregate `npm run verify`, and aggregate `npm run verify:e2e` checks.
 
 ## Add a capability
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-28T17:49:50.882Z",
-  "sourceHash": "cf4dab18659ede8dc3bdbcff404b1c93788c673d3090a34d1083492a2aebb129",
+  "generatedAt": "2026-07-28T20:04:27.484Z",
+  "sourceHash": "f9379efd0c4715235efb68907accbe0d2c30fe00b1aee7e1632f1a6378023d04",
   "modules": [
     {
       "id": "library",
@@ -53,6 +53,11 @@
     {
       "from": "server",
       "to": "shared",
+      "kind": "imports"
+    },
+    {
+      "from": "tasks",
+      "to": "library",
       "kind": "imports"
     },
     {

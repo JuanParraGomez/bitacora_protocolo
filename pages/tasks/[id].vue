@@ -5,6 +5,7 @@ import type { ProjectCollection } from '~/app/features/tasks/domain/project.sche
 import { STORAGE_KEYS, type StorageBatchOperation } from '~/shared/contracts/storage';
 import { useTaskIndex } from '~/app/features/tasks/composables/useTaskIndex';
 import { useWorkspaceState, type WorkspaceSummaryState } from '~/app/features/tasks/composables/useWorkspaceState';
+import { useWorkspaceNotices } from '~/app/features/tasks/composables/useWorkspaceNotices';
 import { completeTask } from '~/app/features/tasks/services/task-completion';
 import { createProjectStore } from '~/app/features/tasks/services/project-store';
 import SaveStatus from '~/app/components/shared/SaveStatus.vue';
@@ -24,6 +25,7 @@ const composerDraft = ref('');
 const summaryState = ref<WorkspaceSummaryState>('hidden');
 const lastVisibleMessageId = ref<string | null>(null);
 const workspaceState = shallowRef<ReturnType<typeof useWorkspaceState> | null>(null);
+const noticesApi = useWorkspaceNotices();
 const {
   index,
   projectCollection,
@@ -124,8 +126,47 @@ function rebuildWorkspaceState() {
     const projectId = projectIdForTask(task.value.id, task.value.projectId || 'legacy');
     workspaceState.value.selectTask(projectId, task.value.id);
     workspaceState.value.setProjectExpanded(projectId, true);
+    syncOverlayFromRoute();
     restorePresentation(task.value.id);
   }
+}
+
+function syncOverlayFromRoute() {
+  const overlay = typeof route.query.overlay === 'string' ? route.query.overlay : null;
+  const recordId = typeof route.query.record === 'string' ? route.query.record : null;
+  const projectId = typeof route.query.projectId === 'string'
+    ? route.query.projectId
+    : (workspaceState.value?.activeProjectId.value ?? task.value?.projectId ?? null);
+  if (overlay === 'new-task' || overlay === 'library' || overlay === 'settings') {
+    workspaceState.value?.setActiveOverlay(overlay, {
+      projectId,
+      recordId,
+    });
+    return;
+  }
+  workspaceState.value?.closeOverlay();
+}
+
+async function updateOverlayRoute(
+  overlay: 'new-task' | 'library' | 'settings' | null,
+  options: { projectId?: string | null; recordId?: string | null } = {},
+) {
+  const nextQuery = {
+    ...route.query,
+  } as Record<string, string>;
+  delete nextQuery.overlay;
+  delete nextQuery.record;
+  if (overlay) {
+    nextQuery.overlay = overlay;
+    if (options.recordId) nextQuery.record = options.recordId;
+    if (options.projectId) nextQuery.projectId = options.projectId;
+  } else {
+    delete nextQuery.projectId;
+  }
+  await navigateTo({
+    path: `/tasks/${encodeURIComponent(id.value)}`,
+    query: nextQuery,
+  });
 }
 
 function nextProjectCollection(
@@ -227,10 +268,22 @@ async function save(nextTask?: Task): Promise<boolean> {
       await refreshIndex();
       rebuildWorkspaceState();
       saveError.value = '';
+      noticesApi.pushNotice({
+        title: 'Guardado',
+        message: 'La tarea se actualizó sin salir del workspace.',
+        tone: 'success',
+      });
       if (!isDetached) saved.value = true;
       return true;
     } catch {
       saveError.value = 'No se pudo guardar. Reintenta.';
+      noticesApi.pushNotice({
+        title: 'No se pudo guardar',
+        message: 'El cambio quedó en memoria. Puedes reintentar desde el workspace.',
+        tone: 'error',
+        urgent: true,
+        onRetry: () => { void save(snapshotTask); },
+      });
       return false;
     }
   })();
@@ -418,6 +471,46 @@ function updateLastVisibleMessage(payload: { taskId: string; messageId: string |
   workspaceState.value?.setLastVisibleMessage(payload.taskId, payload.messageId);
 }
 
+function requestOverlay(payload: {
+  overlay: 'new-task' | 'library' | 'settings' | null;
+  projectId?: string | null;
+  recordId?: string | null;
+}) {
+  void updateOverlayRoute(payload.overlay, payload);
+}
+
+function handleLibraryRecordLinked(payload: {
+  recordId: string;
+  title: string;
+  status: 'linked' | 'already-linked' | 'error';
+  reason?: 'record-missing' | 'task-missing' | 'task-invalid' | 'write-failed';
+  task?: Record<string, unknown> | null;
+}) {
+  if (payload.task && task.value) {
+    Object.assign(task.value, repairTask(payload.task));
+  }
+
+  if (payload.status === 'error') {
+    noticesApi.pushNotice({
+      title: 'No se pudo vincular la referencia',
+      message: payload.reason === 'record-missing'
+        ? 'El registro ya no esta disponible en la biblioteca.'
+        : 'La referencia no pudo persistirse en la tarea activa.',
+      tone: 'error',
+      urgent: true,
+    });
+    return;
+  }
+
+  noticesApi.pushNotice({
+    title: payload.status === 'linked' ? 'Referencia vinculada' : 'Referencia ya vinculada',
+    message: payload.status === 'linked'
+      ? `${payload.title} quedo disponible como referencia revisable.`
+      : `${payload.title} ya estaba vinculada a esta tarea.`,
+    tone: 'success',
+  });
+}
+
 const currentErrors = computed(() => {
   if (!task.value) return [];
   return canAdvanceWithAssistant(task.value).reasons;
@@ -439,6 +532,15 @@ const expandedProjectIds = computed(() => (
 
 watch(id, (next) => {
   void load(next);
+});
+watch(() => route.query.overlay, () => {
+  syncOverlayFromRoute();
+});
+watch(() => route.query.record, () => {
+  syncOverlayFromRoute();
+});
+watch(() => route.query.projectId, () => {
+  syncOverlayFromRoute();
 });
 
 await load(id.value);
@@ -466,6 +568,10 @@ onMounted(() => {
         :active-tasks="index.tareas"
         :completed-items="index.registros"
         :save-task="save"
+        :active-overlay="workspaceState?.activeOverlay.value"
+        :overlay-record-id="workspaceState?.overlayRecordId.value"
+        :overlay-project-id="workspaceState?.overlayProjectId.value"
+        :notices="noticesApi.notices.value"
         @save="saveFromWorkspace"
         @dirty="markDirty"
         @request-back="retreat"
@@ -481,6 +587,10 @@ onMounted(() => {
         @update-draft="updateDraft"
         @update-summary-state="updateSummaryState"
         @update-last-visible-message="updateLastVisibleMessage"
+        @request-overlay="requestOverlay"
+        @dismiss-notice="noticesApi.dismissNotice"
+        @retry-notice="noticesApi.retryNotice"
+        @library-record-linked="handleLibraryRecordLinked"
       />
       <section class="task-page__status" aria-label="Estado de la tarea">
         <p>Fase {{ task.fase }} · {{ task.estado }}</p>

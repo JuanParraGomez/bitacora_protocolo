@@ -188,6 +188,52 @@ describe('workspace state', () => {
     expect(createState(storage).draftFor('task-b1')).toBe('');
   });
 
+  it('coordinates one active overlay at a time and persists its metadata', () => {
+    const storage = createMemoryStorage();
+    const workspace = createState(storage);
+
+    expect(workspace.setActiveOverlay('new-task', { projectId: 'project-a' })).toBe(true);
+    expect(workspace.activeOverlay.value).toBe('new-task');
+    expect(workspace.overlayProjectId.value).toBe('project-a');
+    expect(workspace.overlayRecordId.value).toBeNull();
+
+    expect(workspace.setActiveOverlay('library', {
+      projectId: 'project-b',
+      recordId: 'record-42',
+    })).toBe(true);
+    expect(workspace.activeOverlay.value).toBe('library');
+    expect(workspace.overlayProjectId.value).toBe('project-b');
+    expect(workspace.overlayRecordId.value).toBe('record-42');
+
+    workspace.closeOverlay();
+    expect(workspace.activeOverlay.value).toBeNull();
+    expect(workspace.overlayProjectId.value).toBeNull();
+    expect(workspace.overlayRecordId.value).toBeNull();
+  });
+
+  it('repairs invalid persisted overlay state without mutating valid task context', () => {
+    const storage = createMemoryStorage({
+      'bitacora:workspace-view-state': JSON.stringify({
+        activeProjectId: 'project-a',
+        activeTaskId: 'task-a1',
+        expandedProjectIds: [],
+        draftByTask: {},
+        summaryStateByTask: {},
+        lastVisibleMessageByTask: {},
+        activeOverlay: 'unexpected',
+        overlayProjectId: 'missing-project',
+        overlayRecordId: '',
+      }),
+    });
+
+    const workspace = createState(storage);
+    expect(workspace.activeProjectId.value).toBe('project-a');
+    expect(workspace.activeTaskId.value).toBe('task-a1');
+    expect(workspace.activeOverlay.value).toBeNull();
+    expect(workspace.overlayProjectId.value).toBeNull();
+    expect(workspace.overlayRecordId.value).toBeNull();
+  });
+
   it('invalidates a late response when its originating navigation context is no longer current', () => {
     const workspace = createState();
     workspace.selectTask('project-a', 'task-a1');

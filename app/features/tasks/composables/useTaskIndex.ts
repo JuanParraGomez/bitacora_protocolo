@@ -32,6 +32,13 @@ const recordSummarySchema = z.object({
   tareaId: z.string().default(''),
   taskId: z.string().default(''),
   projectId: normalizedProjectIdSchema,
+  resourceKind: z.enum(['method', 'tool', 'learning', 'automation-candidate']).default('learning'),
+  sourceTaskId: z.string().default(''),
+  sourceMethodVersionId: z.string().nullable().default(null),
+  automationEvidence: z.object({
+    status: z.enum(['hypothesis', 'candidate-with-evidence']),
+    occurrenceCount: z.number().int().min(0).default(0),
+  }).nullable().default(null),
 });
 
 const projectSummarySchema = z.object({
@@ -90,7 +97,17 @@ function parseRecordSummary(entry: unknown) {
   return parsed.success ? parsed.data : null;
 }
 
-function isRecordLike(value: unknown): value is { id: string; titulo?: string; tareaId?: string; taskId?: string; projectId?: string } {
+function isRecordLike(value: unknown): value is {
+  id: string;
+  titulo?: string;
+  tareaId?: string;
+  taskId?: string;
+  projectId?: string;
+  resourceKind?: 'method' | 'tool' | 'learning' | 'automation-candidate';
+  sourceTaskId?: string;
+  sourceMethodVersionId?: string | null;
+  automationEvidence?: { status?: 'hypothesis' | 'candidate-with-evidence'; occurrenceCount?: number } | null;
+} {
   return Boolean(value && typeof value === 'object' && 'id' in value);
 }
 
@@ -114,6 +131,10 @@ function parseTaskIndex(raw: string | null | undefined): TaskIndex {
           tareaId: item.tareaId ?? item.taskId ?? item.id,
           taskId: item.taskId ?? item.tareaId ?? item.id,
           projectId: item.projectId ?? 'legacy',
+          resourceKind: item.resourceKind ?? 'learning',
+          sourceTaskId: item.sourceTaskId ?? item.taskId ?? item.tareaId ?? item.id,
+          sourceMethodVersionId: item.sourceMethodVersionId ?? null,
+          automationEvidence: item.automationEvidence ?? null,
         }))
         .filter((record): record is NonNullable<ReturnType<typeof parseRecordSummary>> => Boolean(record)),
     );

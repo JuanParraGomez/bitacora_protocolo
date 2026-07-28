@@ -16,6 +16,9 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   openNavigation: [];
   expandSidebar: [];
+  openNewTask: [];
+  openLibrary: [];
+  openSettings: [event: Event];
 }>();
 
 const navigationButton = ref<HTMLButtonElement | null>(null);
@@ -59,6 +62,12 @@ defineExpose({ focusNavigation });
     <div class="workspace-header__stage">
       <strong>Etapa {{ props.phase }} de 4</strong>
       <span>{{ props.phaseTitle }}</span>
+    </div>
+
+    <div class="workspace-header__actions">
+      <button type="button" @click="emit('openNewTask')">Nueva tarea</button>
+      <button type="button" @click="emit('openLibrary')">Biblioteca</button>
+      <button type="button" @click="emit('openSettings', $event)">Ajustes</button>
     </div>
   </header>
 </template>
@@ -122,6 +131,20 @@ defineExpose({ focusNavigation });
   font-size: .72rem;
 }
 
+.workspace-header__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .55rem;
+}
+
+.workspace-header__actions button {
+  border: 1px solid #cfe0d7;
+  border-radius: .6rem;
+  padding: .55rem .75rem;
+  color: #173026;
+  background: #fff;
+}
+
 .workspace-header__stage strong {
   color: #1e2a23;
 }
@@ -136,6 +159,12 @@ defineExpose({ focusNavigation });
   .workspace-header__stage {
     grid-column: 2;
     justify-items: start;
+  }
+
+  .workspace-header__actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 }
 </style>

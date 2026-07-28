@@ -1,12 +1,31 @@
 <script setup lang="ts">
-import { createBlankTask } from '../domain/task-rules';
-import { taskIndexSchema } from '../domain/task.schema';
-import { STORAGE_KEYS } from '~/shared/contracts/storage';
-const emit = defineEmits<{ created: [id: string] }>();
+import {
+  createTaskIntakeSubmissionMachine,
+  transitionTaskIntakeSubmissionState,
+  TASK_DIRECTIVE_MAX_LENGTH,
+  TASK_NAME_MAX_LENGTH,
+  type TaskIntakeSubmissionState,
+  type TaskIntakeSubmission,
+  validateTaskIntake,
+} from './task-intake';
+
+const props = withDefaults(defineProps<{
+  disabled?: boolean;
+  submissionState?: TaskIntakeSubmissionState;
+}>(), {
+  disabled: false,
+  submissionState: 'idle',
+});
+
+const emit = defineEmits<{
+  submit: [payload: TaskIntakeSubmission];
+  dirty: [];
+}>();
 const name = ref('');
 const directive = ref('');
 const error = ref('');
 const route = useRoute();
+const submission = ref(createTaskIntakeSubmissionMachine());
 
 const templateId = String(route.query.template || '');
 if (templateId) {
@@ -16,38 +35,75 @@ if (templateId) {
       const template = JSON.parse(response.value) as { nombre?: string; directiva?: string };
       name.value = template.nombre || '';
       directive.value = template.directiva || '';
-    } catch { /* malformed templates remain unavailable rather than breaking intake */ }
+    } catch {
+      // Malformed templates remain unavailable rather than breaking intake.
+    }
   }
 }
 
-async function submit() {
-  error.value = '';
-  if (!name.value.trim()) { error.value = 'El nombre es obligatorio.'; return; }
-  const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-  const task = { ...createBlankTask(name.value.trim(), directive.value.trim()), id };
-  const current = await $fetch<{ value: unknown } | null>('/api/storage/bitacora%3Aindex').catch(() => null);
-  let index: { tareas: unknown[]; registros: unknown[] } = { tareas: [], registros: [] };
-  if (current?.value) {
-    try {
-      const parsed = taskIndexSchema.safeParse(JSON.parse(String(current.value)));
-      if (parsed.success) index = { tareas: parsed.data.tareas, registros: parsed.data.registros };
-    } catch { index = { tareas: [], registros: [] }; }
+watch([name, directive], () => {
+  submission.value = transitionTaskIntakeSubmissionState(submission.value, 'input');
+  emit('dirty');
+});
+
+watch(() => props.submissionState, (nextState) => {
+  if (!nextState || nextState === submission.value.state) {
+    return;
   }
-  index.tareas.unshift(task);
-  await $fetch('/api/storage/bitacora%3Aindex', { method: 'PUT', body: { value: JSON.stringify(index) } });
-  await $fetch(`/api/storage/${encodeURIComponent(STORAGE_KEYS.task(id))}`, { method: 'PUT', body: { value: JSON.stringify(task) } });
-  await navigateTo(`/tasks/${encodeURIComponent(id)}`);
-  emit('created', id);
+
+  if (nextState === 'submitting') {
+    return;
+  }
+
+  if (nextState === 'succeeded') {
+    submission.value = transitionTaskIntakeSubmissionState(submission.value, 'success');
+    return;
+  }
+
+  if (nextState === 'failed') {
+    submission.value = transitionTaskIntakeSubmissionState(submission.value, 'failure');
+    return;
+  }
+
+  if (nextState === 'invalid') {
+    submission.value = transitionTaskIntakeSubmissionState(submission.value, 'invalid');
+    return;
+  }
+
+  if (nextState === 'idle') {
+    submission.value = transitionTaskIntakeSubmissionState(submission.value, 'input');
+  }
+});
+
+function submit() {
+  error.value = '';
+  submission.value = transitionTaskIntakeSubmissionState(submission.value, 'attempt');
+  if (submission.value.state !== 'submitting') {
+    return;
+  }
+
+  const result = validateTaskIntake({
+    name: name.value,
+    directive: directive.value,
+    templateTaskId: templateId || null,
+  });
+  if (!result.ok) {
+    error.value = result.error;
+    submission.value = transitionTaskIntakeSubmissionState(submission.value, 'invalid');
+    return;
+  }
+
+  emit('submit', result.value);
 }
 </script>
 
 <template>
   <form @submit.prevent="submit">
     <label for="task-name">Nombre</label>
-  <input id="task-name" v-model="name" />
+    <input id="task-name" v-model="name" :maxlength="TASK_NAME_MAX_LENGTH" :disabled="props.disabled" />
     <label for="task-directive">Directiva</label>
-    <textarea id="task-directive" v-model="directive" />
+    <textarea id="task-directive" v-model="directive" :maxlength="TASK_DIRECTIVE_MAX_LENGTH" :disabled="props.disabled" />
     <p v-if="error" role="alert">{{ error }}</p>
-    <button type="submit">Crear tarea</button>
+    <button type="submit" :disabled="props.disabled || submission.state === 'submitting'">Crear tarea</button>
   </form>
 </template>

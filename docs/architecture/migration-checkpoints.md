@@ -33,7 +33,7 @@
 ## Checkpoint 5 — Guided workspace assistant MVP
 
 - Status: validated for the deterministic MVP; real providers remain deferred.
-- Evidence: Nuxt UI shell, three-region workspace, safe chat updates, versioned evaluations, current-evaluation continuation gate, non-secret Codex/DeepSeek preference, accessibility/security/migration regressions, and refreshed structure/graph evidence.
-- Compatibility: existing tasks remain under `bitacora:t:<id>`, `bitacora:index` remains the navigation index, completed records remain under `bitacora:r:<id>`, and legacy `prompt*` fields are preserved but inert.
-- Provider removal criteria: remove the mock only after a real adapter validates against the same schemas, keeps deterministic gates mandatory, avoids client-side secrets, documents timeout/cancellation behavior, and passes aggregate verification plus browser E2E.
+- Evidence: Nuxt UI shell, three-region workspace, preserved overlay deep links (`/tasks/new`, `/library`, `/library/:id` through the shared shell), safe chat updates, versioned evaluations, current-evaluation continuation gate, non-secret Codex/DeepSeek preference, accessibility/security/migration regressions, refreshed structure/graph evidence, and the final aggregate verification checkpoints.
+- Compatibility: existing tasks remain under `bitacora:t:<id>`, `bitacora:index` remains the navigation index, `bitacora:projects` preserves project ownership and last-active task selection, completed records remain under `bitacora:r:<id>`, `bitacora:assistant-settings` keeps the non-secret provider preference, and legacy `prompt*` fields are preserved but inert.
+- Provider removal criteria: remove the mock only after a real adapter validates against the same schemas, keeps deterministic gates mandatory, avoids client-side secrets, documents timeout/cancellation behavior, and passes aggregate `npm run verify` plus aggregate `npm run verify:e2e`.
 - Recovery: keep `/legacy` available, retain SQLite backups, disable real provider wiring if introduced, and redeploy the deterministic single-runtime image.

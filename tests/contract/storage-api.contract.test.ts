@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-const base = process.env.TEST_BASE_URL ?? 'http://localhost:3000';
+const base = process.env.TEST_BASE_URL ?? 'http://127.0.0.1:3005';
 
 async function request(path: string, init?: RequestInit) {
   return fetch(`${base}${path}`, init);

@@ -42,6 +42,11 @@ if (initialTask) {
   await navigateTo(`/tasks/${encodeURIComponent(initialTask.id)}`, { replace: true });
 }
 
+function openNewTask(projectId: string) {
+  const target = projectId || initialProjectId;
+  void navigateTo(target ? `/tasks/new?projectId=${encodeURIComponent(target)}` : '/tasks/new');
+}
+
 const activeProject = computed(() => (
   projectCollection.value.projects.find((project) => project.id === selectedProjectId.value)
   ?? projectCollection.value.projects.find((project) => project.status === 'active')
@@ -155,6 +160,7 @@ async function renameProject(payload: { projectId: string; name: string }) {
         :expanded-project-ids="expandedProjectIds"
         :search-query="searchQuery"
         @create-project="createProject"
+        @open-new-task="openNewTask"
         @rename-project="renameProject"
         @select-project="selectProject"
         @select-task="selectTask"

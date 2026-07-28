@@ -66,3 +66,5 @@ the independent-review correction; it is superseded by the green schema row abov
 | Task | Type | Command | Expected red cause | Green result | Status |
 |---|---|---|---|---|---|
 | T045 / T049 | Unit / workspace state | `npx vitest run app/features/tasks/composables/useWorkspaceState.test.ts` | El módulo `useWorkspaceState.ts` no existía y Vitest falló al importarlo | 12/12 pasan; selección, borrador, resumen, ancla por ID, reparación, reset y aislamiento por generación quedan cubiertos | ✅ COMPLETE |
+| T044 / T048 | Unit / project grouping | `npx vitest run app/features/tasks/composables/useTaskIndex.test.ts` | 6/6 fallaron porque no se cargaba `bitacora:projects` ni existían grupos por proyecto y estado | 6/6 pasan; proyectos activos, archivados, vacíos, legacy y recuperación conservan agrupación aislada | ✅ COMPLETE |
+| T047 | Unit / atomic task move | `npx vitest run app/features/tasks/services/project-store.test.ts` | 6/6 fallaron porque `moveTask` no existía | 14/14 pasan; batch único, rollback/retry, pertenencia real, validación y no-op idempotente | ✅ COMPLETE |

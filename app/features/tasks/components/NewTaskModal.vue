@@ -52,10 +52,12 @@ watch(() => props.open, async (next) => {
   if (!next) return;
   resetForm();
   submissionState.value = 'idle';
-  openerRef.value = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  openerRef.value = typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+    ? document.activeElement
+    : null;
   await nextTick();
   closeButtonRef.value?.focus();
-});
+}, { immediate: true });
 
 watch(() => props.selectedProjectId, () => {
   if (!props.open) return;

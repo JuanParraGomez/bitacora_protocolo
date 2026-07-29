@@ -112,7 +112,7 @@ test.describe('Nuxt task workflows', () => {
       activeProjectId: 'project-intake',
     });
     await page.goto('/tasks/new');
-    await expect(page.getByRole('navigation', { name: 'Navegación de tareas' })).toBeVisible();
+    await expect(page.locator('.app-shell')).toHaveCount(1);
     const dialog = page.getByRole('dialog', { name: 'Crear tarea' });
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: /crear tarea/i }).click();
@@ -131,7 +131,7 @@ test.describe('Nuxt task workflows', () => {
     });
     await page.goto('/tasks/new');
     await expect(page.locator('.app-shell')).toHaveCount(1);
-    await expect(page.getByRole('navigation', { name: 'Navegación de tareas' })).toHaveCount(1);
+    await expect(page.getByRole('dialog', { name: 'Crear tarea' })).toHaveCount(1);
 
     const styles = await page.evaluate(() => {
       const body = getComputedStyle(document.body);
@@ -548,9 +548,10 @@ test.describe('Nuxt task workflows', () => {
     const guidedForm = page.locator('.guided-phase-form');
     await formRegion.getByRole('button', { name: 'Evaluar' }).click();
     await expect(guidedForm.getByText('Estado vigente y apto para continuar.')).toBeVisible();
-    await formRegion.getByRole('button', { name: 'Continuar' }).click();
-    await expect(page.getByText(/Fase 4 · completada/)).toBeVisible();
-    await expect(page.getByText('Guardado ✓')).toBeVisible();
+    await formRegion.getByRole('button', { name: 'Finalizar tarea' }).click();
+    await expect(page.getByRole('region', { name: 'Resumen completado' })).toBeVisible();
+    await expect(page.getByTestId('completion-progress')).toContainText('4/4');
+    await expect(page.getByRole('button', { name: 'Volver a tareas' })).toHaveCount(1);
     await expect((await page.request.get('/api/storage/bitacora%3Ar%3Acompletion-e2e')).status()).toBe(200);
     await expect.poll(async () => {
       const index = await page.request.get('/api/storage/bitacora%3Aindex');
@@ -596,6 +597,10 @@ test.describe('Nuxt task workflows', () => {
       activeProjectId: 'library-project',
     });
     await page.goto('/library');
+    await expect(page.getByRole('heading', { name: 'Biblioteca', level: 1 })).toBeVisible();
+    const openTaskLink = page.getByRole('link', { name: /Abrir / });
+    await expect(openTaskLink).toBeVisible();
+    await openTaskLink.click();
     const dialog = page.getByRole('dialog', { name: 'Biblioteca' });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText('Registro E2E', { exact: true })).toBeVisible();

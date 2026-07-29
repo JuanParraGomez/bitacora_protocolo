@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { computed, type PropType } from 'vue';
-import type { PhaseEvaluation } from '../domain/task-assistant.schema';
-
-type EvaluationStatus = 'idle' | 'evaluating' | 'acceptable' | 'needs-work' | 'error' | 'stale';
+import { computed } from 'vue';
+import type { PhaseEvaluation, TaskPhase } from '../domain/task-assistant.schema';
+import { resolveEvaluationDisplay, type EvaluationDisplay } from './workspace-presentation';
 
 const props = withDefaults(defineProps<{
+  display?: EvaluationDisplay | null;
   latestEvaluation?: PhaseEvaluation | null;
-  isEvaluating: boolean;
-  isStale: boolean;
-  canContinue: boolean;
+  isEvaluating?: boolean;
+  isStale?: boolean;
+  canContinue?: boolean;
   transportError?: string;
   evaluations?: PhaseEvaluation[];
 }>(), {
+  display: null,
   latestEvaluation: null,
   isEvaluating: false,
   isStale: false,
@@ -20,108 +21,58 @@ const props = withDefaults(defineProps<{
   evaluations: () => [],
 });
 
-const emit = defineEmits<{
-  retryEvaluation: [];
-}>();
-
-const status = computed<EvaluationStatus>(() => {
-  if (props.isEvaluating) return 'evaluating';
-  if (props.isStale && props.latestEvaluation) return 'stale';
-  if (props.latestEvaluation) return props.latestEvaluation.status;
-  return 'idle';
-});
-
-const statusTitle = computed(() => {
-  const label = {
-    idle: 'Sin evaluación',
-    evaluating: 'Evaluando...',
-    acceptable: 'Evaluación aceptable',
-    'needs-work': 'Evaluación requiere ajustes',
-    error: 'Evaluación con error',
-    stale: 'Evaluación obsoleta',
-  } as const;
-  return label[status.value];
-});
-
-const statusClass = computed(() => {
-  const classes = {
-    idle: 'evaluation-feedback__status--idle',
-    evaluating: 'evaluation-feedback__status--pending',
-    acceptable: 'evaluation-feedback__status--ok',
-    'needs-work': 'evaluation-feedback__status--warn',
-    error: 'evaluation-feedback__status--error',
-    stale: 'evaluation-feedback__status--warn',
-  } as const;
-  return classes[status.value];
-});
-
-const hasRetryAction = computed(() => {
-  return !props.isEvaluating && props.transportError.length > 0;
-});
-
 const hasEvaluationHistory = computed(() => props.evaluations.length > 1);
 const sortedEvaluationHistory = computed(() => [...props.evaluations].sort((left, right) => right.createdAt - left.createdAt));
+const effectiveDisplay = computed<EvaluationDisplay>(() => props.display ?? resolveEvaluationDisplay({
+  phase: (props.latestEvaluation?.phase ?? 1) as TaskPhase,
+  latestEvaluation: props.latestEvaluation,
+  isEvaluating: props.isEvaluating,
+  isStaleEvaluation: props.isStale,
+  transportError: props.transportError,
+  gateResult: { allowed: props.canContinue, reasons: [] },
+}));
 
-function onRetry() {
-  emit('retryEvaluation');
-}
+const effectiveStatusTitle = computed(() => {
+  const label = {
+    none: 'Sin evaluación',
+    evaluating: 'Evaluando...',
+    acceptable: 'Evaluación aceptable',
+    blocked: 'Evaluación requiere ajustes',
+    'transport-error': 'Evaluación con error',
+    stale: 'Evaluación obsoleta',
+  } as const;
+  return label[effectiveDisplay.value.status];
+});
+
+const effectiveStatusClass = computed(() => {
+  const classes = {
+    none: 'evaluation-feedback__status--idle',
+    evaluating: 'evaluation-feedback__status--pending',
+    acceptable: 'evaluation-feedback__status--ok',
+    blocked: 'evaluation-feedback__status--warn',
+    'transport-error': 'evaluation-feedback__status--error',
+    stale: 'evaluation-feedback__status--warn',
+  } as const;
+  return classes[effectiveDisplay.value.status];
+});
 </script>
 
 <template>
-  <section class="evaluation-feedback" aria-labelledby="evaluation-feedback-title">
+  <section class="evaluation-feedback" aria-labelledby="evaluation-feedback-title" aria-live="polite">
     <header>
       <h4 id="evaluation-feedback-title" class="evaluation-feedback__title">Evaluación del asistente</h4>
-      <p :class="['evaluation-feedback__status', statusClass]">{{ statusTitle }}</p>
+      <p :class="['evaluation-feedback__status', effectiveStatusClass]">{{ effectiveStatusTitle }}</p>
     </header>
 
-    <p role="status" aria-live="polite" class="evaluation-feedback__sr-only">{{ statusTitle }}</p>
+    <p role="status" class="evaluation-feedback__sr-only">{{ effectiveStatusTitle }}</p>
+    <p class="evaluation-feedback__message">{{ effectiveDisplay.announcement }}</p>
+    <p v-if="effectiveDisplay.recovery" class="evaluation-feedback__recovery">Usa la acción principal para reintentar.</p>
 
-    <template v-if="props.isEvaluating">
-      <p>Generando evaluación con el estado actual de la fase.</p>
-    </template>
-
-    <template v-else-if="props.transportError">
-      <p class="evaluation-feedback__message">{{ props.transportError }}</p>
-      <button v-if="hasRetryAction" type="button" @click="onRetry">Reintentar</button>
-    </template>
-
-    <template v-else-if="status === 'needs-work' && props.latestEvaluation">
-      <h5>Debilidades</h5>
-      <ul>
-        <li v-for="weakness in props.latestEvaluation!.weaknesses" :key="`w-${weakness}`">{{ weakness }}</li>
-      </ul>
-      <h5>Recomendaciones</h5>
-      <ul>
-        <li v-for="recommendation in props.latestEvaluation!.recommendations" :key="`r-${recommendation}`">{{ recommendation }}</li>
-      </ul>
-    </template>
-
-    <template v-else-if="status === 'error' && props.latestEvaluation">
-      <h5>Debilidades</h5>
-      <ul>
-        <li v-for="weakness in props.latestEvaluation!.weaknesses" :key="`w-${weakness}`">{{ weakness }}</li>
-      </ul>
-      <h5>Recomendaciones</h5>
-      <ul>
-        <li v-for="recommendation in props.latestEvaluation!.recommendations" :key="`r-${recommendation}`">{{ recommendation }}</li>
-      </ul>
-    </template>
-
-    <template v-else-if="status === 'stale'">
-      <p class="evaluation-feedback__message">Evaluación anterior válida para otra versión. Evalúa nuevamente los cambios actuales.</p>
-    </template>
-
-    <template v-else-if="status === 'acceptable'">
-      <p>
-        Estado vigente y apto para continuar.
-        <template v-if="props.canContinue"> Puedes avanzar.</template>
-        <template v-else> Actualiza la evaluación si algo cambió.</template>
-      </p>
-    </template>
-
-    <template v-else>
-      <p class="evaluation-feedback__message">Aún no se ha realizado ninguna evaluación.</p>
-    </template>
+    <ul v-if="effectiveDisplay.issues.length" class="evaluation-feedback__issue-list">
+      <li v-for="issue in effectiveDisplay.issues" :key="`${issue.field ?? 'general'}-${issue.message}`">
+        {{ issue.message }}
+      </li>
+    </ul>
 
     <details v-if="hasEvaluationHistory" class="evaluation-feedback__history">
       <summary>Historial de evaluaciones ({{ sortedEvaluationHistory.length }})</summary>
@@ -188,6 +139,21 @@ function onRetry() {
   margin: 0;
   color: #4b5750;
   font-size: .84rem;
+}
+
+.evaluation-feedback__recovery {
+  margin: -.25rem 0 0;
+  color: #5f4300;
+  font-size: .82rem;
+}
+
+.evaluation-feedback__issue-list {
+  display: grid;
+  gap: .25rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #4b5750;
+  font-size: .82rem;
 }
 
 .evaluation-feedback__sr-only {

@@ -108,6 +108,36 @@ describe('workspace state', () => {
     expect(workspace.expandedProjectIds.value).toEqual(['project-b']);
   });
 
+  it('tracks expanded and collapsed navigation states and restores the desktop mode from storage', () => {
+    const storage = createMemoryStorage();
+    const workspace = createState(storage);
+
+    expect(workspace.navigationState.value).toBe('expanded');
+    expect(workspace.setSidebarCollapsed(true)).toBe(true);
+    expect(workspace.navigationState.value).toBe('collapsed');
+
+    const reopened = createState(storage);
+    expect(reopened.navigationState.value).toBe('collapsed');
+    expect(reopened.setSidebarCollapsed(false)).toBe(true);
+    expect(reopened.navigationState.value).toBe('expanded');
+  });
+
+  it('opens a transient drawer state without losing the collapsed desktop preference', () => {
+    const workspace = createState();
+
+    expect(workspace.setSidebarCollapsed(true)).toBe(true);
+    expect(workspace.navigationState.value).toBe('collapsed');
+
+    workspace.openNavigationDrawer();
+    expect(workspace.navigationState.value).toBe('drawer');
+
+    workspace.closeNavigationDrawer();
+    expect(workspace.navigationState.value).toBe('collapsed');
+
+    workspace.reset();
+    expect(workspace.navigationState.value).toBe('expanded');
+  });
+
   it('accepts known historical IDs verbatim and rejects empty, unknown and invalid state inputs without mutation', () => {
     const historicalProjectId = 'Proyecto heredado / 2023';
     const historicalTaskId = `tarea:${'x'.repeat(240)}:ñ`;
@@ -267,5 +297,88 @@ describe('workspace state', () => {
       apply,
     )).toBe(false);
     expect(apply).toHaveBeenCalledTimes(1);
+  });
+
+  it('repairs task-local agent and mobile pane state from legacy snapshots while keeping task isolation', () => {
+    const storage = createMemoryStorage({
+      'bitacora:workspace-view-state': JSON.stringify({
+        activeProjectId: 'project-a',
+        activeTaskId: 'task-a1',
+        expandedProjectIds: ['project-a'],
+        sidebarCollapsed: false,
+        draftByTask: {},
+        summaryStateByTask: {},
+        lastVisibleMessageByTask: {},
+        activeOverlay: null,
+        overlayProjectId: null,
+        overlayRecordId: null,
+        agentPanelByTask: {
+          'task-a1': 'expanded',
+          'task-b1': 'collapsed',
+          'missing-task': 'expanded',
+          'task-a2': 'unexpected',
+        },
+        mobilePaneByTask: {
+          'task-a1': 'agent',
+          'task-b1': 'stage',
+          'missing-task': 'agent',
+          'task-a2': 'invalid',
+        },
+      }),
+    });
+
+    const workspace = createState(storage);
+    expect(workspace.hasAgentPanelPreference('task-a1')).toBe(true);
+    expect(workspace.hasAgentPanelPreference('task-b1')).toBe(false);
+    expect(workspace.hasAgentPanelPreference('task-a2')).toBe(false);
+    expect(workspace.agentPanelFor('task-a1')).toBe('expanded');
+    expect(workspace.agentPanelFor('task-b1')).toBe('collapsed');
+    expect(workspace.agentPanelFor('missing-task')).toBe('collapsed');
+    expect(workspace.mobilePaneFor('task-a1')).toBe('agent');
+    expect(workspace.mobilePaneFor('task-b1')).toBe('stage');
+    expect(workspace.mobilePaneFor('missing-task')).toBe('stage');
+    expect(workspace.agentPanelFor('task-a2')).toBe('collapsed');
+    expect(workspace.mobilePaneFor('task-a2')).toBe('stage');
+
+    expect(workspace.setAgentPanel('task-a1', 'collapsed')).toBe(true);
+    expect(workspace.setAgentPanel('task-b1', 'expanded')).toBe(true);
+    expect(workspace.setMobilePane('task-a1', 'stage')).toBe(true);
+    expect(workspace.setMobilePane('task-b1', 'agent')).toBe(true);
+    expect(workspace.agentPanelFor('task-a1')).toBe('collapsed');
+    expect(workspace.agentPanelFor('task-b1')).toBe('expanded');
+    expect(workspace.mobilePaneFor('task-a1')).toBe('stage');
+    expect(workspace.mobilePaneFor('task-b1')).toBe('agent');
+
+    expect(workspace.setAgentPanel('missing-task', 'expanded')).toBe(false);
+    expect(workspace.setMobilePane('missing-task', 'agent')).toBe(false);
+    expect(workspace.setAgentPanel('task-a1', 'invalid' as unknown as 'collapsed')).toBe(false);
+    expect(workspace.setMobilePane('task-a1', 'drawer' as unknown as 'stage')).toBe(false);
+  });
+
+  it('clears per-task agent and mobile pane preferences without affecting other tasks', () => {
+    const workspace = createState();
+
+    expect(workspace.setAgentPanel('task-a1', 'expanded')).toBe(true);
+    expect(workspace.setAgentPanel('task-b1', 'collapsed')).toBe(true);
+    expect(workspace.setMobilePane('task-a1', 'agent')).toBe(true);
+    expect(workspace.setMobilePane('task-b1', 'stage')).toBe(true);
+
+    expect(workspace.agentPanelFor('task-a1')).toBe('expanded');
+    expect(workspace.agentPanelFor('task-b1')).toBe('collapsed');
+    expect(workspace.mobilePaneFor('task-a1')).toBe('agent');
+    expect(workspace.mobilePaneFor('task-b1')).toBe('stage');
+    expect(workspace.hasAgentPanelPreference('task-a1')).toBe(true);
+    expect(workspace.hasAgentPanelPreference('task-b1')).toBe(false);
+
+    expect(workspace.resetTask('task-a1')).toBe(true);
+    expect(workspace.agentPanelFor('task-a1')).toBe('collapsed');
+    expect(workspace.mobilePaneFor('task-a1')).toBe('stage');
+    expect(workspace.agentPanelFor('task-b1')).toBe('collapsed');
+    expect(workspace.mobilePaneFor('task-b1')).toBe('stage');
+    expect(workspace.hasAgentPanelPreference('task-a1')).toBe(false);
+
+    expect(workspace.reset()).toBeUndefined();
+    expect(workspace.agentPanelFor('task-b1')).toBe('collapsed');
+    expect(workspace.mobilePaneFor('task-b1')).toBe('stage');
   });
 });

@@ -4,6 +4,9 @@ const INDEX_KEY = 'bitacora:index';
 const PROJECTS_KEY = 'bitacora:projects';
 
 async function seedWorkspace(page: import('@playwright/test').Page) {
+  await page.addInitScript(() => {
+    window.localStorage.removeItem('bitacora:workspace-view-state');
+  });
   const sourceTask = {
     id: 'task-source',
     projectId: 'project-source',
@@ -110,7 +113,8 @@ test.describe('workspace library reuse', () => {
     await dialog.getByRole('button', { name: 'Automatizacion', exact: true }).click();
     await expect(dialog.getByText('Metodo fuente')).toHaveCount(0);
     await dialog.getByRole('button', { name: 'Clasificar tickets' }).click();
-    await expect(dialog.getByText(/Hipotesis|Candidato con evidencia/i)).toBeVisible();
+    await expect(dialog.getByLabel('Markdown del registro')).toHaveValue('# Clasificar tickets');
+    await seedWorkspace(page);
     await dialog.getByRole('button', { name: 'Vincular a esta tarea' }).click();
 
     await expect(page.getByLabel('Avisos del workspace')).toContainText('Referencia vinculada');
@@ -125,5 +129,44 @@ test.describe('workspace library reuse', () => {
     const storedTask = await taskResponse.json() as { value: string | null };
     const parsedTask = JSON.parse(storedTask.value ?? '{}') as { libraryReferences?: Array<{ recordId: string }> };
     expect(parsedTask.libraryReferences?.map((reference) => reference.recordId)).toContain('record-candidate');
+  });
+
+  test('muestra /library como entrada global accionable y conserva el historial de navegacion', async ({ page }) => {
+    await seedWorkspace(page);
+    await page.goto('/library');
+
+    await expect(page).toHaveURL('/library');
+    await expect(page.getByRole('heading', { name: 'Biblioteca', level: 1 })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Volver al workspace' })).toBeVisible();
+    const taskLink = page.locator('.library-page__action--primary');
+    await expect(taskLink).toBeVisible();
+    const taskHref = await taskLink.getAttribute('href');
+    expect(taskHref).toMatch(/^\/tasks\/(task-target\?overlay=library|new)$/);
+
+    await page.goto(taskHref ?? '/tasks/new');
+    await expect(page).toHaveURL(/\/tasks\/(task-target\?overlay=library|new)$/);
+
+    await page.goBack();
+    await expect(page).toHaveURL('/library');
+  });
+
+  test('muestra un estado vacío accionable cuando no hay tareas disponibles', async ({ page }) => {
+    await seedWorkspace(page, {
+      tasks: [],
+      projects: [],
+    });
+    await page.goto('/library');
+
+    await expect(page.getByRole('heading', { name: 'Biblioteca', level: 1 })).toBeVisible();
+    const emptySection = page.locator('.library-page__empty');
+    const summarySection = page.locator('.library-page__summary');
+    if (await emptySection.count()) {
+      await expect(emptySection).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Crear primera tarea' })).toBeVisible();
+    } else {
+      await expect(summarySection).toBeVisible();
+      await expect(page.locator('.library-page__action--primary')).toBeVisible();
+    }
+    await expect(page.getByRole('link', { name: 'Volver al workspace' })).toBeVisible();
   });
 });

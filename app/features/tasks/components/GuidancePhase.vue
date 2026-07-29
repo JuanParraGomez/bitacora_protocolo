@@ -2,8 +2,13 @@
 import type { Task } from '../domain/task.schema';
 import { computed, reactive, toRaw, watch } from 'vue';
 
-const props = withDefaults(defineProps<{ task: Task; saveTask?: () => Promise<boolean> }>(), {
+const props = withDefaults(defineProps<{
+  task: Task;
+  saveTask?: () => Promise<boolean>;
+  fieldIssueIds?: Record<string, string>;
+}>(), {
   saveTask: undefined,
+  fieldIssueIds: () => ({}),
 });
 const task = reactive(toRaw(props.task));
 const emit = defineEmits<{ save: []; dirty: [] }>();
@@ -41,6 +46,10 @@ function addCriterion() {
   emit('dirty');
 }
 
+function describedBy(field: string): string | undefined {
+  return props.fieldIssueIds[field] || undefined;
+}
+
 watch(() => task.f2, () => {
   emit('dirty');
   emit('save');
@@ -55,15 +64,22 @@ watch(() => task.f2, () => {
         <p>Propósito: convertir el análisis en una guía accionable.</p>
         <p>Beneficios: hace explícitos los criterios y permite priorizar el trabajo.</p>
         <p>Utilidad: conecta la formulación vigente con la ejecución y la revisión.</p>
-        <label>Decisión <input v-model="task.f2.decision" /></label>
-        <label>Alcance <textarea v-model="task.f2.alcance" /></label>
-        <label>No-objetivos <textarea v-model="task.f2.noObjetivos" /></label>
-        <label>Pasos <textarea v-model="task.f2.pasos" /></label>
+        <label for="phase-two-decision">Decisión</label>
+        <input id="phase-two-decision" v-model="task.f2.decision" :aria-describedby="describedBy('f2.decision')" />
+        <label for="phase-two-scope">Alcance</label>
+        <textarea id="phase-two-scope" v-model="task.f2.alcance" :aria-describedby="describedBy('f2.alcance')" />
+        <label for="phase-two-non-goals">No-objetivos</label>
+        <textarea id="phase-two-non-goals" v-model="task.f2.noObjetivos" :aria-describedby="describedBy('f2.alcance')" />
+        <label for="phase-two-steps">Pasos</label>
+        <textarea id="phase-two-steps" v-model="task.f2.pasos" :aria-describedby="describedBy('f2.pasos')" />
         <label>Dependencias y orden entre pasos <textarea v-model="task.f2.guia" rows="2" /></label>
-        <label>Subproblemas <textarea v-model="subproblemRows" rows="3" /></label>
-        <label>Preguntas abiertas <textarea v-model="openQuestionRows" rows="3" /></label>
-        <label>Riesgos detectados <textarea v-model="riskRows" rows="3" /></label>
-        <fieldset><legend>Predicciones</legend>
+        <label for="phase-two-subproblems">Subproblemas</label>
+        <textarea id="phase-two-subproblems" v-model="subproblemRows" rows="3" :aria-describedby="describedBy('f2.subproblemas')" />
+        <label for="phase-two-open-questions">Preguntas abiertas</label>
+        <textarea id="phase-two-open-questions" v-model="openQuestionRows" rows="3" :aria-describedby="describedBy('f2.preguntasAbiertas')" />
+        <label for="phase-two-risks">Riesgos detectados</label>
+        <textarea id="phase-two-risks" v-model="riskRows" rows="3" :aria-describedby="describedBy('f2.riesgos')" />
+        <fieldset id="phase-two-predictions" :aria-describedby="describedBy('f2.predicciones')"><legend>Predicciones</legend>
           <div v-for="(prediction, index) in task.f2.predicciones" :key="index">
             <label>Predicción {{ index + 1 }} <input v-model="prediction.texto" /></label>
             <label>Umbral {{ index + 1 }} <input v-model="prediction.umbral" /></label>

@@ -4,11 +4,10 @@ import type { Task } from '~/app/features/tasks/domain/task.schema';
 import type { ProjectCollection } from '~/app/features/tasks/domain/project.schema';
 import { STORAGE_KEYS, type StorageBatchOperation } from '~/shared/contracts/storage';
 import { useTaskIndex } from '~/app/features/tasks/composables/useTaskIndex';
-import { useWorkspaceState, type WorkspaceSummaryState } from '~/app/features/tasks/composables/useWorkspaceState';
+import { useWorkspaceState, type WorkspaceAgentPanelState, type WorkspaceMobilePaneState, type WorkspaceSummaryState } from '~/app/features/tasks/composables/useWorkspaceState';
 import { useWorkspaceNotices } from '~/app/features/tasks/composables/useWorkspaceNotices';
 import { completeTask } from '~/app/features/tasks/services/task-completion';
 import { createProjectStore } from '~/app/features/tasks/services/project-store';
-import SaveStatus from '~/app/components/shared/SaveStatus.vue';
 import TaskWorkspace from '~/app/features/tasks/components/TaskWorkspace.vue';
 
 const route = useRoute();
@@ -24,6 +23,8 @@ const sidebarCollapsed = ref(false);
 const composerDraft = ref('');
 const summaryState = ref<WorkspaceSummaryState>('hidden');
 const lastVisibleMessageId = ref<string | null>(null);
+const agentPanelState = ref<WorkspaceAgentPanelState | undefined>(undefined);
+const mobilePane = ref<WorkspaceMobilePaneState>('stage');
 const workspaceState = shallowRef<ReturnType<typeof useWorkspaceState> | null>(null);
 const noticesApi = useWorkspaceNotices();
 useHead(() => ({
@@ -114,16 +115,33 @@ function restorePresentation(taskId: string) {
   composerDraft.value = workspaceState.value?.draftFor(taskId) ?? '';
   summaryState.value = workspaceState.value?.summaryStateFor(taskId) ?? 'hidden';
   lastVisibleMessageId.value = workspaceState.value?.lastVisibleMessageFor(taskId) ?? null;
+  agentPanelState.value = workspaceState.value?.hasAgentPanelPreference(taskId)
+    ? workspaceState.value.agentPanelFor(taskId)
+    : undefined;
+  mobilePane.value = workspaceState.value?.mobilePaneFor(taskId) ?? 'stage';
 }
 
 function rebuildWorkspaceState() {
   if (!import.meta.client) return;
+  const contexts = projectGroups.value.map((group) => ({
+    projectId: group.project.id,
+    taskIds: taskIdsForGroup(group),
+  }));
+  if (task.value) {
+    const currentProjectId = task.value.projectId || 'legacy';
+    const existingContext = contexts.find((context) => context.projectId === currentProjectId);
+    if (existingContext) {
+      existingContext.taskIds = [...new Set([...existingContext.taskIds, task.value.id])];
+    } else {
+      contexts.push({
+        projectId: currentProjectId,
+        taskIds: [task.value.id],
+      });
+    }
+  }
   workspaceState.value = useWorkspaceState({
     storage: window.localStorage,
-    contexts: projectGroups.value.map((group) => ({
-      projectId: group.project.id,
-      taskIds: taskIdsForGroup(group),
-    })),
+    contexts,
   });
   sidebarCollapsed.value = workspaceState.value.sidebarCollapsed.value;
   if (task.value) {
@@ -484,6 +502,16 @@ function updateLastVisibleMessage(payload: { taskId: string; messageId: string |
   workspaceState.value?.setLastVisibleMessage(payload.taskId, payload.messageId);
 }
 
+function updateAgentPanelState(payload: { taskId: string; state: 'collapsed' | 'expanded' }) {
+  if (payload.taskId === task.value?.id) agentPanelState.value = payload.state;
+  workspaceState.value?.setAgentPanel(payload.taskId, payload.state);
+}
+
+function updateMobilePane(payload: { taskId: string; state: 'stage' | 'agent' }) {
+  if (payload.taskId === task.value?.id) mobilePane.value = payload.state;
+  workspaceState.value?.setMobilePane(payload.taskId, payload.state);
+}
+
 function requestOverlay(payload: {
   overlay: 'new-task' | 'library' | 'settings' | null;
   projectId?: string | null;
@@ -526,10 +554,6 @@ function handleLibraryRecordLinked(payload: {
   });
 }
 
-const currentErrors = computed(() => {
-  if (!task.value) return [];
-  return canAdvanceWithAssistant(task.value).reasons;
-});
 const canContinue = computed(() => task.value ? canAdvanceWithAssistant(task.value).allowed : false);
 const activeWorkspaceProjectId = computed(() => (
   workspaceState.value?.activeProjectId.value
@@ -587,11 +611,14 @@ onMounted(() => {
         :overlay-record-id="workspaceState?.overlayRecordId.value"
         :overlay-project-id="workspaceState?.overlayProjectId.value"
         :notices="noticesApi.notices.value"
+        :agent-panel-state="agentPanelState"
+        :mobile-pane="mobilePane"
         @save="saveFromWorkspace"
         @dirty="markDirty"
-        @request-back="retreat"
-        @request-continue="advance"
-        @create-project="createProject"
+	        @request-back="retreat"
+	        @request-continue="advance"
+	        @request-return="navigateTo('/')"
+	        @create-project="createProject"
         @rename-project="renameProject"
         @rename-task="renameTask"
         @select-project="selectProject"
@@ -602,17 +629,13 @@ onMounted(() => {
         @update-draft="updateDraft"
         @update-summary-state="updateSummaryState"
         @update-last-visible-message="updateLastVisibleMessage"
+        @update-agent-panel-state="updateAgentPanelState"
+        @update-mobile-pane="updateMobilePane"
         @request-overlay="requestOverlay"
         @dismiss-notice="noticesApi.dismissNotice"
         @retry-notice="noticesApi.retryNotice"
         @library-record-linked="handleLibraryRecordLinked"
       />
-      <section class="task-page__status" aria-label="Estado de la tarea">
-        <p>Fase {{ task.fase }} · {{ task.estado }}</p>
-        <SaveStatus :status="saveError ? 'error' : saved ? 'saved' : 'idle'" :message="saveError" />
-        <p v-if="currentErrors.length" role="alert">{{ currentErrors.join(' ') }}</p>
-        <button type="button" :disabled="!canContinue" @click="advance">Avanzar</button>
-      </section>
     </template>
     <p v-else class="task-workspace__loading">Cargando interfaz...</p>
   </main>
@@ -624,7 +647,7 @@ onMounted(() => {
 .task-page {
   position: relative;
   display: grid !important;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
   height: 100dvh;
   min-height: 0;
   overflow: hidden;
@@ -637,53 +660,4 @@ onMounted(() => {
   max-height: 100%;
 }
 
-.task-page__status {
-  position: relative;
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: .75rem;
-  min-height: 3rem;
-  max-height: 35dvh;
-  overflow: auto;
-  padding: .4rem .7rem;
-  border-top: 1px solid #d7ddd8;
-  color: #526058;
-  font-size: .82rem;
-  background: #f8faf8;
-  pointer-events: none;
-}
-
-.task-page__status p {
-  margin: 0;
-}
-
-.task-page__status [role='alert'] {
-  max-width: 42rem;
-  pointer-events: none;
-}
-
-.task-page__status [role='status'] {
-  pointer-events: none;
-}
-
-.task-page__status button {
-  border-color: #007a4d;
-  color: #fff;
-  background: #007a4d;
-  pointer-events: auto;
-}
-
-.task-page__status button:disabled {
-  pointer-events: none;
-}
-
-@media (max-width: 767px) {
-  .task-page__status {
-    align-items: stretch;
-    flex-direction: column;
-  }
-}
 </style>

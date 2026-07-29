@@ -104,6 +104,11 @@ function submit() {
     <label for="task-directive">Directiva</label>
     <textarea id="task-directive" v-model="directive" :maxlength="TASK_DIRECTIVE_MAX_LENGTH" :disabled="props.disabled" />
     <p v-if="error" role="alert">{{ error }}</p>
-    <button type="submit" :disabled="props.disabled || submission.state === 'submitting'">Crear tarea</button>
+    <button
+      type="submit"
+      :disabled="props.disabled || submission.state === 'submitting'"
+    >
+      Crear tarea
+    </button>
   </form>
 </template>

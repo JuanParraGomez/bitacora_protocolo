@@ -60,6 +60,7 @@ const emit = defineEmits<{
   display: grid;
   gap: .7rem;
   width: min(24rem, calc(100vw - 2rem));
+  pointer-events: none;
 }
 
 .notice-region__item {
@@ -70,6 +71,7 @@ const emit = defineEmits<{
   border-radius: .85rem;
   box-shadow: 0 18px 48px rgba(9, 22, 15, .16);
   background: rgba(255, 255, 255, .96);
+  pointer-events: none;
 }
 
 .notice-region__item--success {
@@ -94,6 +96,7 @@ const emit = defineEmits<{
   display: flex;
   justify-content: flex-end;
   gap: .55rem;
+  pointer-events: auto;
 }
 
 .notice-region__button {

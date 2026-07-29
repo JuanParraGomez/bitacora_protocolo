@@ -98,7 +98,9 @@ test.describe('workspace overlays', () => {
     await seedWorkspace(page);
     await page.goto('/tasks/overlay-task');
 
-    await page.getByRole('region', { name: 'Contexto del workspace' }).getByRole('button', { name: 'Nueva tarea' }).click();
+    await page.getByRole('navigation', { name: 'Navegación de tareas' })
+      .getByRole('button', { name: 'Nueva tarea', exact: true })
+      .click();
     const dialog = page.getByRole('dialog', { name: 'Crear tarea' });
     await expect(dialog).toBeVisible();
 
@@ -113,6 +115,24 @@ test.describe('workspace overlays', () => {
     await dialog.getByLabel('Nombre').fill('Nueva tarea desde overlay');
     await dialog.getByRole('button', { name: 'Crear tarea' }).click();
     await expect(page).toHaveURL(/\/tasks\//);
+  });
+
+  test('submits the intake form with Enter from the name field', async ({ page }) => {
+    await seedWorkspace(page);
+    await page.goto('/tasks/overlay-task');
+
+    await page.getByRole('navigation', { name: 'Navegación de tareas' })
+      .getByRole('button', { name: 'Nueva tarea', exact: true })
+      .click();
+    const dialog = page.getByRole('dialog', { name: 'Crear tarea' });
+    await expect(dialog).toBeVisible();
+
+    await dialog.getByLabel('Nombre').fill('Nueva tarea con Enter');
+    await dialog.getByLabel('Directiva').fill('Verificar envío por teclado');
+    await dialog.getByLabel('Nombre').press('Enter');
+
+    await expect(page).toHaveURL(/\/tasks\//);
+    await expect(page.getByRole('heading', { name: 'Nueva tarea con Enter' })).toBeVisible();
   });
 
   test('opens library as desktop modeless and mobile full-width overlay with deep links', async ({ page }) => {
@@ -153,7 +173,10 @@ test.describe('workspace overlays', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/tasks/overlay-task');
 
-    const openButton = page.getByRole('region', { name: 'Contexto del workspace' }).getByRole('button', { name: 'Nueva tarea' });
+    const navigationToggle = page.getByRole('button', { name: 'Abrir navegación' });
+    await navigationToggle.click();
+    const openButton = page.getByRole('dialog', { name: 'Navegación del workspace' })
+      .getByRole('button', { name: 'Nueva tarea', exact: true });
     await openButton.click();
 
     const dialog = page.getByRole('dialog', { name: 'Crear tarea' });
@@ -177,7 +200,7 @@ test.describe('workspace overlays', () => {
 
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
-    await expect(openButton).toBeFocused();
+    await expect(navigationToggle).toBeFocused();
   });
 
   test('preserves landmarks, keyboard order, modeless library and live regions across overlay states', async ({ page, browserName }) => {
@@ -197,7 +220,7 @@ test.describe('workspace overlays', () => {
     expect(before).not.toContain('Biblioteca');
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.getByRole('region', { name: 'Contexto del workspace' })
+    await page.getByRole('navigation', { name: 'Navegación de tareas' })
       .getByRole('button', { name: 'Biblioteca', exact: true })
       .click();
     const library = page.getByRole('dialog', { name: 'Biblioteca' });
@@ -206,7 +229,7 @@ test.describe('workspace overlays', () => {
     await expect(page.getByLabel('Avisos del workspace')).toHaveCount(0);
 
     await page.getByRole('navigation', { name: 'Navegación de tareas' })
-      .locator('footer')
+      .getByRole('navigation', { name: 'Navegación secundaria' })
       .getByRole('button', { name: 'Ajustes', exact: true })
       .click();
     const settings = page.getByRole('dialog', { name: 'Ajustes de asistencia' });
@@ -263,6 +286,7 @@ test.describe('workspace overlays', () => {
 
     await page.goBack();
     await expect(page).toHaveURL('/');
-    await expect(sidebar.getByLabel('Accesos principales').getByRole('button', { name: 'Ajustes', exact: true })).toBeDisabled();
+    await expect(sidebar.getByRole('navigation', { name: 'Navegación secundaria' })
+      .getByRole('button', { name: 'Ajustes', exact: true })).toBeDisabled();
   });
 });

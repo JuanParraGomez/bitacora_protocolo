@@ -17,9 +17,12 @@ import GuidedPhaseForm from './GuidedPhaseForm.vue';
 import NewTaskModal from './NewTaskModal.vue';
 import NoticeRegion from './NoticeRegion.vue';
 import StructuredStageSummary from './StructuredStageSummary.vue';
+import TaskCompletionSummary from './TaskCompletionSummary.vue';
 import WorkspaceHeader from './WorkspaceHeader.vue';
+import WorkspacePaneTabs from './WorkspacePaneTabs.vue';
 import type { WorkspaceNotice } from '../composables/useWorkspaceNotices';
-import type { WorkspaceOverlayState } from '../composables/useWorkspaceState';
+import type { WorkspaceAgentPanelState, WorkspaceMobilePaneState, WorkspaceOverlayState } from '../composables/useWorkspaceState';
+import { resolveContextualPrimaryAction, resolveEvaluationDisplay } from './workspace-presentation';
 
 const props = withDefaults(defineProps<{
   task: Task;
@@ -39,6 +42,8 @@ const props = withDefaults(defineProps<{
   overlayRecordId?: string | null;
   overlayProjectId?: string | null;
   notices?: WorkspaceNotice[];
+  agentPanelState?: WorkspaceAgentPanelState;
+  mobilePane?: WorkspaceMobilePaneState;
 }>(), {
   projectGroups: () => [],
   activeProjectId: '',
@@ -56,15 +61,18 @@ const props = withDefaults(defineProps<{
   overlayRecordId: null,
   overlayProjectId: null,
   notices: () => [],
+  agentPanelState: undefined,
+  mobilePane: undefined,
 });
 
 const emit = defineEmits<{
   save: [Task, { operationId?: string }?];
   dirty: [Task];
   requestEvaluate: [];
-  requestEvaluationRetry: [];
-  requestBack: [];
-  requestContinue: [];
+	  requestEvaluationRetry: [];
+	  requestBack: [];
+	  requestContinue: [];
+	  requestReturn: [];
   createProject: [name: string];
   renameProject: [payload: { projectId: string; name: string }];
   renameTask: [payload: { taskId: string; name: string }];
@@ -79,6 +87,8 @@ const emit = defineEmits<{
   requestOverlay: [payload: { overlay: WorkspaceOverlayState; projectId?: string | null; recordId?: string | null }];
   dismissNotice: [id: string];
   retryNotice: [id: string];
+  updateAgentPanelState: [payload: { taskId: string; state: WorkspaceAgentPanelState }];
+  updateMobilePane: [payload: { taskId: string; state: WorkspaceMobilePaneState }];
   libraryRecordLinked: [payload: {
     recordId: string;
     title: string;
@@ -102,7 +112,8 @@ const sidebarOpen = ref(false);
 const sidebarDrawerRef = ref<HTMLElement | null>(null);
 const sidebarCloseButtonRef = ref<HTMLButtonElement | null>(null);
 const workspaceHeaderRef = ref<InstanceType<typeof WorkspaceHeader> | null>(null);
-const agentPanelExpanded = ref(true);
+const fallbackAgentPanelState = ref<WorkspaceAgentPanelState>('collapsed');
+const fallbackMobilePane = ref<WorkspaceMobilePaneState>('stage');
 const settingsButtonRef = ref<HTMLElement | null>(null);
 const settingsOpen = ref(false);
 const settingsSaving = ref(false);
@@ -155,6 +166,7 @@ const selectedProjectTasks = computed(() => {
 });
 const selectedProjectHasLocalTask = computed(() => (
   selectedProjectTasks.value.some((task) => task.id === localTask.id)
+  || (localTask.estado === 'completada' && selectedProjectId.value === (localTask.projectId || 'legacy'))
   || (!selectedProjectGroup.value && selectedProjectId.value === localTask.projectId)
 ));
 const activeProject = computed(() => (
@@ -168,6 +180,22 @@ const effectiveDraft = computed(() => props.composerDraft ?? fallbackDrafts[loca
 const effectiveSummaryState = computed(() => (
   props.summaryState ?? fallbackSummaryStates[localTask.id] ?? 'collapsed'
 ));
+const shouldOpenAgentByDefault = computed(() => (
+  localTask.fase === 1
+  || phaseMessages.value.length > 0
+  || effectiveDraft.value.trim().length > 0
+  || isCompact.value
+));
+const effectiveAgentPanelState = computed<WorkspaceAgentPanelState>(() => (
+  props.agentPanelState
+  ?? (shouldOpenAgentByDefault.value ? 'expanded' : fallbackAgentPanelState.value)
+));
+const effectiveMobilePane = computed<WorkspaceMobilePaneState>(() => (
+  props.mobilePane ?? fallbackMobilePane.value
+));
+const isAgentPanelExpanded = computed(() => (
+  isMobile.value ? true : effectiveAgentPanelState.value === 'expanded'
+));
 const phaseSnapshot = computed(() => buildPhaseSnapshot(localTask, localTask.fase).fields);
 const latestEvaluations = computed(() => localTask.assistant.evaluations
   .filter((evaluation) => evaluation.taskId === localTask.id && evaluation.phase === localTask.fase)
@@ -178,6 +206,31 @@ const evaluationHistory = computed(() => [...latestEvaluations.value].sort((left
 const latestEvaluation = computed(() => getLatestCurrentEvaluation(localTask));
 const isEvaluationStale = computed(() => !!latestEvaluation.value && !isEvaluationCurrent(localTask, latestEvaluation.value));
 const canContinue = computed(() => canContinueByAssistant(localTask));
+const isCompletedTask = computed(() => localTask.estado === 'completada');
+const fieldGateResult = computed(() => {
+  const reasons = gateReasons(localTask);
+  return {
+    allowed: reasons.length === 0 && canContinue.value,
+    reasons,
+  };
+});
+const contextualPrimaryAction = computed(() => resolveContextualPrimaryAction({
+  phase: localTask.fase as TaskPhase,
+  taskState: localTask.estado === 'completada' ? 'completed' : 'active',
+  evaluation: latestEvaluation.value,
+  isEvaluating: isEvaluating.value,
+  isStaleEvaluation: isEvaluationStale.value,
+  gateResult: fieldGateResult.value,
+  transportError: evaluationError.value,
+}));
+const evaluationDisplay = computed(() => resolveEvaluationDisplay({
+  phase: localTask.fase as TaskPhase,
+  latestEvaluation: latestEvaluation.value,
+  isEvaluating: isEvaluating.value,
+  isStaleEvaluation: isEvaluationStale.value,
+  transportError: evaluationError.value,
+  gateResult: fieldGateResult.value,
+}));
 const isEvaluating = computed(() => evaluationState.value === 'evaluating');
 const phaseMessages = computed(() => localTask.assistant.messages
   .filter((message) => message.taskId === localTask.id && message.phase === localTask.fase)
@@ -267,6 +320,12 @@ watch(() => props.task, next => {
 }, { deep: true, immediate: true });
 watch(() => props.activeOverlay, (next) => {
   settingsOpen.value = next === 'settings';
+}, { immediate: true });
+watch(() => props.agentPanelState, (next) => {
+  fallbackAgentPanelState.value = next ?? 'collapsed';
+}, { immediate: true });
+watch(() => props.mobilePane, (next) => {
+  fallbackMobilePane.value = next ?? 'stage';
 }, { immediate: true });
 watch(localTask, () => {
   emit('dirty', toRaw(localTask));
@@ -360,6 +419,16 @@ function updateSummaryState(state: 'collapsed' | 'expanded' | 'review') {
 
 function updateLastVisibleMessage(messageId: string | null) {
   emit('updateLastVisibleMessage', { taskId: localTask.id, messageId });
+}
+
+function updateAgentPanelState(state: WorkspaceAgentPanelState) {
+  fallbackAgentPanelState.value = state;
+  emit('updateAgentPanelState', { taskId: localTask.id, state });
+}
+
+function updateMobilePane(state: WorkspaceMobilePaneState) {
+  fallbackMobilePane.value = state;
+  emit('updateMobilePane', { taskId: localTask.id, state });
 }
 
 function onSelectTask(payload: { projectId: string; taskId: string }) {
@@ -481,6 +550,7 @@ function appendEvaluation(evaluation: WorkspaceEvaluation) {
 type ChatUpdateStatus = 'proposed' | 'applied' | 'rejected' | 'conflict';
 
 function handleProposalDecision(decision: ProposalDecision) {
+  if (isCompletedTask.value) return;
   const sourceMessage = localTask.assistant.messages.find((message: AssistantMessage) =>
     message.role === 'assistant' && message.updates.some((proposal: FormUpdate) => proposal.id === decision.proposalId));
   const proposal = sourceMessage?.updates.find((candidate: FormUpdate) => candidate.id === decision.proposalId);
@@ -512,6 +582,7 @@ function handleProposalDecision(decision: ProposalDecision) {
 }
 
 async function handleSendMessage(text: string, options: { retryMessageId?: string } = {}) {
+  if (isCompletedTask.value) return;
   if (chatSendState.value === 'submitted' || chatSendState.value === 'streaming') return;
   const normalized = text.trim();
   if (!normalized) return;
@@ -581,10 +652,10 @@ async function handleSendMessage(text: string, options: { retryMessageId?: strin
         Object.assign(localTask, originTask);
         chatSuggestions.value = response.suggestions;
         chatSendState.value = 'ready';
+        emit('save', originTask, {
+          operationId: `chat-send:${requestId}`,
+        });
       }
-      emit('save', originTask, {
-        operationId: `chat-send:${requestId}`,
-      });
     } catch (cause: SendError) {
       setUserMessageStatus(userMessageId, 'error', originTask);
       const originIsCurrent = contextId === conversationContext.value
@@ -594,10 +665,10 @@ async function handleSendMessage(text: string, options: { retryMessageId?: strin
         Object.assign(localTask, originTask);
         chatSendState.value = 'error';
         chatError.value = cause instanceof Error ? cause.message : 'No se pudo enviar el mensaje.';
+        emit('save', originTask, {
+          operationId: `chat-send:${requestId}`,
+        });
       }
-      emit('save', originTask, {
-        operationId: `chat-send:${requestId}`,
-      });
     } finally {
       inFlightByRequest.delete(requestId);
       if (contextId === conversationContext.value && chatSendState.value === 'submitted') {
@@ -682,7 +753,7 @@ function onRequestContinue() {
 }
 
 function toggleAgentPanel() {
-  agentPanelExpanded.value = !agentPanelExpanded.value;
+  updateAgentPanelState(isAgentPanelExpanded.value ? 'collapsed' : 'expanded');
 }
 
 function onChatSubmit(text: string) {
@@ -797,56 +868,142 @@ watch(() => [localTask.id, localTask.fase], () => {
         />
 
         <div v-if="selectedProjectHasLocalTask" class="workspace-stage-layout">
-          <section class="workspace-stage" aria-labelledby="workspace-stage-title">
-            <header class="workspace-stage__header">
-              <p class="workspace-stage__eyebrow">Etapa activa</p>
-              <h2 id="workspace-stage-title">Lienzo de la etapa</h2>
-            </header>
-            <StructuredStageSummary
-              :task="localTask"
-              :evaluation="latestEvaluation"
-              :is-stale-evaluation="isEvaluationStale"
-              :can-continue="canContinue"
-              :state="effectiveSummaryState"
-              @update-state="updateSummaryState"
-            />
-            <section role="region" aria-label="Formulario guiado" class="workspace-stage__form-region">
-              <GuidedPhaseForm
-                :task="localTask"
-                :save-task="props.saveTask"
-                :evaluation="latestEvaluation"
-                :is-evaluating="isEvaluating"
-                :is-stale-evaluation="isEvaluationStale"
-                :can-continue="canContinue"
-                :evaluation-error="evaluationError"
-                :evaluation-history="evaluationHistory"
-                @dirty="onTaskDirty"
-                @save="onTaskSave"
-                @request-evaluate="onEvaluationRequest"
-                @request-evaluation-retry="onEvaluationRetry"
-                @request-back="onRequestBack"
-                @request-continue="onRequestContinue"
-              />
-            </section>
-          </section>
+          <template v-if="isMobile">
+            <WorkspacePaneTabs
+              v-model="fallbackMobilePane"
+              class="workspace-stage-layout__tabs"
+              @update:model-value="updateMobilePane"
+            >
+              <template #stage>
+                <section class="workspace-stage" aria-labelledby="workspace-stage-title">
+                  <header class="workspace-stage__header">
+                    <p class="workspace-stage__eyebrow">{{ isCompletedTask ? 'Tarea completada' : 'Etapa activa' }}</p>
+                    <h2 id="workspace-stage-title">{{ isCompletedTask ? 'Lienzo de cierre' : 'Lienzo de la etapa' }}</h2>
+                  </header>
+                  <TaskCompletionSummary
+                    v-if="isCompletedTask"
+                    :task="localTask"
+                    :records="props.completedItems"
+                    @request-return="emit('requestReturn')"
+                  />
+                  <template v-else>
+                    <StructuredStageSummary
+                      :task="localTask"
+                      :evaluation="latestEvaluation"
+                      :is-stale-evaluation="isEvaluationStale"
+                      :can-continue="canContinue"
+                      :state="effectiveSummaryState"
+                      @update-state="updateSummaryState"
+                    />
+                    <section role="region" aria-label="Formulario guiado" class="workspace-stage__form-region">
+                      <GuidedPhaseForm
+                        :task="localTask"
+                        :save-task="props.saveTask"
+                        :evaluation="latestEvaluation"
+                        :is-evaluating="isEvaluating"
+                        :is-stale-evaluation="isEvaluationStale"
+                        :can-continue="canContinue"
+                        :evaluation-error="evaluationError"
+                        :evaluation-history="evaluationHistory"
+                        :primary-action="contextualPrimaryAction"
+                        :evaluation-display="evaluationDisplay"
+                        @dirty="onTaskDirty"
+                        @save="onTaskSave"
+                        @request-evaluate="onEvaluationRequest"
+                        @request-evaluation-retry="onEvaluationRetry"
+                        @request-back="onRequestBack"
+                        @request-continue="onRequestContinue"
+                        @request-return="emit('requestReturn')"
+                      />
+                    </section>
+                  </template>
+                </section>
+              </template>
+              <template #agent>
+                <AgentPanel
+                  :messages="phaseMessages"
+                  :suggestions="chatSuggestions"
+                  :send-status="chatSendState"
+                  :disabled="isCompletedTask"
+                  :error-message="chatError"
+                  :workspace-label="projectLabel"
+                  :draft="effectiveDraft"
+                  :restore-message-id="props.lastVisibleMessageId"
+                  :expanded="true"
+                  @toggle="toggleAgentPanel"
+                  @send="onChatSubmit"
+                  @retry="onChatRetry"
+                  @proposal-decision="handleProposalDecision"
+                  @update-draft="updateDraft"
+                  @visible-message="updateLastVisibleMessage"
+                />
+              </template>
+            </WorkspacePaneTabs>
+          </template>
 
-          <AgentPanel
-            :messages="phaseMessages"
-            :suggestions="chatSuggestions"
-            :send-status="chatSendState"
-            :disabled="false"
-            :error-message="chatError"
-            :workspace-label="projectLabel"
-            :draft="effectiveDraft"
-            :restore-message-id="props.lastVisibleMessageId"
-            :expanded="agentPanelExpanded"
-            @toggle="toggleAgentPanel"
-            @send="onChatSubmit"
-            @retry="onChatRetry"
-            @proposal-decision="handleProposalDecision"
-            @update-draft="updateDraft"
-            @visible-message="updateLastVisibleMessage"
-          />
+          <template v-else>
+            <section class="workspace-stage" aria-labelledby="workspace-stage-title">
+              <header class="workspace-stage__header">
+                <p class="workspace-stage__eyebrow">{{ isCompletedTask ? 'Tarea completada' : 'Etapa activa' }}</p>
+                <h2 id="workspace-stage-title">{{ isCompletedTask ? 'Lienzo de cierre' : 'Lienzo de la etapa' }}</h2>
+              </header>
+              <TaskCompletionSummary
+                v-if="isCompletedTask"
+                :task="localTask"
+                :records="props.completedItems"
+                @request-return="emit('requestReturn')"
+              />
+              <template v-else>
+                <StructuredStageSummary
+                  :task="localTask"
+                  :evaluation="latestEvaluation"
+                  :is-stale-evaluation="isEvaluationStale"
+                  :can-continue="canContinue"
+                  :state="effectiveSummaryState"
+                  @update-state="updateSummaryState"
+                />
+                <section role="region" aria-label="Formulario guiado" class="workspace-stage__form-region">
+                  <GuidedPhaseForm
+                    :task="localTask"
+                    :save-task="props.saveTask"
+                    :evaluation="latestEvaluation"
+                    :is-evaluating="isEvaluating"
+                    :is-stale-evaluation="isEvaluationStale"
+                    :can-continue="canContinue"
+                    :evaluation-error="evaluationError"
+                    :evaluation-history="evaluationHistory"
+                    :primary-action="contextualPrimaryAction"
+                    :evaluation-display="evaluationDisplay"
+                    @dirty="onTaskDirty"
+                    @save="onTaskSave"
+                    @request-evaluate="onEvaluationRequest"
+                    @request-evaluation-retry="onEvaluationRetry"
+                    @request-back="onRequestBack"
+                    @request-continue="onRequestContinue"
+                    @request-return="emit('requestReturn')"
+                  />
+                </section>
+              </template>
+            </section>
+
+            <AgentPanel
+              :messages="phaseMessages"
+              :suggestions="chatSuggestions"
+              :send-status="chatSendState"
+              :disabled="isCompletedTask"
+              :error-message="chatError"
+              :workspace-label="projectLabel"
+              :draft="effectiveDraft"
+              :restore-message-id="props.lastVisibleMessageId"
+              :expanded="isAgentPanelExpanded"
+              @toggle="toggleAgentPanel"
+              @send="onChatSubmit"
+              @retry="onChatRetry"
+              @proposal-decision="handleProposalDecision"
+              @update-draft="updateDraft"
+              @visible-message="updateLastVisibleMessage"
+            />
+          </template>
         </div>
 
         <section v-else class="workspace-empty-context" aria-labelledby="workspace-empty-context-title">

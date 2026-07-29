@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import type { Task } from '../domain/task.schema';
-import type { PhaseEvaluation } from '../domain/task-assistant.schema';
+import type { PhaseEvaluation, TaskPhase } from '../domain/task-assistant.schema';
 import { phaseInstructions } from '../domain/phase-instructions';
 import ExecutionPhase from './ExecutionPhase.vue';
 import GuidancePhase from './GuidancePhase.vue';
 import EvaluationFeedback from './EvaluationFeedback.vue';
 import OrientationPhase from './OrientationPhase.vue';
 import ReviewPhase from './ReviewPhase.vue';
+import StageFieldIssues from './StageFieldIssues.vue';
 import { buildGuidedPhaseFormModel, resolveGuidedPhaseSaveCopy, type GuidedPhaseSaveState } from './guided-phase-form';
+import { resolveContextualPrimaryAction, resolveEvaluationDisplay, type ContextualPrimaryAction, type EvaluationDisplay } from './workspace-presentation';
 
 const props = withDefaults(defineProps<{
   task: Task;
@@ -19,6 +21,8 @@ const props = withDefaults(defineProps<{
   canContinue?: boolean;
   evaluationError?: string;
   evaluationHistory?: PhaseEvaluation[];
+  primaryAction?: ContextualPrimaryAction | null;
+  evaluationDisplay?: EvaluationDisplay | null;
 }>(), {
   saveTask: undefined,
   evaluation: null,
@@ -27,15 +31,18 @@ const props = withDefaults(defineProps<{
   canContinue: false,
   evaluationError: '',
   evaluationHistory: () => [],
+  primaryAction: null,
+  evaluationDisplay: null,
 });
 const emit = defineEmits<{
   save: [Task];
   dirty: [Task];
   requestEvaluate: [];
-  requestEvaluationRetry: [];
-  requestBack: [];
-  requestContinue: [];
-}>();
+	  requestEvaluationRetry: [];
+	  requestBack: [];
+	  requestContinue: [];
+	  requestReturn: [];
+	}>();
 
 const phase = computed(() => props.task.fase);
 const saveState = ref<GuidedPhaseSaveState>('idle');
@@ -44,15 +51,63 @@ const currentPhaseInstruction = computed(() => phaseInstructions[phase.value as 
 const phaseModel = computed(() => buildGuidedPhaseFormModel(props.task, saveState.value, saveError.value));
 const phaseLabel = computed(() => phaseModel.value.phaseLabel ?? currentPhaseInstruction.value?.title ?? `Fase ${phase.value}`);
 const canGoBack = computed(() => props.task.fase > 1);
-const canContinue = computed(() => props.canContinue && !props.isStaleEvaluation && !!props.evaluation && props.evaluation.status === 'acceptable');
-const continueMessage = computed(() => {
-  if (!props.evaluation) return 'Requiere evaluar para continuar.';
-  if (props.isStaleEvaluation) return 'La evaluación está desfasada; vuelve a evaluar.';
-  if (props.evaluation.status !== 'acceptable') return 'Corrige y re-evalúa antes de continuar.';
-  if (props.evaluation.gateVersion !== 'outcome-v2') return 'Actualiza a outcome-v2 para habilitar el avance.';
-  return 'Puedes avanzar a la siguiente etapa.';
-});
 const saveCopy = computed(() => resolveGuidedPhaseSaveCopy(saveState.value, saveError.value));
+const fallbackGateResult = computed(() => ({
+  allowed: props.canContinue,
+  reasons: props.canContinue ? [] : ['La fase requiere una evaluación vigente y aceptable del asistente para continuar.'],
+}));
+const activePrimaryAction = computed(() => props.primaryAction ?? resolveContextualPrimaryAction({
+  phase: props.task.fase as TaskPhase,
+  taskState: props.task.estado === 'completada' ? 'completed' : 'active',
+  evaluation: props.evaluation,
+  isEvaluating: props.isEvaluating,
+  isStaleEvaluation: props.isStaleEvaluation,
+  gateResult: fallbackGateResult.value,
+  transportError: props.evaluationError,
+}));
+const activeEvaluationDisplay = computed(() => props.evaluationDisplay ?? resolveEvaluationDisplay({
+  phase: props.task.fase as TaskPhase,
+  latestEvaluation: props.evaluation,
+  isEvaluating: props.isEvaluating,
+  isStaleEvaluation: props.isStaleEvaluation,
+  transportError: props.evaluationError,
+  gateResult: fallbackGateResult.value,
+}));
+const fieldIdMap = {
+  'f1.linaje': 'lineage-source',
+  'f1.checkMapeo': 'mapping-confirmed',
+  'f1.analisisProblema.decision': 'problem-decision',
+  'f1.analisisProblema': 'problem-detected',
+  'f1.analisisProblema.justificacion': 'problem-justification',
+  'f1.resultadoDeseado': 'desired-result',
+  'f1.alcance': 'problem-scope',
+  'f1.restricciones': 'problem-constraints',
+  'f1.actores': 'problem-actors',
+  'f1.criterioExito': 'success-criteria',
+  'f2.decision': 'phase-two-decision',
+  'f2.alcance': 'phase-two-scope',
+  'f2.pasos': 'phase-two-steps',
+  'f2.subproblemas': 'phase-two-subproblems',
+  'f2.preguntasAbiertas': 'phase-two-open-questions',
+  'f2.riesgos': 'phase-two-risks',
+  'f2.predicciones': 'phase-two-predictions',
+  'f3.iteraciones': 'iteration-attempt-0',
+  'f3.checkCompila': 'phase-three-compiles',
+  'f3.checkAuditado': 'phase-three-audited',
+  'f4.aar': 'phase-four-observed-0',
+  'f4.conexiones': 'phase-four-connections',
+  'f4.cambio': 'phase-four-change',
+  'f4.titulo': 'phase-four-title-input',
+} as const;
+const fieldIssueIds = computed(() => {
+  const result: Record<string, string> = {};
+  activeEvaluationDisplay.value.issues.forEach((issue) => {
+    if (!issue.field) return;
+    const id = `stage-issue-${issue.field.replace(/\./g, '-').replace(/[^A-Za-z0-9_-]/g, '-')}`;
+    result[issue.field] = result[issue.field] ? `${result[issue.field]} ${id}` : id;
+  });
+  return result;
+});
 
 const progressSteps = computed(() => [1, 2, 3, 4].map((step) => ({
   step,
@@ -75,24 +130,43 @@ function onSavePayload() {
 async function onSaveDraft() {
   saveState.value = 'saving';
   saveError.value = '';
-  emit('save', props.task);
-  saveState.value = 'saved';
-}
+  if (!props.saveTask) {
+    emit('save', props.task);
+    saveState.value = 'saved';
+    return;
+  }
 
-function onEvaluate() {
-  emit('requestEvaluate');
-}
+  try {
+    const saved = await props.saveTask();
+    if (saved) {
+      saveState.value = 'saved';
+      return;
+    }
+  } catch {
+    // The visible save state below is the recovery path.
+  }
 
-function onRetryEvaluation() {
-  emit('requestEvaluationRetry');
+  saveState.value = 'error';
+  saveError.value = 'No se pudo guardar el borrador.';
 }
 
 function onBack() {
   emit('requestBack');
 }
 
-function onContinue() {
-  emit('requestContinue');
+function onPrimaryAction() {
+  if (activePrimaryAction.value.disabled) return;
+  if (activePrimaryAction.value.kind === 'evaluate' || activePrimaryAction.value.kind === 'reevaluate') {
+    emit('requestEvaluate');
+    return;
+  }
+  if (activePrimaryAction.value.kind === 'continue' || activePrimaryAction.value.kind === 'finish') {
+    emit('requestContinue');
+    return;
+  }
+  if (activePrimaryAction.value.kind === 'return') {
+    emit('requestReturn');
+  }
 }
 
 watch(() => props.task.id, () => {
@@ -129,31 +203,32 @@ watch(() => props.task.id, () => {
         <button v-if="canGoBack" type="button" @click="onBack">Atrás</button>
         <button
           type="button"
+          class="guided-phase-form__primary-action"
           data-focus-target="form"
-          :disabled="props.isEvaluating"
-          @click="onEvaluate"
+          data-primary-action="true"
+          :disabled="activePrimaryAction.disabled"
+          :title="activePrimaryAction.reason ?? undefined"
+          @click="onPrimaryAction"
         >
-          {{ props.isEvaluating ? 'Evaluando…' : 'Evaluar' }}
+          {{ activePrimaryAction.label }}
         </button>
-        <button v-if="props.evaluationError" type="button" @click="onRetryEvaluation">{{ saveCopy.retryLabel }}</button>
-        <button type="button" :disabled="!canContinue" :title="continueMessage" @click="onContinue">Continuar</button>
       </div>
     </header>
 
     <EvaluationFeedback
-      :latest-evaluation="props.evaluation"
-      :is-evaluating="props.isEvaluating"
-      :is-stale="props.isStaleEvaluation"
-      :can-continue="canContinue"
-      :transport-error="props.evaluationError"
+      :display="activeEvaluationDisplay"
       :evaluations="props.evaluationHistory"
-      @retry-evaluation="onRetryEvaluation"
+    />
+    <StageFieldIssues
+      :issues="activeEvaluationDisplay.issues"
+      :field-id-map="fieldIdMap"
     />
 
     <OrientationPhase
       v-if="phase === 1"
       :task="props.task"
       :save-task="props.saveTask"
+      :field-issue-ids="fieldIssueIds"
       @save="onSavePayload"
       @dirty="onDirtyPayload"
     />
@@ -161,6 +236,7 @@ watch(() => props.task.id, () => {
       v-else-if="phase === 2"
       :task="props.task"
       :save-task="props.saveTask"
+      :field-issue-ids="fieldIssueIds"
       @save="onSavePayload"
       @dirty="onDirtyPayload"
     />
@@ -168,6 +244,7 @@ watch(() => props.task.id, () => {
       v-else-if="phase === 3"
       :task="props.task"
       :save-task="props.saveTask"
+      :field-issue-ids="fieldIssueIds"
       @save="onSavePayload"
       @dirty="onDirtyPayload"
     />
@@ -175,6 +252,7 @@ watch(() => props.task.id, () => {
       v-else
       :task="props.task"
       :save-task="props.saveTask"
+      :field-issue-ids="fieldIssueIds"
       @save="onSavePayload"
       @dirty="onDirtyPayload"
     />
@@ -304,6 +382,10 @@ watch(() => props.task.id, () => {
 }
 
 .guided-phase-form > :deep(.evaluation-feedback) {
+  margin: 1rem 1.45rem 0;
+}
+
+.guided-phase-form > :deep(.stage-field-issues) {
   margin: 1rem 1.45rem 0;
 }
 

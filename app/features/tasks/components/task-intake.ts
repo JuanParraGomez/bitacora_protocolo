@@ -1,4 +1,5 @@
 import { repairProjectCollection, type ProjectCollection } from '../domain/project.schema';
+import { LEGACY_PROJECT_ID } from '../domain/project.schema';
 import { taskIndexSchema, type TaskIndex } from '../domain/task.schema';
 import { createBlankTask } from '../domain/task-rules';
 
@@ -194,7 +195,9 @@ export function resolveActiveProjectId(
   projects: ProjectCollection,
   preferredProjectId: string,
 ): string {
-  const activeProjects = projects.projects.filter((project) => project.status === 'active');
+  const activeProjects = projects.projects.filter((project) => (
+    project.status === 'active' && project.id !== LEGACY_PROJECT_ID
+  ));
   if (activeProjects.length === 0) return '';
   const requested = activeProjects.find((project) => project.id === preferredProjectId);
   return requested?.id || activeProjects[0]?.id || '';

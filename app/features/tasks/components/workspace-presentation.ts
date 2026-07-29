@@ -382,7 +382,7 @@ export function resolveEvaluationDisplay(snapshot: {
 
 export function projectCompletionSummary(task: Task, records: TaskIndex['registros'] = []): CompletionSummary {
   return {
-    progress: `${Math.min(Math.max(task.fase, 1), 4)}/4`,
+    progress: task.estado === 'completada' ? '4/4' : `${Math.min(Math.max(task.fase, 1), 4)}/4`,
     finalOutcome: resolveCompletionOutcome(task),
     keyLearning: resolveCompletionLearnings(task),
     evidence: resolveCompletionEvidence(task),

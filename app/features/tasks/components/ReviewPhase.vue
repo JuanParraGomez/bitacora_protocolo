@@ -4,8 +4,13 @@ import { currentMethodVersion, deriveCriterionImprovements, deriveMethodMaturity
 import type { Task } from '../domain/task.schema';
 import { reactive, toRaw, watch } from 'vue';
 
-const props = withDefaults(defineProps<{ task: Task; saveTask?: () => Promise<boolean> }>(), {
+const props = withDefaults(defineProps<{
+  task: Task;
+  saveTask?: () => Promise<boolean>;
+  fieldIssueIds?: Record<string, string>;
+}>(), {
   saveTask: undefined,
+  fieldIssueIds: () => ({}),
 });
 const task = reactive(toRaw(props.task));
 const emit = defineEmits<{ save: []; dirty: [] }>();
@@ -15,6 +20,9 @@ const activeOpportunities = computed(() => {
   if (!activeMethodVersion.value) return [];
   return task.automationOpportunities.filter((opportunity) => opportunity.methodVersionId === activeMethodVersion.value!.id);
 });
+function describedBy(field: string): string | undefined {
+  return props.fieldIssueIds[field] || undefined;
+}
 function automationEvidenceLabel(opportunity: Task['automationOpportunities'][number]) {
   return opportunity.occurrenceIterationIds.length >= 2
     ? 'Candidato con evidencia'
@@ -62,14 +70,19 @@ watch(() => task.f2.criterios.map(criterion => criterion.id), syncImprovements, 
     <div class="phase-workspace__content">
       <div class="phase-workspace__form">
         <div v-for="(review, index) in task.f4.aar" :key="index">
-          <label>Observado {{ index + 1 }} <input v-model="review.observado" /></label>
-          <label>Causa {{ index + 1 }} <input v-model="review.causa" /></label>
+          <label :for="`phase-four-observed-${index}`">Observado {{ index + 1 }}</label>
+          <input :id="`phase-four-observed-${index}`" v-model="review.observado" :aria-describedby="index === 0 ? describedBy('f4.aar') : undefined" />
+          <label :for="`phase-four-cause-${index}`">Causa {{ index + 1 }}</label>
+          <input :id="`phase-four-cause-${index}`" v-model="review.causa" :aria-describedby="index === 0 ? describedBy('f4.aar') : undefined" />
         <label><input v-model="review.mia" type="checkbox" /> Fue una suposición propia</label>
       </div>
-      <label>Título de consolidación <input v-model="task.f4.titulo" data-focus-target="form" /></label>
-      <label>Cambio procedimental <textarea v-model="task.f4.cambio" /></label>
+      <label for="phase-four-title-input">Título de consolidación</label>
+      <input id="phase-four-title-input" v-model="task.f4.titulo" data-focus-target="form" :aria-describedby="describedBy('f4.titulo')" />
+      <label for="phase-four-change">Cambio procedimental</label>
+      <textarea id="phase-four-change" v-model="task.f4.cambio" :aria-describedby="describedBy('f4.cambio')" />
       <label>Patrón operativo <textarea v-model="task.f4.patron" /></label>
-      <label>Conexiones y límites <textarea v-model="task.f4.conexiones" /></label>
+      <label for="phase-four-connections">Conexiones y límites</label>
+      <textarea id="phase-four-connections" v-model="task.f4.conexiones" :aria-describedby="describedBy('f4.conexiones')" />
 
       <section class="phase-workspace__method-summary">
         <h4>Método consolidado y madurez</h4>

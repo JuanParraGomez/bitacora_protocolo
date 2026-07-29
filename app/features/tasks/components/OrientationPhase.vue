@@ -2,8 +2,13 @@
 import type { Task } from '../domain/task.schema';
 import { computed, reactive, toRaw } from 'vue';
 
-const props = withDefaults(defineProps<{ task: Task; saveTask?: () => Promise<boolean> }>(), {
+const props = withDefaults(defineProps<{
+  task: Task;
+  saveTask?: () => Promise<boolean>;
+  fieldIssueIds?: Record<string, string>;
+}>(), {
   saveTask: undefined,
+  fieldIssueIds: () => ({}),
 });
 const task = reactive(toRaw(props.task));
 const emit = defineEmits<{ save: []; dirty: [] }>();
@@ -21,6 +26,10 @@ const actorRows = computed({
     task.f1.actores = normalizeTextLines(next);
   },
 });
+
+function describedBy(field: string): string | undefined {
+  return props.fieldIssueIds[field] || undefined;
+}
 </script>
 
 <template>
@@ -31,16 +40,16 @@ const actorRows = computed({
         <fieldset aria-labelledby="phase-one-priority-title">
           <legend id="phase-one-priority-title">Síntesis operativa</legend>
           <label for="problem-detected">Problema detectado</label>
-          <textarea id="problem-detected" v-model="task.f1.analisisProblema.problemaDetectado" rows="3" />
+          <textarea id="problem-detected" v-model="task.f1.analisisProblema.problemaDetectado" rows="3" :aria-describedby="describedBy('f1.analisisProblema')" />
           <label for="problem-evidence">Evidencia</label>
-          <textarea id="problem-evidence" v-model="task.f1.analisisProblema.evidencia" rows="3" />
+          <textarea id="problem-evidence" v-model="task.f1.analisisProblema.evidencia" rows="3" :aria-describedby="describedBy('f1.analisisProblema')" />
           <label for="problem-analysis">Análisis</label>
-          <textarea id="problem-analysis" v-model="task.f1.analisisProblema.analisis" rows="3" />
+          <textarea id="problem-analysis" v-model="task.f1.analisisProblema.analisis" rows="3" :aria-describedby="describedBy('f1.analisisProblema')" />
         </fieldset>
         <label for="desired-result">Resultado deseado</label>
-        <textarea id="desired-result" v-model="task.f1.resultadoDeseado" rows="2" />
+          <textarea id="desired-result" v-model="task.f1.resultadoDeseado" rows="2" :aria-describedby="describedBy('f1.resultadoDeseado')" />
         <label for="success-criteria">Criterio de éxito</label>
-        <textarea id="success-criteria" v-model="task.f1.criterioExito" rows="2" />
+          <textarea id="success-criteria" v-model="task.f1.criterioExito" rows="2" :aria-describedby="describedBy('f1.criterioExito')" />
 
         <fieldset aria-labelledby="context-and-confirmation-title">
           <legend id="context-and-confirmation-title">Contexto y confirmación</legend>
@@ -49,29 +58,30 @@ const actorRows = computed({
             id="lineage-source"
             v-model="task.f1.linaje[0]!.origen"
             data-focus-target="form"
+            :aria-describedby="describedBy('f1.linaje')"
           />
           <label for="lineage-result">Resultado del linaje</label>
-          <input id="lineage-result" v-model="task.f1.linaje[0]!.resultado" />
-          <label><input id="mapping-confirmed" v-model="task.f1.checkMapeo" type="checkbox" /> Confirmar mapeo</label>
+          <input id="lineage-result" v-model="task.f1.linaje[0]!.resultado" :aria-describedby="describedBy('f1.linaje')" />
+          <label><input id="mapping-confirmed" v-model="task.f1.checkMapeo" type="checkbox" :aria-describedby="describedBy('f1.checkMapeo')" /> Confirmar mapeo</label>
           <label><input id="mapping-accepted" v-model="task.f1.confirmacion" type="checkbox" /> Confirmación final</label>
           <label for="phase-one-doubts">Dudas</label>
           <textarea id="phase-one-doubts" v-model="task.f1.dudas" rows="2" />
           <label for="problem-scope">Alcance</label>
-          <textarea id="problem-scope" v-model="task.f1.alcance" rows="3" />
+          <textarea id="problem-scope" v-model="task.f1.alcance" rows="3" :aria-describedby="describedBy('f1.alcance')" />
           <label for="problem-constraints">Restricciones</label>
-          <textarea id="problem-constraints" v-model="task.f1.restricciones" rows="2" />
+          <textarea id="problem-constraints" v-model="task.f1.restricciones" rows="2" :aria-describedby="describedBy('f1.restricciones')" />
           <label for="problem-actors">Actores involucrados (uno por línea)</label>
-          <textarea id="problem-actors" v-model="actorRows" rows="3" />
+          <textarea id="problem-actors" v-model="actorRows" rows="3" :aria-describedby="describedBy('f1.actores')" />
           <label for="problem-decision">Decisión sobre el problema</label>
-          <select id="problem-decision" v-model="task.f1.analisisProblema.decision">
+          <select id="problem-decision" v-model="task.f1.analisisProblema.decision" :aria-describedby="describedBy('f1.analisisProblema.decision')">
             <option value="pendiente">Pendiente</option>
             <option value="mantener">Mantener</option>
             <option value="reformular">Reformular</option>
           </select>
           <label for="problem-justification">Justificación</label>
-          <textarea id="problem-justification" v-model="task.f1.analisisProblema.justificacion" rows="3" />
+          <textarea id="problem-justification" v-model="task.f1.analisisProblema.justificacion" rows="3" :aria-describedby="describedBy('f1.analisisProblema.justificacion')" />
           <label for="current-problem">Formulación vigente</label>
-          <textarea id="current-problem" v-model="task.f1.analisisProblema.problemaVigente" rows="3" />
+          <textarea id="current-problem" v-model="task.f1.analisisProblema.problemaVigente" rows="3" :aria-describedby="describedBy('f1.analisisProblema.justificacion')" />
         </fieldset>
       </div>
     </div>

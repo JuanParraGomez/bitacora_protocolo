@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useId } from 'vue';
+import { computed, nextTick, ref, useId, watch } from 'vue';
 import type { AssistantMessage, ProposalDecision } from '../domain/task-assistant.schema';
 import TaskChat from './TaskChat.vue';
 
@@ -34,10 +34,33 @@ const emit = defineEmits<{
 }>();
 
 const contentId = useId();
+const toggleButton = ref<HTMLButtonElement | null>(null);
+const isBusy = computed(() => props.sendStatus === 'submitted' || props.sendStatus === 'streaming');
+
+function onContentKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || !props.expanded) return;
+  event.preventDefault();
+  emit('toggle');
+  void nextTick(() => {
+    toggleButton.value?.focus();
+  });
+}
+
+watch(() => props.expanded, async (next, previous) => {
+  if (previous && !next) {
+    await nextTick();
+    toggleButton.value?.focus();
+  }
+});
 </script>
 
 <template>
-  <aside class="agent-panel" role="region" aria-label="Panel del agente">
+  <aside
+    class="agent-panel"
+    role="region"
+    aria-label="Panel del agente"
+    :aria-busy="isBusy ? 'true' : 'false'"
+  >
     <header class="agent-panel__rail">
       <div class="agent-panel__identity">
         <p class="agent-panel__eyebrow">Agente</p>
@@ -45,6 +68,7 @@ const contentId = useId();
         <p class="agent-panel__state">{{ props.expanded ? 'Abierto' : 'Contraído' }}</p>
       </div>
       <button
+        ref="toggleButton"
         type="button"
         class="agent-panel__toggle"
         :aria-expanded="props.expanded"
@@ -59,6 +83,9 @@ const contentId = useId();
       :id="contentId"
       class="agent-panel__content"
       :data-expanded="props.expanded ? 'true' : 'false'"
+      data-agent-panel-content
+      tabindex="0"
+      @keydown="onContentKeydown"
     >
       <TaskChat
         v-show="props.expanded"

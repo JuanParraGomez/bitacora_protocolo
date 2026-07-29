@@ -1,11 +1,17 @@
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const WORKSPACE_STATE_STORAGE_KEY = 'bitacora:workspace-view-state';
 const SUMMARY_STATES = ['hidden', 'collapsed', 'expanded', 'review'] as const;
 const OVERLAY_STATES = ['new-task', 'library', 'settings'] as const;
+const NAVIGATION_STATES = ['expanded', 'collapsed'] as const;
+const AGENT_PANEL_STATES = ['collapsed', 'expanded'] as const;
+const MOBILE_PANE_STATES = ['stage', 'agent'] as const;
 
 export type WorkspaceSummaryState = typeof SUMMARY_STATES[number];
 export type WorkspaceOverlayState = typeof OVERLAY_STATES[number] | null;
+export type WorkspaceNavigationState = typeof NAVIGATION_STATES[number] | 'drawer';
+export type WorkspaceAgentPanelState = typeof AGENT_PANEL_STATES[number];
+export type WorkspaceMobilePaneState = typeof MOBILE_PANE_STATES[number];
 
 export type WorkspaceContextDefinition = {
   projectId: string;
@@ -30,9 +36,12 @@ type StoredWorkspaceState = {
   activeProjectId: string | null;
   activeTaskId: string | null;
   expandedProjectIds: string[];
+  sidebarCollapsed: boolean;
   draftByTask: Record<string, string>;
   summaryStateByTask: Record<string, WorkspaceSummaryState>;
   lastVisibleMessageByTask: Record<string, string>;
+  agentPanelByTask: Record<string, WorkspaceAgentPanelState>;
+  mobilePaneByTask: Record<string, WorkspaceMobilePaneState>;
   activeOverlay: WorkspaceOverlayState;
   overlayProjectId: string | null;
   overlayRecordId: string | null;
@@ -55,6 +64,16 @@ function isSummaryState(value: unknown): value is WorkspaceSummaryState {
 function isOverlayState(value: unknown): value is Exclude<WorkspaceOverlayState, null> {
   return typeof value === 'string'
     && (OVERLAY_STATES as readonly string[]).includes(value);
+}
+
+function isAgentPanelState(value: unknown): value is WorkspaceAgentPanelState {
+  return typeof value === 'string'
+    && (AGENT_PANEL_STATES as readonly string[]).includes(value);
+}
+
+function isMobilePaneState(value: unknown): value is WorkspaceMobilePaneState {
+  return typeof value === 'string'
+    && (MOBILE_PANE_STATES as readonly string[]).includes(value);
 }
 
 function nonEmptyString(value: unknown): value is string {
@@ -121,9 +140,16 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions) {
   const activeOverlay = ref<WorkspaceOverlayState>(isOverlayState(stored.activeOverlay) ? stored.activeOverlay : null);
   const overlayProjectId = ref<string | null>(isKnownProject(stored.overlayProjectId) ? stored.overlayProjectId : null);
   const overlayRecordId = ref<string | null>(nonEmptyString(stored.overlayRecordId) ? stored.overlayRecordId : null);
+  const sidebarCollapsed = ref<boolean>(stored.sidebarCollapsed === true);
+  const navigationDrawerOpen = ref(false);
+  const navigationState = computed<WorkspaceNavigationState>(() => (
+    navigationDrawerOpen.value ? 'drawer' : (sidebarCollapsed.value ? 'collapsed' : 'expanded')
+  ));
   const draftByTask = new Map<string, string>();
   const summaryStateByTask = new Map<string, WorkspaceSummaryState>();
   const lastVisibleMessageByTask = new Map<string, string>();
+  const agentPanelByTask = new Map<string, WorkspaceAgentPanelState>();
+  const mobilePaneByTask = new Map<string, WorkspaceMobilePaneState>();
   let navigationGeneration = 0;
 
   if (Array.isArray(stored.expandedProjectIds)) {
@@ -159,14 +185,33 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions) {
     }
   }
 
+  if (isRecord(stored.agentPanelByTask)) {
+    for (const [taskId, panelState] of Object.entries(stored.agentPanelByTask)) {
+      if (isKnownTask(taskId) && isAgentPanelState(panelState) && panelState !== 'collapsed') {
+        agentPanelByTask.set(taskId, panelState);
+      }
+    }
+  }
+
+  if (isRecord(stored.mobilePaneByTask)) {
+    for (const [taskId, paneState] of Object.entries(stored.mobilePaneByTask)) {
+      if (isKnownTask(taskId) && isMobilePaneState(paneState) && paneState !== 'stage') {
+        mobilePaneByTask.set(taskId, paneState);
+      }
+    }
+  }
+
   function snapshot(): StoredWorkspaceState {
     return {
       activeProjectId: activeProjectId.value,
       activeTaskId: activeTaskId.value,
       expandedProjectIds: [...expandedProjectIds.value],
+      sidebarCollapsed: sidebarCollapsed.value,
       draftByTask: Object.fromEntries(draftByTask),
       summaryStateByTask: Object.fromEntries(summaryStateByTask),
       lastVisibleMessageByTask: Object.fromEntries(lastVisibleMessageByTask),
+      agentPanelByTask: Object.fromEntries(agentPanelByTask),
+      mobilePaneByTask: Object.fromEntries(mobilePaneByTask),
       activeOverlay: activeOverlay.value,
       overlayProjectId: overlayProjectId.value,
       overlayRecordId: overlayRecordId.value,
@@ -261,6 +306,40 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions) {
     return isKnownTask(taskId) ? lastVisibleMessageByTask.get(taskId) ?? null : null;
   }
 
+  function hasAgentPanelPreference(taskId: string): boolean {
+    return isKnownTask(taskId) && agentPanelByTask.has(taskId);
+  }
+
+  function agentPanelFor(taskId: string): WorkspaceAgentPanelState {
+    return isKnownTask(taskId) ? agentPanelByTask.get(taskId) ?? 'collapsed' : 'collapsed';
+  }
+
+  function setAgentPanel(taskId: string, state: WorkspaceAgentPanelState): boolean {
+    if (!isKnownTask(taskId) || !isAgentPanelState(state)) return false;
+    if (state === 'collapsed') {
+      agentPanelByTask.delete(taskId);
+    } else {
+      agentPanelByTask.set(taskId, state);
+    }
+    persist();
+    return true;
+  }
+
+  function mobilePaneFor(taskId: string): WorkspaceMobilePaneState {
+    return isKnownTask(taskId) ? mobilePaneByTask.get(taskId) ?? 'stage' : 'stage';
+  }
+
+  function setMobilePane(taskId: string, state: WorkspaceMobilePaneState): boolean {
+    if (!isKnownTask(taskId) || !isMobilePaneState(state)) return false;
+    if (state === 'stage') {
+      mobilePaneByTask.delete(taskId);
+    } else {
+      mobilePaneByTask.set(taskId, state);
+    }
+    persist();
+    return true;
+  }
+
   function setProjectExpanded(projectId: string, expanded: boolean): boolean {
     if (!isKnownProject(projectId) || typeof expanded !== 'boolean') return false;
     const next = new Set(expandedProjectIds.value);
@@ -271,11 +350,29 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions) {
     return true;
   }
 
+  function setSidebarCollapsed(collapsed: boolean): boolean {
+    if (typeof collapsed !== 'boolean') return false;
+    sidebarCollapsed.value = collapsed;
+    if (collapsed) navigationDrawerOpen.value = false;
+    persist();
+    return true;
+  }
+
+  function openNavigationDrawer() {
+    navigationDrawerOpen.value = true;
+  }
+
+  function closeNavigationDrawer() {
+    navigationDrawerOpen.value = false;
+  }
+
   function resetTask(taskId: string): boolean {
     if (!isKnownTask(taskId)) return false;
     draftByTask.delete(taskId);
     summaryStateByTask.delete(taskId);
     lastVisibleMessageByTask.delete(taskId);
+    agentPanelByTask.delete(taskId);
+    mobilePaneByTask.delete(taskId);
     if (activeTaskId.value === taskId) {
       navigationGeneration += 1;
     }
@@ -309,12 +406,16 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions) {
     activeProjectId.value = null;
     activeTaskId.value = null;
     expandedProjectIds.value = [];
+    sidebarCollapsed.value = false;
+    navigationDrawerOpen.value = false;
     activeOverlay.value = null;
     overlayProjectId.value = null;
     overlayRecordId.value = null;
     draftByTask.clear();
     summaryStateByTask.clear();
     lastVisibleMessageByTask.clear();
+    agentPanelByTask.clear();
+    mobilePaneByTask.clear();
     navigationGeneration += 1;
     if (!storage) return;
     try {
@@ -357,6 +458,8 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions) {
     activeProjectId,
     activeTaskId,
     expandedProjectIds,
+    navigationState,
+    sidebarCollapsed,
     activeOverlay,
     overlayProjectId,
     overlayRecordId,
@@ -368,7 +471,15 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions) {
     summaryStateFor,
     setLastVisibleMessage,
     lastVisibleMessageFor,
+    hasAgentPanelPreference,
+    agentPanelFor,
+    setAgentPanel,
+    mobilePaneFor,
+    setMobilePane,
     setProjectExpanded,
+    setSidebarCollapsed,
+    openNavigationDrawer,
+    closeNavigationDrawer,
     setActiveOverlay,
     closeOverlay,
     resetTask,

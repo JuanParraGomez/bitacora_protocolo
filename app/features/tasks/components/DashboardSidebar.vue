@@ -22,12 +22,18 @@ const props = withDefaults(defineProps<{
   expandedProjectIds?: string[];
   searchQuery?: string;
   collapsed?: boolean;
+  libraryHref?: string | null;
+  settingsDisabled?: boolean;
+  settingsUnavailableReason?: string;
 }>(), {
   selectedProjectId: '',
   selectedTaskId: '',
   expandedProjectIds: () => [],
   searchQuery: undefined,
   collapsed: false,
+  libraryHref: null,
+  settingsDisabled: false,
+  settingsUnavailableReason: 'Abre una tarea para usar Ajustes.',
 });
 
 const emit = defineEmits<{
@@ -145,11 +151,29 @@ function selectProject(group: WorkspaceProjectGroup) {
       </button>
     </header>
 
-    <nav class="task-sidebar__primary" aria-label="Accesos principales">
+    <nav class="task-sidebar__primary" aria-label="Navegación primaria">
+      <button type="button" class="task-sidebar__primary-link task-sidebar__primary-link--button" @click="emit('openNewTask', selectedProjectId || 'legacy')">
+        Nueva tarea
+      </button>
       <NuxtLink to="/" class="task-sidebar__primary-link">Tareas</NuxtLink>
-      <button type="button" class="task-sidebar__primary-link" @click="emit('openLibrary')">Biblioteca</button>
+    </nav>
+
+    <nav class="task-sidebar__secondary" aria-label="Navegación secundaria">
+      <NuxtLink v-if="props.libraryHref" :to="props.libraryHref" class="task-sidebar__primary-link">
+        Biblioteca
+      </NuxtLink>
+      <button v-else type="button" class="task-sidebar__primary-link" @click="emit('openLibrary')">Biblioteca</button>
       <NuxtLink to="/reference" class="task-sidebar__primary-link">Referencias</NuxtLink>
-      <button type="button" class="task-sidebar__primary-link" @click="emit('openSettings', $event)">Ajustes</button>
+      <button
+        type="button"
+        class="task-sidebar__primary-link"
+        :disabled="props.settingsDisabled"
+        :title="props.settingsDisabled ? props.settingsUnavailableReason : undefined"
+        :aria-describedby="props.settingsDisabled ? 'task-sidebar-settings-unavailable' : undefined"
+        @click="emit('openSettings', $event)"
+      >
+        Ajustes
+      </button>
     </nav>
 
     <section class="task-sidebar__tools" aria-label="Herramientas de proyectos">
@@ -233,14 +257,6 @@ function selectProject(group: WorkspaceProjectGroup) {
           :id="`project-tasks-${group.project.id}`"
           class="task-sidebar__project-content"
         >
-          <button
-            type="button"
-            class="task-sidebar__new-task"
-            @click="emit('openNewTask', group.project.id)"
-          >
-            Nueva tarea
-          </button>
-
           <p v-if="group.isEmpty" role="status">Este proyecto todavía no tiene tareas.</p>
           <p v-else-if="projectTasks(group).length === 0" role="status">
             No hay tareas que coincidan con la búsqueda.
@@ -308,15 +324,10 @@ function selectProject(group: WorkspaceProjectGroup) {
     </div>
 
     <footer class="task-sidebar__footer">
-      <button
-        type="button"
-        class="task-sidebar__settings"
-        data-focus-target="settings"
-        @click="emit('openSettings', $event)"
-      >
-        Ajustes
-      </button>
       <a href="/legacy">Aprendizajes guardados</a>
+      <p v-if="props.settingsDisabled" id="task-sidebar-settings-unavailable" class="task-sidebar__availability" role="status">
+        {{ props.settingsUnavailableReason }}
+      </p>
       <slot />
     </footer>
   </aside>
@@ -324,8 +335,8 @@ function selectProject(group: WorkspaceProjectGroup) {
 
 <style scoped>
 .task-sidebar {
-  display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
   min-height: 100%;
   padding: 1rem;
@@ -375,10 +386,22 @@ function selectProject(group: WorkspaceProjectGroup) {
   gap: .45rem;
 }
 
+.task-sidebar__secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+}
+
 .task-sidebar__primary-link {
   color: #34433a;
   font-size: .78rem;
   text-decoration: none;
+}
+
+.task-sidebar__primary-link--button {
+  border: 0;
+  padding: 0;
+  background: transparent;
 }
 
 .task-sidebar__tools,
@@ -390,6 +413,7 @@ function selectProject(group: WorkspaceProjectGroup) {
 .task-sidebar__tools {
   padding-block: .75rem;
   border-block: 1px solid #e0e6e2;
+  padding-bottom: 1rem;
 }
 
 .task-sidebar__tools label,
@@ -409,9 +433,7 @@ function selectProject(group: WorkspaceProjectGroup) {
   background: #fff;
 }
 
-.task-sidebar__create-project,
-.task-sidebar__new-task,
-.task-sidebar__settings {
+.task-sidebar__create-project {
   min-height: 2.5rem;
   border: 1px solid #9bc6b2;
   border-radius: .55rem;
@@ -421,8 +443,10 @@ function selectProject(group: WorkspaceProjectGroup) {
 }
 
 .task-sidebar__projects {
+  flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+  padding-top: .25rem;
 }
 
 .task-sidebar__project {
@@ -462,14 +486,6 @@ function selectProject(group: WorkspaceProjectGroup) {
   display: grid;
   gap: .55rem;
   padding-top: .5rem;
-}
-
-.task-sidebar__new-task {
-  display: grid;
-  place-items: center;
-  color: #06472e;
-  font-size: .8rem;
-  text-decoration: none;
 }
 
 .task-sidebar__task-list,
@@ -546,6 +562,12 @@ function selectProject(group: WorkspaceProjectGroup) {
 .task-sidebar__footer a {
   color: #526058;
   font-size: .78rem;
+}
+
+.task-sidebar__availability {
+  margin: 0;
+  color: #66736c;
+  font-size: .72rem;
 }
 
 @media (max-width: 1023px) {

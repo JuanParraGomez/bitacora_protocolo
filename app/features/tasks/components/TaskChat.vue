@@ -55,6 +55,7 @@ const proposalEditErrors = reactive<Record<string, string>>({});
 let visibleMessageFrame = 0;
 let restoreMessageFrame = 0;
 let restoreMessageTimer = 0;
+const isRestoringAnchor = ref(false);
 
 const draft = computed({
   get: () => props.draft ?? internalDraft.value,
@@ -234,6 +235,7 @@ function messageViewport(): HTMLElement | null {
 
 function restoreMessageAnchor() {
   if (!props.restoreMessageId || typeof window === 'undefined') return;
+  isRestoringAnchor.value = true;
   void nextTick(() => {
     window.cancelAnimationFrame(restoreMessageFrame);
     window.clearTimeout(restoreMessageTimer);
@@ -247,7 +249,11 @@ function restoreMessageAnchor() {
     restoreMessageFrame = window.requestAnimationFrame(() => {
       restoreMessageFrame = window.requestAnimationFrame(() => {
         scrollToAnchor();
-        restoreMessageTimer = window.setTimeout(scrollToAnchor, 150);
+        restoreMessageTimer = window.setTimeout(() => {
+          scrollToAnchor();
+          isRestoringAnchor.value = false;
+          reportLastVisibleMessage();
+        }, 150);
       });
     });
   });
@@ -255,6 +261,7 @@ function restoreMessageAnchor() {
 
 function reportLastVisibleMessage() {
   if (typeof window === 'undefined') return;
+  if (isRestoringAnchor.value) return;
   window.cancelAnimationFrame(visibleMessageFrame);
   visibleMessageFrame = window.requestAnimationFrame(() => {
     const viewport = messageViewport();

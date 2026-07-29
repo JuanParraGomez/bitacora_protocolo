@@ -221,3 +221,181 @@ The first implementation block in this feature will record the setup work for:
 - Unverified scope: later phase 4-7 evidence remains pending.
 - Diff / commit: uncommitted workspace changes
 - Status: `VERIFICADO`
+
+## Phase 4 verification
+
+### `T022`
+
+- Task: Add component coverage for the agent rail/panel contract.
+- Objective: Verify `aria-expanded`, busy state, Escape collapse, focus return, and preserved draft wiring for the structural agent region.
+- AC / FR / IMG: AC-006–AC-007, AC-010, FR-003–FR-005, FR-020, FR-027–FR-029, IMG-UX-02, IMG-UX-03.
+- Files: `app/features/tasks/components/AgentPanel.test.ts`, `app/features/tasks/components/AgentPanel.vue`.
+- Command: `npx vitest run app/features/tasks/components/AgentPanel.test.ts app/features/tasks/components/WorkspacePaneTabs.test.ts app/features/tasks/components/TaskWorkspace.test.ts app/features/tasks/components/TaskChat.test.ts --reporter=verbose`
+- Date/time: 2026-07-29T13:42:53Z
+- Exit code: 0
+- Expected red cause: Vue SFC component tests and the agent-panel accessibility behavior did not exist before the phase 4 test-first pass.
+- Green result: the new component suite now verifies the agent panel contract and keeps the draft/focus behavior stable across collapse and expand.
+- Regression suites: `npx vitest run app/features/tasks/composables/useWorkspaceState.test.ts --reporter=verbose`
+- Unverified scope: browser-level visual comparison remains deferred to phase 7.
+- Diff / commit: uncommitted workspace changes
+- Status: `VERIFICADO`
+
+### `T023`
+
+- Task: Add keyboard and single-instance tests for the mobile workspace tabs.
+- Objective: Verify roving focus, `Etapa`/`Agente` switching, `inert` semantics, and mounted-plane continuity.
+- AC / FR / IMG: AC-008, FR-007–FR-009, FR-027–FR-030, IMG-UX-04.
+- Files: `app/features/tasks/components/WorkspacePaneTabs.test.ts`, `app/features/tasks/components/WorkspacePaneTabs.vue`.
+- Command: `npx vitest run app/features/tasks/components/AgentPanel.test.ts app/features/tasks/components/WorkspacePaneTabs.test.ts app/features/tasks/components/TaskWorkspace.test.ts app/features/tasks/components/TaskChat.test.ts --reporter=verbose`
+- Date/time: 2026-07-29T13:42:53Z
+- Exit code: 0
+- Expected red cause: the tab component and its accessibility contract were missing before the red run.
+- Green result: the tab region now ships with keyboard navigation, plane switching, and inactive-plane isolation validated by component tests.
+- Regression suites: `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/stage-agent-workspace.spec.ts --reporter=line`
+- Unverified scope: pixel-level visual parity remains pending.
+- Diff / commit: uncommitted workspace changes
+- Status: `VERIFICADO`
+
+### `T024`
+
+- Task: Extend component tests around chat continuity, retries, proposals, and late responses.
+- Objective: Cover draft persistence, retry flows, assistant proposal editing/decision paths, and ignored late responses after context changes.
+- AC / FR / IMG: AC-007, AC-009–AC-010, FR-009, FR-018–FR-020, FR-031, IMG-UX-02, IMG-UX-03.
+- Files: `app/features/tasks/components/TaskChat.test.ts`, `app/features/tasks/components/TaskWorkspace.test.ts`, `app/features/tasks/components/TaskChat.vue`, `app/features/tasks/components/TaskWorkspace.vue`.
+- Command: `npx vitest run app/features/tasks/components/AgentPanel.test.ts app/features/tasks/components/WorkspacePaneTabs.test.ts app/features/tasks/components/TaskWorkspace.test.ts app/features/tasks/components/TaskChat.test.ts --reporter=verbose`
+- Date/time: 2026-07-29T13:42:53Z
+- Exit code: 0
+- Expected red cause: the late-response continuity checks and proposal-edit coverage were absent before phase 4.
+- Green result: chat/proposal/task continuity is now covered by focused component tests, including preserving origin-task writes when navigation wins the race.
+- Regression suites: `npx vitest run app/features/tasks/composables/useWorkspaceState.test.ts --reporter=verbose`
+- Unverified scope: only browser-level accessibility/visual audits remain outside this focused component scope.
+- Diff / commit: uncommitted workspace changes
+- Status: `VERIFICADO`
+
+### `T025`
+
+- Task: Add and stabilize the cross-breakpoint E2E contract for the structural agent workspace.
+- Objective: Cover desktop/tablet/mobile agent opening, mobile tabs, continuity, and the expected initial red failures before implementation.
+- AC / FR / IMG: AC-002, AC-006–AC-010, AC-022, FR-003–FR-009, FR-018–FR-021, FR-027–FR-031, IMG-UX-02–IMG-UX-04.
+- Files: `tests/e2e/stage-agent-workspace.spec.ts`, `tests/e2e/conversational-workspace.spec.ts`, `tests/e2e/workspace-overlays.spec.ts`.
+- Command: `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/stage-agent-workspace.spec.ts --reporter=line`
+- Date/time: 2026-07-29T13:42:53Z
+- Exit code: 0
+- Expected red cause: the first phase 4 E2E pass exposed the missing mobile tabs, hidden composer/proposals, and duplicated navigation assumptions that the old shell still carried.
+- Green result: the stage-agent E2E suite now passes with the structural agent, mobile plane switching, and single-surface navigation contract.
+- Regression suites: `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/conversational-workspace.spec.ts --reporter=line`, `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/workspace-overlays.spec.ts --reporter=line`
+- Unverified scope: aggregate `npm run verify` remains for phase 7.
+- Diff / commit: uncommitted workspace changes
+- Status: `VERIFICADO`
+
+### `T026`
+
+- Task: Complete the structural `AgentPanel` implementation.
+- Objective: Deliver the accessible rail/open state, busy semantics, focus handling, and structural chat host without taking over chat logic.
+- AC / FR / IMG: AC-002, AC-006–AC-007, AC-010, FR-003–FR-006, FR-020, FR-027–FR-030, IMG-UX-02, IMG-UX-03.
+- Files: `app/features/tasks/components/AgentPanel.vue`.
+- Command: `npx vitest run app/features/tasks/components/AgentPanel.test.ts app/features/tasks/components/TaskWorkspace.test.ts --reporter=verbose`
+- Date/time: 2026-07-29T13:42:53Z
+- Exit code: 0
+- Expected red cause: the original panel lacked busy semantics, Escape collapse, and deterministic focus return.
+- Green result: `AgentPanel` now behaves as a structural region with explicit open/closed state, busy signaling, and keyboard/focus support.
+- Regression suites: `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/stage-agent-workspace.spec.ts --reporter=line`
+- Unverified scope: none within the scoped component contract.
+- Diff / commit: uncommitted workspace changes
+- Status: `VERIFICADO`
+
+### `T027`
+
+- Task: Implement the accessible `WorkspacePaneTabs` mobile plane switcher.
+- Objective: Keep one mounted stage plane and one mounted agent plane with accessible tabs and inactive-plane semantics.
+- AC / FR / IMG: AC-008, FR-007–FR-009, FR-027–FR-030, IMG-UX-04.
+- Files: `app/features/tasks/components/WorkspacePaneTabs.vue`.
+- Command: `npx vitest run app/features/tasks/components/WorkspacePaneTabs.test.ts --reporter=verbose`
+- Date/time: 2026-07-29T13:42:53Z
+- Exit code: 0
+- Expected red cause: the tab switcher component did not exist before implementation.
+- Green result: the new component now provides keyboard-accessible plane switching while preserving both mounted instances.
+- Regression suites: `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/stage-agent-workspace.spec.ts --reporter=line`
+- Unverified scope: visual comparison remains for phase 7.
+- Diff / commit: uncommitted workspace changes
+- Status: `VERIFICADO`
+
+### `T028`
+
+- Task: Integrate the structural agent, mobile tabs, and persisted presentation state into `TaskWorkspace`.
+- Objective: Keep a single form/chat instance per task while wiring desktop, tablet, and mobile breakpoints to the correct presentation model.
+- AC / FR / IMG: AC-002, AC-006–AC-010, FR-004–FR-009, FR-018–FR-020, FR-030–FR-031, IMG-UX-02–IMG-UX-04.
+- Files: `app/features/tasks/components/TaskWorkspace.vue`, `pages/tasks/[id].vue`, `app/features/tasks/composables/useWorkspaceState.ts`.
+- Command: `npx vitest run app/features/tasks/components/TaskWorkspace.test.ts app/features/tasks/composables/useWorkspaceState.test.ts --reporter=verbose`
+- Date/time: 2026-07-29T13:42:53Z
+- Exit code: 0
+- Expected red cause: task-local agent/mobile state and the responsive workspace shell were not integrated before the phase 4 pass.
+- Green result: the workspace now persists agent state per task, supports mobile plane switching, and keeps late assistant responses attached to the origin task only.
+- Regression suites: `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/conversational-workspace.spec.ts --reporter=line`, `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/stage-agent-workspace.spec.ts --reporter=line`
+- Unverified scope: aggregate verify remains pending.
+- Diff / commit: uncommitted workspace changes
+- Status: `VERIFICADO`
+
+### `T029`
+
+- Task: Adapt `TaskChat` to the structural agent region without changing the message/proposal contract.
+- Objective: Preserve composer draft, retry flows, proposal editing, and restore the visible-message anchor inside the new panel structure.
+- AC / FR / IMG: AC-007, AC-009–AC-010, FR-009, FR-018–FR-020, FR-027–FR-030, IMG-UX-02, IMG-UX-03.
+- Files: `app/features/tasks/components/TaskChat.vue`, `app/features/tasks/components/TaskChat.test.ts`.
+- Command: `npx vitest run app/features/tasks/components/TaskChat.test.ts --reporter=verbose`
+- Date/time: 2026-07-29T13:42:53Z
+- Exit code: 0
+- Expected red cause: the chat restore/proposal flows were not covered for the structural panel and initially regressed the stored anchor on navigation.
+- Green result: `TaskChat` now restores the requested anchor before emitting a new visible-message checkpoint, preserving the navigation continuity contract.
+- Regression suites: `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/conversational-workspace.spec.ts --reporter=line`
+- Unverified scope: none within the scoped behavior validated here.
+- Diff / commit: uncommitted workspace changes
+- Status: `VERIFICADO`
+
+### `T030`
+
+- Task: Consolidate navigation destinations into one primary and one secondary surface.
+- Objective: Keep `Nueva tarea` only in primary navigation and `Biblioteca`, `Referencias`, `Ajustes` only in secondary navigation.
+- AC / FR / IMG: AC-022, FR-021, FR-026, FR-027–FR-030, IMG-UX-01–IMG-UX-06.
+- Files: `app/features/tasks/components/DashboardSidebar.vue`, `app/features/tasks/components/WorkspaceHeader.vue`, `tests/e2e/workspace-overlays.spec.ts`, `tests/e2e/conversational-workspace.spec.ts`, `tests/e2e/stage-agent-workspace.spec.ts`.
+- Command: `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/workspace-overlays.spec.ts --reporter=line`
+- Date/time: 2026-07-29T13:42:53Z
+- Exit code: 0
+- Expected red cause: the old shell duplicated actions between the header and sidebar, and the legacy E2E suite still targeted those duplicate affordances.
+- Green result: the sidebar is now the single source of navigation actions, and the focused overlay/navigation regressions pass against that contract.
+- Regression suites: `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/conversational-workspace.spec.ts --reporter=line`, `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/stage-agent-workspace.spec.ts --reporter=line`
+- Unverified scope: full route-regression aggregation remains in phase 7.
+- Diff / commit: uncommitted workspace changes
+- Status: `VERIFICADO`
+
+### `T031`
+
+- Task: Run the required green validation for US2 plus the named regressions.
+- Objective: Confirm the agent workspace contract across component, conversation, overlay, and state persistence suites.
+- AC / FR / IMG: AC-002, AC-006–AC-010, AC-022, FR-003–FR-009, FR-018–FR-021, FR-026–FR-031, IMG-UX-02–IMG-UX-04.
+- Files: `app/features/tasks/components/AgentPanel.test.ts`, `app/features/tasks/components/WorkspacePaneTabs.test.ts`, `app/features/tasks/components/TaskWorkspace.test.ts`, `app/features/tasks/components/TaskChat.test.ts`, `app/features/tasks/composables/useWorkspaceState.test.ts`, `tests/e2e/conversational-workspace.spec.ts`, `tests/e2e/stage-agent-workspace.spec.ts`, `tests/e2e/workspace-overlays.spec.ts`.
+- Command: `npx vitest run app/features/tasks/components/AgentPanel.test.ts app/features/tasks/components/WorkspacePaneTabs.test.ts app/features/tasks/components/TaskWorkspace.test.ts app/features/tasks/components/TaskChat.test.ts app/features/tasks/composables/useWorkspaceState.test.ts --reporter=verbose` + `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/conversational-workspace.spec.ts --reporter=line` + `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/stage-agent-workspace.spec.ts --reporter=line` + `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/workspace-overlays.spec.ts --reporter=line` + `npm run typecheck`
+- Date/time: 2026-07-29T13:42:53Z
+- Exit code: 0
+- Expected red cause: the first US2 verification pass surfaced hidden chat/proposal state, outdated navigation expectations, notice interception, and anchor-restore timing issues.
+- Green result: all focused component suites, the three named Playwright suites, and `npm run typecheck` passed after the minimum production and test-contract corrections.
+- Regression suites: same as command
+- Unverified scope: `npm run verify`, visual captures, accessibility audit, and broader route regressions remain for later phases.
+- Diff / commit: uncommitted workspace changes
+- Status: `VERIFICADO`
+
+### `T032`
+
+- Task: Append the phase 4 verification ledger and close the US2 checklist items.
+- Objective: Leave T022–T032 recorded as verified with the navigation-by-breakpoint contract captured in the ledger.
+- AC / FR / IMG: AC-002, AC-006–AC-010, AC-022, FR-003–FR-009, FR-018–FR-021, FR-026–FR-031, IMG-UX-01–IMG-UX-06.
+- Files: `specs/008-stage-agent-workspace/implementation-evidence.md`, `specs/008-stage-agent-workspace/tasks.md`.
+- Command: `Append phase 4 verification entries and update task checkboxes`
+- Date/time: 2026-07-29T13:42:53Z
+- Exit code: 0
+- Expected red cause: no phase 4 ledger entries existed before this append-only closure pass.
+- Green result: the phase 4 evidence is now recorded and T022–T032 are marked complete in the task list.
+- Regression suites: `npm run typecheck`
+- Unverified scope: phase 5-7 work remains open by design.
+- Diff / commit: uncommitted workspace changes
+- Status: `VERIFICADO`

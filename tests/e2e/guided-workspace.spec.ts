@@ -657,7 +657,7 @@ test.describe('Task workspace dashboard shell', () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.evaluate(() => { document.documentElement.style.zoom = ''; });
     await page.locator('#task-chat-composer-input').fill('Necesito revisar el estado');
-    await page.getByRole('button', { name: 'Send prompt' }).click();
+    await page.getByRole('button', { name: 'Enviar mensaje' }).click();
     await expect(page.getByText('Necesito revisar el estado', { exact: true })).toBeVisible();
   });
 

@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "phase": "phase-6-us4",
+  "status": "PHASE_COMPLETED_WITH_SCOPED_EVIDENCE",
+  "completedAt": "2026-07-29T14:42:41Z",
+  "specKitManifestUnchanged": true,
+  "tasks": {
+    "edited": [
+      "T043",
+      "T044",
+      "T046",
+      "T047"
+    ],
+    "verified": [
+      "T043",
+      "T044",
+      "T045",
+      "T046",
+      "T047",
+      "T048"
+    ],
+    "pendingHumanOrSpecLedger": [
+      "T049"
+    ]
+  },
+  "files": [
+    "app/features/tasks/components/TaskCompletionSummary.vue",
+    "app/features/tasks/components/TaskCompletionSummary.test.ts",
+    "app/features/tasks/components/TaskWorkspace.vue",
+    "app/features/tasks/components/TaskWorkspace.test.ts",
+    "app/features/tasks/components/workspace-presentation.ts",
+    "app/features/tasks/components/workspace-presentation.test.ts",
+    "pages/tasks/[id].vue",
+    "tests/e2e/stage-agent-workspace.spec.ts",
+    "tests/e2e/nuxt-task-workflows.spec.ts"
+  ],
+  "redEvidence": [
+    {
+      "command": "npx vitest run app/features/tasks/components/TaskCompletionSummary.test.ts --reporter=verbose",
+      "exitCode": 1,
+      "cause": "TaskCompletionSummary.vue did not exist yet; import failed as expected."
+    },
+    {
+      "command": "TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/stage-agent-workspace.spec.ts --grep \"completed summary\" --reporter=line",
+      "exitCode": 1,
+      "cause": "Completed summary region was absent before Phase 6 integration."
+    },
+    {
+      "command": "npx vitest run app/features/tasks/components/TaskCompletionSummary.test.ts app/features/tasks/components/TaskWorkspace.test.ts app/features/tasks/components/workspace-presentation.test.ts --reporter=verbose",
+      "exitCode": 1,
+      "cause": "Additional red tests exposed completed progress as 2/4 for historical tasks and empty workspace when completed task was absent from index.tareas."
+    },
+    {
+      "command": "npx vitest run app/features/tasks/components/TaskWorkspace.test.ts --reporter=verbose",
+      "exitCode": 1,
+      "cause": "Independent review repair test showed completed AgentPanel was not disabled."
+    }
+  ],
+  "greenEvidence": [
+    {
+      "command": "npx vitest run app/features/tasks/components/TaskCompletionSummary.test.ts app/features/tasks/components/TaskWorkspace.test.ts app/features/tasks/components/workspace-presentation.test.ts --reporter=verbose",
+      "exitCode": 0,
+      "result": "20 focused component/presentation tests passed after read-only agent repair."
+    },
+    {
+      "command": "npx vitest run app/features/tasks/services/task-completion.test.ts app/features/tasks/composables/useTaskIndex.test.ts --reporter=verbose",
+      "exitCode": 0,
+      "result": "14 completion/index regression tests passed."
+    },
+    {
+      "command": "npx vitest run tests/integration/task-persistence.test.ts tests/contract/task-workflow.contract.test.ts tests/contract/storage-batch.contract.test.ts tests/contract/storage-api.contract.test.ts --reporter=verbose",
+      "exitCode": 0,
+      "result": "24 storage/workflow contract and integration tests passed."
+    },
+    {
+      "command": "TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/stage-agent-workspace.spec.ts --reporter=line",
+      "exitCode": 0,
+      "result": "5 stage-agent E2E tests passed, including completed summary reload with zero storage writes."
+    },
+    {
+      "command": "TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/nuxt-task-workflows.spec.ts --grep \"completes phase four\" --reporter=line",
+      "exitCode": 0,
+      "result": "Completion E2E passed in serial after avoiding shared-storage collision."
+    },
+    {
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "result": "Nuxt typecheck passed; existing Nuxt Icon fallback warnings only."
+    }
+  ],
+  "residualRisk": [
+    {
+      "command": "TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/nuxt-task-workflows.spec.ts --reporter=line",
+      "exitCode": 1,
+      "result": "8 passed, 5 failed when run broadly before Phase 7 cleanup; failures are old shell/action expectations outside Phase 6 except completion, which now passes in serial."
+    },
+    {
+      "command": "Concurrent stage-agent and nuxt completion E2E",
+      "exitCode": 1,
+      "result": "A transient failure was caused by shared storage collision; rerunning completion flow serially passed."
+    }
+  ],
+  "agents": [
+    {
+      "id": "019fae4a-0845-70f3-b65a-2ff4631f1498",
+      "role": "planner",
+      "result": "CONCRETE_CONCERNS addressed in local implementation/tests."
+    },
+    {
+      "id": "019fae4a-1d97-78d3-a04d-7a6a95568629",
+      "role": "plan-reviewer",
+      "result": "Findings addressed: real post-completion index shape and TaskWorkspace boundary test."
+    },
+    {
+      "id": "019fae50-58cd-7973-af06-f8f3b7e316e4",
+      "role": "independent-reviewer",
+      "result": "High finding addressed: completed AgentPanel disabled and write-capable handlers guarded."
+    }
+  ],
+  "repairAttempts": [
+    {
+      "finding": "Completed task absent from index.tareas rendered empty workspace.",
+      "result": "Page workspace contexts now include the loaded route task; TaskWorkspace accepts completed local task for its project."
+    },
+    {
+      "finding": "Completed progress could display a lower historical phase.",
+      "result": "projectCompletionSummary now reports 4/4 for estado completada."
+    },
+    {
+      "finding": "Completed AgentPanel could emit write-capable events.",
+      "result": "AgentPanel disabled for completed tasks; send/proposal handlers return before mutation/save."
+    }
+  ]
+}

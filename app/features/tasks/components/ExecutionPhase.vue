@@ -3,8 +3,13 @@ import type { Task } from '../domain/task.schema';
 import { addIteration } from '../domain/task-rules';
 import { nextTick, reactive, ref, toRaw } from 'vue';
 
-const props = withDefaults(defineProps<{ task: Task; saveTask?: () => Promise<boolean> }>(), {
+const props = withDefaults(defineProps<{
+  task: Task;
+  saveTask?: () => Promise<boolean>;
+  fieldIssueIds?: Record<string, string>;
+}>(), {
   saveTask: undefined,
+  fieldIssueIds: () => ({}),
 });
 const task = reactive(toRaw(props.task));
 const emit = defineEmits<{ save: []; dirty: [] }>();
@@ -81,6 +86,10 @@ function appendIteration() {
   });
 }
 
+function describedBy(field: string): string | undefined {
+  return props.fieldIssueIds[field] || undefined;
+}
+
 </script>
 
 <template>
@@ -91,11 +100,11 @@ function appendIteration() {
         <div v-for="(iteration, index) in task.f3.iteraciones" :key="iteration.id || index" :ref="element => { if (element) iterationRefs[index] = element as HTMLElement }" :aria-label="`Iteración ${index + 1}`">
           <h4>Iteración {{ index + 1 }}</h4>
           <label :for="`iteration-attempt-${index}`">Qué hice {{ index + 1 }}</label>
-          <input :id="`iteration-attempt-${index}`" v-model="iteration.intento" />
+          <input :id="`iteration-attempt-${index}`" v-model="iteration.intento" :aria-describedby="index === 0 ? describedBy('f3.iteraciones') : undefined" />
           <label :for="`iteration-result-${index}`">Qué pasó {{ index + 1 }}</label>
-          <textarea :id="`iteration-result-${index}`" v-model="iteration.resultado" />
+          <textarea :id="`iteration-result-${index}`" v-model="iteration.resultado" :aria-describedby="index === 0 ? describedBy('f3.iteraciones') : undefined" />
           <label :for="`iteration-adjustment-${index}`">Qué ajusté {{ index + 1 }}</label>
-          <textarea :id="`iteration-adjustment-${index}`" v-model="iteration.ajuste" />
+          <textarea :id="`iteration-adjustment-${index}`" v-model="iteration.ajuste" :aria-describedby="index === 0 ? describedBy('f3.iteraciones') : undefined" />
           <label :for="`iteration-objective-${index}`">Objetivo de la iteración</label>
           <textarea :id="`iteration-objective-${index}`" v-model="iteration.objective" rows="2" />
           <label :for="`iteration-action-${index}`">Acción aplicada</label>
@@ -139,8 +148,8 @@ function appendIteration() {
           </fieldset>
         </div>
         <button type="button" @click="appendIteration">Añadir iteración</button>
-        <label><input v-model="task.f3.checkCompila" type="checkbox" /> Confirma que compila</label>
-        <label><input v-model="task.f3.checkAuditado" type="checkbox" /> Confirma que fue auditado</label>
+        <label><input id="phase-three-compiles" v-model="task.f3.checkCompila" type="checkbox" :aria-describedby="describedBy('f3.checkCompila')" /> Confirma que compila</label>
+        <label><input id="phase-three-audited" v-model="task.f3.checkAuditado" type="checkbox" :aria-describedby="describedBy('f3.checkAuditado')" /> Confirma que fue auditado</label>
       </div>
     </div>
   </section>

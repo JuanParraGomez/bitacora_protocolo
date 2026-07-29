@@ -7,6 +7,7 @@ export default defineConfig({
     include: [
       'tests/**/*.test.ts',
       'app/**/*.test.ts',
+      'scripts/**/*.test.mjs',
     ],
     setupFiles: ['./tests/setup.ts'],
     passWithNoTests: false,

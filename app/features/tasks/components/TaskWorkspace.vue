@@ -11,12 +11,12 @@ import AssistantSettingsModal from './AssistantSettingsModal.vue';
 import { mockWorkspaceAssistant, type ChatRequest, type ChatResponse } from '../services/mock-workspace-assistant';
 import LibrarySlideover from '~/app/features/library/components/LibrarySlideover.vue';
 import type { Project } from '../domain/project.schema';
+import AgentPanel from './AgentPanel.vue';
 import DashboardSidebar, { type WorkspaceProjectGroup } from './DashboardSidebar.vue';
 import GuidedPhaseForm from './GuidedPhaseForm.vue';
 import NewTaskModal from './NewTaskModal.vue';
 import NoticeRegion from './NoticeRegion.vue';
 import StructuredStageSummary from './StructuredStageSummary.vue';
-import TaskChat from './TaskChat.vue';
 import WorkspaceHeader from './WorkspaceHeader.vue';
 import type { WorkspaceNotice } from '../composables/useWorkspaceNotices';
 import type { WorkspaceOverlayState } from '../composables/useWorkspaceState';
@@ -101,9 +101,8 @@ const isMobile = ref(false);
 const sidebarOpen = ref(false);
 const sidebarDrawerRef = ref<HTMLElement | null>(null);
 const sidebarCloseButtonRef = ref<HTMLButtonElement | null>(null);
-const mobileFormOpen = ref(false);
 const workspaceHeaderRef = ref<InstanceType<typeof WorkspaceHeader> | null>(null);
-const questionnaireButtonRef = ref<HTMLElement | null>(null);
+const agentPanelExpanded = ref(true);
 const settingsButtonRef = ref<HTMLElement | null>(null);
 const settingsOpen = ref(false);
 const settingsSaving = ref(false);
@@ -200,7 +199,6 @@ function updateResponsiveMode() {
   isMobile.value = mobileMediaQuery ? mobileMediaQuery.matches : false;
   if (!isCompact.value) {
     sidebarOpen.value = false;
-    mobileFormOpen.value = false;
   }
 }
 
@@ -307,17 +305,6 @@ function onTaskDirty() {
 function onTaskSave() {
   emit('save', toRaw(localTask), {
     operationId: `form-save:${localTask.id}:${localTask.fase}:${Date.now().toString(36)}`,
-  });
-}
-
-function openQuestionnaire() {
-  mobileFormOpen.value = true;
-}
-
-function onMobileFormClose() {
-  mobileFormOpen.value = false;
-  nextTick(() => {
-    questionnaireButtonRef.value?.focus();
   });
 }
 
@@ -694,6 +681,10 @@ function onRequestContinue() {
   emit('requestContinue');
 }
 
+function toggleAgentPanel() {
+  agentPanelExpanded.value = !agentPanelExpanded.value;
+}
+
 function onChatSubmit(text: string) {
   void handleSendMessage(text);
 }
@@ -805,34 +796,21 @@ watch(() => [localTask.id, localTask.fase], () => {
           @open-settings="openSettings"
         />
 
-        <TaskChat
-          v-if="selectedProjectHasLocalTask"
-          :messages="phaseMessages"
-          :suggestions="chatSuggestions"
-          :send-status="chatSendState"
-          :disabled="false"
-          :error-message="chatError"
-          :workspace-label="projectLabel"
-          :draft="effectiveDraft"
-          :restore-message-id="props.lastVisibleMessageId"
-          @send="onChatSubmit"
-          @retry="onChatRetry"
-          @proposal-decision="handleProposalDecision"
-          @update-draft="updateDraft"
-          @visible-message="updateLastVisibleMessage"
-        >
-          <StructuredStageSummary
-            :task="localTask"
-            :evaluation="latestEvaluation"
-            :is-stale-evaluation="isEvaluationStale"
-            :can-continue="canContinue"
-            :state="effectiveSummaryState"
-            @update-state="updateSummaryState"
-          />
-
-          <details v-if="!isCompact" open class="workspace-guided-editor">
-            <summary>Editar datos de la etapa</summary>
-            <section role="region" aria-label="Formulario guiado">
+        <div v-if="selectedProjectHasLocalTask" class="workspace-stage-layout">
+          <section class="workspace-stage" aria-labelledby="workspace-stage-title">
+            <header class="workspace-stage__header">
+              <p class="workspace-stage__eyebrow">Etapa activa</p>
+              <h2 id="workspace-stage-title">Lienzo de la etapa</h2>
+            </header>
+            <StructuredStageSummary
+              :task="localTask"
+              :evaluation="latestEvaluation"
+              :is-stale-evaluation="isEvaluationStale"
+              :can-continue="canContinue"
+              :state="effectiveSummaryState"
+              @update-state="updateSummaryState"
+            />
+            <section role="region" aria-label="Formulario guiado" class="workspace-stage__form-region">
               <GuidedPhaseForm
                 :task="localTask"
                 :save-task="props.saveTask"
@@ -850,19 +828,26 @@ watch(() => [localTask.id, localTask.fase], () => {
                 @request-continue="onRequestContinue"
               />
             </section>
-          </details>
+          </section>
 
-          <p v-else class="workspace-section__mobile-action">
-            <button
-              ref="questionnaireButtonRef"
-              type="button"
-              data-focus-target="form"
-              @click="openQuestionnaire"
-            >
-              Cuestionario
-            </button>
-          </p>
-        </TaskChat>
+          <AgentPanel
+            :messages="phaseMessages"
+            :suggestions="chatSuggestions"
+            :send-status="chatSendState"
+            :disabled="false"
+            :error-message="chatError"
+            :workspace-label="projectLabel"
+            :draft="effectiveDraft"
+            :restore-message-id="props.lastVisibleMessageId"
+            :expanded="agentPanelExpanded"
+            @toggle="toggleAgentPanel"
+            @send="onChatSubmit"
+            @retry="onChatRetry"
+            @proposal-decision="handleProposalDecision"
+            @update-draft="updateDraft"
+            @visible-message="updateLastVisibleMessage"
+          />
+        </div>
 
         <section v-else class="workspace-empty-context" aria-labelledby="workspace-empty-context-title">
           <p class="workspace-empty-context__eyebrow">Proyecto activo</p>
@@ -878,43 +863,6 @@ watch(() => [localTask.id, localTask.fase], () => {
         </section>
       </section>
     </section>
-
-    <USlideover
-      v-if="isCompact"
-      v-model:open="mobileFormOpen"
-      title="Formulario guiado"
-      @update:open="(next) => {
-        if (!next) {
-          onMobileFormClose();
-        }
-      }"
-    >
-      <template #content>
-        <section
-          role="region"
-          aria-label="Formulario guiado"
-          data-mobile-form-panel
-          class="workspace-guided-slideover"
-        >
-          <GuidedPhaseForm
-            :task="localTask"
-            :save-task="props.saveTask"
-            :evaluation="latestEvaluation"
-            :is-evaluating="isEvaluating"
-            :is-stale-evaluation="isEvaluationStale"
-            :can-continue="canContinue"
-            :evaluation-error="evaluationError"
-            :evaluation-history="evaluationHistory"
-            @dirty="onTaskDirty"
-            @save="onTaskSave"
-            @request-evaluate="onEvaluationRequest"
-            @request-evaluation-retry="onEvaluationRetry"
-            @request-back="onRequestBack"
-            @request-continue="onRequestContinue"
-          />
-        </section>
-      </template>
-    </USlideover>
 
     <AssistantSettingsModal
       :open="settingsOpen"
@@ -1006,6 +954,57 @@ watch(() => [localTask.id, localTask.fase], () => {
   min-height: 0;
 }
 
+.workspace-stage-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(19rem, .82fr);
+  gap: 1rem;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: 1rem;
+}
+
+.workspace-stage {
+  display: grid;
+  gap: .85rem;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid #dce3de;
+  border-radius: .9rem;
+  background: #fff;
+}
+
+.workspace-stage__header {
+  display: grid;
+  gap: .2rem;
+}
+
+.workspace-stage__header h2,
+.workspace-stage__header p {
+  margin: 0;
+}
+
+.workspace-stage__eyebrow {
+  color: #08724c;
+  font-size: .72rem;
+  font-weight: 780;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.workspace-stage__header h2 {
+  color: #101812;
+  font-size: 1rem;
+  font-weight: 780;
+}
+
+.workspace-stage__form-region {
+  min-width: 0;
+  min-height: 0;
+}
+
 .workspace-empty-context {
   display: grid;
   align-content: center;
@@ -1039,37 +1038,6 @@ watch(() => [localTask.id, localTask.fase], () => {
   border-radius: .65rem;
   color: #fff;
   font-weight: 760;
-  background: #007a4d;
-}
-
-.workspace-guided-editor {
-  border: 1px solid #dce5df;
-  border-radius: .7rem;
-  background: #fff;
-}
-
-.workspace-guided-editor > summary {
-  padding: .75rem .85rem;
-  color: #26342b;
-  font-size: .82rem;
-  font-weight: 760;
-  cursor: pointer;
-}
-
-.workspace-guided-editor[open] > summary {
-  border-bottom: 1px solid #e0e7e2;
-}
-
-.workspace-section__mobile-action {
-  margin: 0;
-  padding: 0;
-}
-
-.workspace-section__mobile-action button {
-  width: 100%;
-  min-height: 2.75rem;
-  border-color: #007a4d;
-  color: #fff;
   background: #007a4d;
 }
 
@@ -1121,13 +1089,6 @@ watch(() => [localTask.id, localTask.fase], () => {
   height: 100%;
 }
 
-.workspace-guided-slideover {
-  height: 100dvh;
-  overflow: auto;
-  padding-bottom: env(safe-area-inset-bottom);
-  background: #fff;
-}
-
 .workspace-panel :deep(.workspace-shell) {
   min-width: 0;
 }
@@ -1145,6 +1106,12 @@ watch(() => [localTask.id, localTask.fase], () => {
     min-height: 0;
     border-radius: .8rem;
   }
+
+  .workspace-stage-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100%;
+  }
 }
 
 @media (max-width: 767px) {
@@ -1156,6 +1123,14 @@ watch(() => [localTask.id, localTask.fase], () => {
     height: 100dvh;
     border-width: 0;
     border-radius: 0;
+  }
+
+  .workspace-stage-layout {
+    padding: .75rem;
+  }
+
+  .workspace-stage {
+    padding: .85rem;
   }
 }
 </style>

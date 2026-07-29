@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { Task } from '../domain/task.schema';
 import type { PhaseEvaluation } from '../domain/task-assistant.schema';
 import { phaseInstructions } from '../domain/phase-instructions';
@@ -8,6 +8,7 @@ import GuidancePhase from './GuidancePhase.vue';
 import EvaluationFeedback from './EvaluationFeedback.vue';
 import OrientationPhase from './OrientationPhase.vue';
 import ReviewPhase from './ReviewPhase.vue';
+import { buildGuidedPhaseFormModel, resolveGuidedPhaseSaveCopy, type GuidedPhaseSaveState } from './guided-phase-form';
 
 const props = withDefaults(defineProps<{
   task: Task;
@@ -37,8 +38,11 @@ const emit = defineEmits<{
 }>();
 
 const phase = computed(() => props.task.fase);
+const saveState = ref<GuidedPhaseSaveState>('idle');
+const saveError = ref('');
 const currentPhaseInstruction = computed(() => phaseInstructions[phase.value as keyof typeof phaseInstructions]?.[0]);
-const phaseLabel = computed(() => currentPhaseInstruction.value?.title ?? `Fase ${phase.value}`);
+const phaseModel = computed(() => buildGuidedPhaseFormModel(props.task, saveState.value, saveError.value));
+const phaseLabel = computed(() => phaseModel.value.phaseLabel ?? currentPhaseInstruction.value?.title ?? `Fase ${phase.value}`);
 const canGoBack = computed(() => props.task.fase > 1);
 const canContinue = computed(() => props.canContinue && !props.isStaleEvaluation && !!props.evaluation && props.evaluation.status === 'acceptable');
 const continueMessage = computed(() => {
@@ -48,6 +52,7 @@ const continueMessage = computed(() => {
   if (props.evaluation.gateVersion !== 'outcome-v2') return 'Actualiza a outcome-v2 para habilitar el avance.';
   return 'Puedes avanzar a la siguiente etapa.';
 });
+const saveCopy = computed(() => resolveGuidedPhaseSaveCopy(saveState.value, saveError.value));
 
 const progressSteps = computed(() => [1, 2, 3, 4].map((step) => ({
   step,
@@ -56,11 +61,22 @@ const progressSteps = computed(() => [1, 2, 3, 4].map((step) => ({
 })));
 
 function onDirtyPayload() {
+  saveState.value = 'dirty';
+  saveError.value = '';
   emit('dirty', props.task);
 }
 
 function onSavePayload() {
+  saveState.value = 'saved';
+  saveError.value = '';
   emit('save', props.task);
+}
+
+async function onSaveDraft() {
+  saveState.value = 'saving';
+  saveError.value = '';
+  emit('save', props.task);
+  saveState.value = 'saved';
 }
 
 function onEvaluate() {
@@ -78,6 +94,11 @@ function onBack() {
 function onContinue() {
   emit('requestContinue');
 }
+
+watch(() => props.task.id, () => {
+  saveState.value = 'idle';
+  saveError.value = '';
+});
 </script>
 
 <template>
@@ -97,8 +118,14 @@ function onContinue() {
         </li>
       </ol>
       <p class="guided-phase-form__current-step" role="status" aria-live="polite">Paso actual: Fase {{ phase }}</p>
-      <p class="guided-phase-form__continue-message">{{ continueMessage }}</p>
+      <section class="guided-phase-form__save-state" role="status" aria-live="polite">
+        <p class="guided-phase-form__save-status">{{ saveCopy.statusLabel }}</p>
+        <p class="guided-phase-form__save-helper">{{ saveCopy.helperLabel }}</p>
+      </section>
       <div class="guided-phase-form__controls">
+        <button type="button" class="guided-phase-form__save-button" @click="onSaveDraft">
+          {{ saveCopy.actionLabel }}
+        </button>
         <button v-if="canGoBack" type="button" @click="onBack">Atrás</button>
         <button
           type="button"
@@ -108,7 +135,7 @@ function onContinue() {
         >
           {{ props.isEvaluating ? 'Evaluando…' : 'Evaluar' }}
         </button>
-        <button v-if="props.evaluationError" type="button" @click="onRetryEvaluation">Reintentar</button>
+        <button v-if="props.evaluationError" type="button" @click="onRetryEvaluation">{{ saveCopy.retryLabel }}</button>
         <button type="button" :disabled="!canContinue" :title="continueMessage" @click="onContinue">Continuar</button>
       </div>
     </header>

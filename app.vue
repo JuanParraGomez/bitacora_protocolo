@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import AppNavigation from '~/app/components/shared/AppNavigation.vue';
+
+useHead({
+  htmlAttrs: {
+    lang: 'es',
+  },
+  titleTemplate: (title) => title ? `${title} · Bitácora Protocolo` : 'Bitácora Protocolo',
+});
 </script>
 
 <template>

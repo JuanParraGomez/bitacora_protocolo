@@ -59,7 +59,7 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
-  save: [Task];
+  save: [Task, { operationId?: string }?];
   dirty: [Task];
   requestEvaluate: [];
   requestEvaluationRetry: [];
@@ -305,7 +305,9 @@ function onTaskDirty() {
 }
 
 function onTaskSave() {
-  emit('save', toRaw(localTask));
+  emit('save', toRaw(localTask), {
+    operationId: `form-save:${localTask.id}:${localTask.fase}:${Date.now().toString(36)}`,
+  });
 }
 
 function openQuestionnaire() {
@@ -517,7 +519,9 @@ function handleProposalDecision(decision: ProposalDecision) {
   }
   Object.assign(localTask, result.task);
   emit('dirty', toRaw(localTask));
-  emit('save', toRaw(localTask));
+  emit('save', toRaw(localTask), {
+    operationId: `proposal-save:${decision.proposalId}`,
+  });
 }
 
 async function handleSendMessage(text: string, options: { retryMessageId?: string } = {}) {
@@ -572,7 +576,9 @@ async function handleSendMessage(text: string, options: { retryMessageId?: strin
   }
 
   const originTask = cloneTask(localTask);
-  emit('save', originTask);
+  emit('save', originTask, {
+    operationId: `chat-send:${requestId}`,
+  });
   chatSendState.value = 'submitted';
   chatError.value = '';
   chatSuggestions.value = [];
@@ -589,7 +595,9 @@ async function handleSendMessage(text: string, options: { retryMessageId?: strin
         chatSuggestions.value = response.suggestions;
         chatSendState.value = 'ready';
       }
-      emit('save', originTask);
+      emit('save', originTask, {
+        operationId: `chat-send:${requestId}`,
+      });
     } catch (cause: SendError) {
       setUserMessageStatus(userMessageId, 'error', originTask);
       const originIsCurrent = contextId === conversationContext.value
@@ -600,7 +608,9 @@ async function handleSendMessage(text: string, options: { retryMessageId?: strin
         chatSendState.value = 'error';
         chatError.value = cause instanceof Error ? cause.message : 'No se pudo enviar el mensaje.';
       }
-      emit('save', originTask);
+      emit('save', originTask, {
+        operationId: `chat-send:${requestId}`,
+      });
     } finally {
       inFlightByRequest.delete(requestId);
       if (contextId === conversationContext.value && chatSendState.value === 'submitted') {
@@ -649,7 +659,9 @@ async function performEvaluation() {
       }
 
       appendEvaluation(evaluation);
-      emit('save', toRaw(localTask));
+      emit('save', toRaw(localTask), {
+        operationId: `evaluation-save:${requestId}`,
+      });
       evaluationError.value = '';
     } catch (cause: EvaluationError) {
       if (contextId !== conversationContext.value) return;

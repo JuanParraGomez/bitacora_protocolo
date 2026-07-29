@@ -197,7 +197,7 @@ export function resolveActiveProjectId(
   const activeProjects = projects.projects.filter((project) => project.status === 'active');
   if (activeProjects.length === 0) return '';
   const requested = activeProjects.find((project) => project.id === preferredProjectId);
-  return requested?.id || activeProjects[0].id;
+  return requested?.id || activeProjects[0]?.id || '';
 }
 
 export function buildTaskIntakeCreatePlan(input: TaskIntakeCreateInput): TaskIntakeCreatePlan {

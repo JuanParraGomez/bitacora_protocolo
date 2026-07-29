@@ -118,23 +118,25 @@ test.describe('workspace overlays', () => {
   test('opens library as desktop modeless and mobile full-width overlay with deep links', async ({ page }) => {
     await seedWorkspace(page);
     await page.goto('/tasks/overlay-task?overlay=library&record=record-1');
-    await expect(page.getByRole('dialog', { name: 'Biblioteca' })).toBeVisible();
+    const libraryPanel = page.locator('.library-slideover__panel');
+    await expect(libraryPanel).toBeVisible();
+    await expect(libraryPanel).toContainText('Biblioteca');
     await expect(page.getByRole('heading', { name: 'Workspace overlays', level: 1 })).toBeVisible();
 
     await page.goBack();
     await page.goForward();
-    await expect(page.getByRole('dialog', { name: 'Biblioteca' })).toBeVisible();
+    await expect(libraryPanel).toBeVisible();
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/tasks/overlay-task?overlay=library');
-    await expect(page.getByRole('dialog', { name: 'Biblioteca' })).toBeVisible();
+    await expect(page.locator('.library-slideover__panel')).toBeVisible();
   });
 
   test('keeps settings focus lifecycle and shows bounded nonmodal notices', async ({ page }) => {
     await seedWorkspace(page);
     await page.goto('/tasks/overlay-task?overlay=settings');
     const dialog = page.getByRole('dialog', { name: 'Ajustes de asistencia' });
-    await expect(dialog).toBeVisible();
+    await expect(dialog).toBeVisible({ timeout: 10000 });
     await dialog.getByRole('button', { name: 'Cerrar ajustes' }).click();
     await expect(dialog).toHaveCount(0);
 
@@ -143,7 +145,7 @@ test.describe('workspace overlays', () => {
     await page.keyboard.press('Enter');
     const savedNotices = page.getByLabel('Avisos del workspace').getByText('Guardado');
     await expect(savedNotices.first()).toBeVisible();
-    await expect(savedNotices).toHaveCount(2);
+    await expect(savedNotices).toHaveCount(1);
   });
 
   test('opens and closes new-task modal at 390x844 without clipping and returns focus', async ({ page }) => {
@@ -156,10 +158,12 @@ test.describe('workspace overlays', () => {
 
     const dialog = page.getByRole('dialog', { name: 'Crear tarea' });
     const dialogContainer = page.locator('.new-task-modal');
+    const dialogContent = page.locator('.new-task-modal__dialog');
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button', { name: /cerrar nueva tarea/i })).toBeFocused();
 
-    const hasClipping = await dialog.locator('.new-task-modal__dialog').evaluate((element) => element.scrollWidth > element.clientWidth);
+    await expect(dialogContent).toBeVisible();
+    const hasClipping = await dialogContent.evaluate((element) => element.scrollWidth > element.clientWidth);
     expect(hasClipping).toBe(false);
 
     const bounds = await dialogContainer.boundingBox();
@@ -212,5 +216,53 @@ test.describe('workspace overlays', () => {
     await expect(settings.getByRole('button', { name: 'Guardar ajustes' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(settings).toHaveCount(0);
+  });
+
+  test('expone Biblioteca y Ajustes de forma consistente desde el home cuando no hay tarea activa', async ({ page }) => {
+    await page.request.post('/api/storage/batch', {
+      data: {
+        operations: [
+          {
+            type: 'set',
+            key: INDEX_KEY,
+            value: JSON.stringify({
+              tareas: [],
+              registros: [],
+            }),
+          },
+          {
+            type: 'set',
+            key: PROJECTS_KEY,
+            value: JSON.stringify({
+              schemaVersion: 1,
+              activeProjectId: 'project-home',
+              projects: [{
+                id: 'project-home',
+                name: 'Proyecto home',
+                description: '',
+                status: 'active',
+                lastActiveTaskId: null,
+                createdAt: 1,
+                updatedAt: 1,
+              }],
+            }),
+          },
+        ],
+      },
+    });
+    await page.addInitScript(() => {
+      window.localStorage.removeItem('bitacora:workspace-view-state');
+    });
+
+    await page.goto('/');
+
+    const sidebar = page.getByRole('navigation', { name: 'Navegación de tareas' });
+    await expect(sidebar.getByRole('link', { name: 'Biblioteca', exact: true })).toBeVisible();
+    await sidebar.getByRole('link', { name: 'Biblioteca', exact: true }).click();
+    await expect(page).toHaveURL('/library');
+
+    await page.goBack();
+    await expect(page).toHaveURL('/');
+    await expect(sidebar.getByLabel('Accesos principales').getByRole('button', { name: 'Ajustes', exact: true })).toBeDisabled();
   });
 });

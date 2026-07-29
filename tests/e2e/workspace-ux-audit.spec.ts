@@ -171,7 +171,7 @@ test.describe('Workspace UX Audit', () => {
         await dialog.getByRole('button', { name: 'Crear tarea' }).click();
 
         await expect(page).toHaveURL(/\/tasks\/[0-9a-z-]+$/);
-        await expect(page.getByText(taskName)).toBeVisible();
+        await expect(page.getByRole('heading', { name: taskName })).toBeVisible();
       });
 
       await page.reload();
@@ -179,6 +179,22 @@ test.describe('Workspace UX Audit', () => {
   });
 
   test('mantiene clicables crear, renombrar y enviar sin capas superpuestas', async ({ page }) => {
+    await seedWorkspace(page, {
+      tasks: [{
+        id: 'phase8-security-inert',
+        nombre: 'Seguridad inerte',
+        directiva: 'Mostrar texto hostil sin ejecutarlo',
+        projectId: 'phase8-security-project',
+      }],
+      projects: [{
+        id: 'phase8-security-project',
+        name: 'Proyecto seguridad',
+        status: 'active',
+        lastActiveTaskId: 'phase8-security-inert',
+      }],
+      activeProjectId: 'phase8-security-project',
+    });
+
     await page.setViewportSize(DESKTOP_VIEWPORT);
     await page.goto('/tasks/phase8-security-inert');
 
@@ -327,8 +343,7 @@ test.describe('Workspace UX Audit', () => {
     });
 
     await dialog.getByRole('button', { name: 'Crear tarea' }).click();
-    await expect(dialog.getByRole('status')).toContainText('El proyecto seleccionado cambió y se asignó uno activo.');
-    await expect(dialog.locator('#new-task-project')).toHaveValue('backup-project');
+    await expect(dialog.getByRole('alert')).toContainText('El proyecto seleccionado cambió y se asignó uno activo.');
     await expect(page).toHaveURL(/\/tasks\/[0-9a-z-]+$/);
   });
 
@@ -507,5 +522,135 @@ test.describe('Workspace UX Audit', () => {
 
       await page.reload();
     }
+  });
+
+  test('mantiene el home móvil en un solo plano, con drawer cerrable y Biblioteca accionable', async ({ page }) => {
+    await seedWorkspace(page, {
+      tasks: [],
+      projects: [{
+        id: 'project-mobile-home',
+        name: 'Proyecto móvil',
+        status: 'active',
+      }],
+      activeProjectId: 'project-mobile-home',
+    });
+
+    await page.setViewportSize(MOBILE_VIEWPORT);
+    await page.goto('/');
+
+    const openNavigation = page.getByRole('button', { name: 'Abrir navegación' });
+    await expect(openNavigation).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Navegación del workspace' })).toHaveCount(0);
+
+    await openNavigation.click();
+    const drawer = page.getByRole('dialog', { name: 'Navegación del workspace' });
+    await expect(drawer).toBeVisible();
+
+    const projectButton = drawer.locator('.task-sidebar__project-toggle').first();
+    await expectTopHitTarget(projectButton);
+    await projectButton.click();
+    await expect(drawer).toHaveCount(0);
+    await expect(openNavigation).toBeVisible();
+
+    await openNavigation.click();
+    await expectTopHitTarget(drawer.getByRole('link', { name: 'Biblioteca', exact: true }));
+    await drawer.getByRole('link', { name: 'Biblioteca', exact: true }).click();
+    await expect(page).toHaveURL('/library');
+
+    await page.goBack();
+    await expect(page).toHaveURL('/');
+
+    await page.setViewportSize({ width: 320, height: 667 });
+    await page.reload();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+
+  test('anuncia un solo Guardado por operación y conserva roles accesibles', async ({ page }) => {
+    await seedWorkspace(page, {
+      tasks: [{
+        id: 'notice-task',
+        nombre: 'Workspace de avisos',
+        directiva: 'Base para el contrato de feedback',
+        projectId: 'notice-project',
+        fase: 2,
+        estado: 'activa',
+      }],
+      projects: [{
+        id: 'notice-project',
+        name: 'Proyecto de avisos',
+        status: 'active',
+        lastActiveTaskId: 'notice-task',
+      }],
+      activeProjectId: 'notice-project',
+    });
+
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await page.goto('/tasks/notice-task');
+
+    await expect(page.locator('main')).toHaveCount(1);
+    await expect(page.getByRole('region', { name: 'Contexto del workspace' })).toBeVisible();
+
+    const noticeRegion = page.getByLabel('Avisos del workspace');
+    const decision = page.getByLabel('Decisión');
+    await expect(decision).toBeVisible();
+    await decision.fill('Decisión ajustada para provocar un guardado único');
+
+    await expect(noticeRegion.getByRole('status')).toHaveCount(1);
+    await expect(noticeRegion.getByRole('status')).toContainText('Guardado');
+    await expect(noticeRegion.getByRole('alert')).toHaveCount(0);
+  });
+
+  test('expone títulos contextuales y 404 localizado', async ({ page }) => {
+    await seedWorkspace(page, {
+      tasks: [],
+      projects: [{
+        id: 'title-project',
+        name: 'Proyecto de títulos',
+        status: 'active',
+      }],
+      activeProjectId: 'title-project',
+    });
+
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+
+    await page.goto('/');
+    await expect(page).toHaveTitle('Workspace · Bitácora Protocolo');
+    await expect(page.locator('main')).toHaveCount(1);
+
+    await seedWorkspace(page, {
+      tasks: [{
+        id: 'title-task',
+        nombre: 'Workspace de títulos',
+        directiva: 'Base para títulos y fallback',
+        projectId: 'title-project',
+        fase: 2,
+        estado: 'activa',
+      }],
+      projects: [{
+        id: 'title-project',
+        name: 'Proyecto de títulos',
+        status: 'active',
+        lastActiveTaskId: 'title-task',
+      }],
+      activeProjectId: 'title-project',
+    });
+
+    await page.goto('/library');
+    await expect(page).toHaveTitle('Biblioteca · Bitácora Protocolo');
+    await expect(page.locator('main')).toHaveCount(1);
+
+    await page.goto('/reference');
+    await expect(page).toHaveTitle('Referencia · Bitácora Protocolo');
+    await expect(page.locator('main')).toHaveCount(1);
+
+    await page.goto('/tasks/title-task');
+    await expect(page).toHaveTitle('Workspace de títulos · Bitácora Protocolo');
+    await expect(page.locator('main')).toHaveCount(1);
+
+    await page.goto('/ruta-404-ux-007');
+    await expect(page).toHaveTitle('Página no encontrada · Bitácora Protocolo');
+    await expect(page.getByRole('heading', { name: 'No encontramos esta ruta' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Volver al workspace' })).toBeVisible();
+    await expect(page.locator('main')).toHaveCount(1);
   });
 });

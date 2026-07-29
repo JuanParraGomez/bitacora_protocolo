@@ -23,7 +23,8 @@ const emit = defineEmits<{
       class="notice-region__item"
       :class="`notice-region__item--${notice.tone}`"
       :role="notice.urgent ? 'alert' : 'status'"
-      aria-live="polite"
+      :aria-live="notice.urgent ? 'assertive' : 'polite'"
+      aria-atomic="true"
     >
       <div class="notice-region__copy">
         <strong>{{ notice.title }}</strong>

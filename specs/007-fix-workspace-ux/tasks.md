@@ -94,19 +94,19 @@
 
 ### Tests for User Story 3
 
-- [ ] T023 [P] [US3] Escribir pruebas de drawer cerrado inicial, Escape, seleccion, retorno de foco, overflow a 320 px y restauracion de nueva tarea/ajustes tras recarga y atras/adelante en `tests/e2e/workspace-ux-audit.spec.ts`
-- [ ] T024 [P] [US3] Escribir pruebas de transiciones expandida, contraida y drawer en `app/features/tasks/composables/useWorkspaceState.test.ts`
-- [ ] T025 [P] [US3] Extender biblioteca global/contextual, atras/adelante y estados vacios en `tests/e2e/workspace-library.spec.ts`
-- [ ] T026 [P] [US3] Extender consistencia de biblioteca y ajustes por rol/nombre en `tests/e2e/workspace-overlays.spec.ts`
-- [ ] T027 [US3] Ejecutar T023–T026 y registrar los fallos rojos UX-003, UX-005, UX-006, UX-009 y UX-017 en `specs/007-fix-workspace-ux/implementation-evidence.md`
+- [X] T023 [P] [US3] Escribir pruebas de drawer cerrado inicial, Escape, seleccion, retorno de foco, overflow a 320 px y restauracion de nueva tarea/ajustes tras recarga y atras/adelante en `tests/e2e/workspace-ux-audit.spec.ts`
+- [X] T024 [P] [US3] Escribir pruebas de transiciones expandida, contraida y drawer en `app/features/tasks/composables/useWorkspaceState.test.ts`
+- [X] T025 [P] [US3] Extender biblioteca global/contextual, atras/adelante y estados vacios en `tests/e2e/workspace-library.spec.ts`
+- [X] T026 [P] [US3] Extender consistencia de biblioteca y ajustes por rol/nombre en `tests/e2e/workspace-overlays.spec.ts`
+- [X] T027 [US3] Ejecutar T023–T026 y registrar los fallos rojos UX-003, UX-005, UX-006, UX-009 y UX-017 en `specs/007-fix-workspace-ux/implementation-evidence.md`
 
 ### Implementation for User Story 3
 
-- [ ] T028 [US3] Implementar estados de navegacion desktop/movil y retorno de foco en `app/features/tasks/composables/useWorkspaceState.ts`
-- [ ] T029 [US3] Implementar drawer movil y colapso desktop en `app/features/tasks/components/DashboardSidebar.vue`, `app/features/tasks/components/WorkspaceHeader.vue` y `app/features/tasks/components/TaskWorkspace.vue`
-- [ ] T030 [US3] Conectar biblioteca y ajustes de forma consistente en `pages/index.vue` y `pages/tasks/[id].vue`
-- [ ] T031 [US3] Convertir `/library` en una entrada accionable que reutiliza la biblioteca existente en `pages/library/index.vue` y `app/features/library/components/LibrarySlideover.vue`
-- [ ] T032 [US3] Ejecutar T023–T026 en todos los viewports objetivo y registrar verde en `specs/007-fix-workspace-ux/implementation-evidence.md`
+- [X] T028 [US3] Implementar estados de navegacion desktop/movil y retorno de foco en `app/features/tasks/composables/useWorkspaceState.ts`
+- [X] T029 [US3] Implementar drawer movil y colapso desktop en `app/features/tasks/components/DashboardSidebar.vue`, `app/features/tasks/components/WorkspaceHeader.vue` y `app/features/tasks/components/TaskWorkspace.vue`
+- [X] T030 [US3] Conectar biblioteca y ajustes de forma consistente en `pages/index.vue` y `pages/tasks/[id].vue`
+- [X] T031 [US3] Convertir `/library` en una entrada accionable que reutiliza la biblioteca existente en `pages/library/index.vue` y `app/features/library/components/LibrarySlideover.vue`
+- [X] T032 [US3] Ejecutar T023–T026 en todos los viewports objetivo y registrar verde en `specs/007-fix-workspace-ux/implementation-evidence.md`
 
 **Checkpoint**: Navegacion, contenido y overlays permanecen diferenciados y recuperables en todos los viewports.
 
@@ -120,14 +120,14 @@
 
 ### Tests for User Story 4
 
-- [ ] T033 [US4] Escribir escenarios de directiva opcional, nombre requerido, foco de error, fila vacia y eliminacion en `tests/e2e/legacy-task-workflows.spec.ts`
-- [ ] T034 [US4] Ejecutar T033 y registrar los fallos rojos UX-011 y UX-012 en `specs/007-fix-workspace-ux/implementation-evidence.md`
+- [X] T033 [US4] Escribir escenarios de directiva opcional, nombre requerido, foco de error, fila vacia y eliminacion en `tests/e2e/legacy-task-workflows.spec.ts`
+- [X] T034 [US4] Ejecutar T033 y registrar los fallos rojos UX-011 y UX-012 en `specs/007-fix-workspace-ux/implementation-evidence.md`
 
 ### Implementation for User Story 4
 
-- [ ] T035 [US4] Etiquetar `Directiva cruda` como opcional y asociar validacion/foco del nombre en `bitacora-protocolo-analitico (2).html`
-- [ ] T036 [US4] Bloquear filas vacias duplicadas y añadir eliminacion de fila en `bitacora-protocolo-analitico (2).html`
-- [ ] T037 [US4] Ejecutar T033 y la regresion de fases en `tests/e2e/legacy-phase-workflows.spec.ts`; registrar verde en `specs/007-fix-workspace-ux/implementation-evidence.md`
+- [X] T035 [US4] Etiquetar `Directiva cruda` como opcional y asociar validacion/foco del nombre en `bitacora-protocolo-analitico (2).html`
+- [X] T036 [US4] Bloquear filas vacias duplicadas y añadir eliminacion de fila en `bitacora-protocolo-analitico (2).html`
+- [X] T037 [US4] Ejecutar T033 y la regresion de fases en `tests/e2e/legacy-phase-workflows.spec.ts`; registrar verde en `specs/007-fix-workspace-ux/implementation-evidence.md`
 
 **Checkpoint**: El legado comunica requisitos y no acumula estructuras vacias accidentalmente.
 
@@ -141,18 +141,18 @@
 
 ### Tests for User Story 5
 
-- [ ] T038 [P] [US5] Escribir pruebas de deduplicacion por operacion, limite, cierre y reintento en `app/features/tasks/composables/useWorkspaceNotices.test.ts`
-- [ ] T039 [P] [US5] Escribir escenarios E2E de un solo `Guardado`, roles `status`/`alert`, navegacion y region de contexto identificadas, `main` unico, titulos, 404 localizado, foco visible y nombres accesibles en `tests/e2e/workspace-ux-audit.spec.ts`
-- [ ] T040 [US5] Ejecutar T038–T039 y registrar los fallos rojos UX-013, UX-014, UX-015 y UX-016 en `specs/007-fix-workspace-ux/implementation-evidence.md`
+- [X] T038 [P] [US5] Escribir pruebas de deduplicacion por operacion, limite, cierre y reintento en `app/features/tasks/composables/useWorkspaceNotices.test.ts`
+- [X] T039 [P] [US5] Escribir escenarios E2E de un solo `Guardado`, roles `status`/`alert`, navegacion y region de contexto identificadas, `main` unico, titulos, 404 localizado, foco visible y nombres accesibles en `tests/e2e/workspace-ux-audit.spec.ts`
+- [X] T040 [US5] Ejecutar T038–T039 y registrar los fallos rojos UX-013, UX-014, UX-015 y UX-016 en `specs/007-fix-workspace-ux/implementation-evidence.md`
 
 ### Implementation for User Story 5
 
-- [ ] T041 [US5] Deduplicar avisos por operacion sin ocultar errores distintos en `app/features/tasks/composables/useWorkspaceNotices.ts` y `app/features/tasks/components/NoticeRegion.vue`
-- [ ] T042 [US5] Emitir una sola identidad de guardado por operacion en `pages/tasks/[id].vue`
-- [ ] T043 [P] [US5] Localizar la ruta inexistente y ofrecer retorno al workspace en `error.vue`
-- [ ] T044 [P] [US5] Definir titulos contextuales y landmarks con navegacion, region de contexto y `main` unico en `app.vue`, `pages/index.vue`, `pages/library/index.vue`, `pages/reference.vue` y `pages/tasks/[id].vue`
-- [ ] T045 [P] [US5] Localizar nombre accesible, tooltip y foco del envio en `app/features/tasks/components/TaskChat.vue`
-- [ ] T046 [US5] Ejecutar T038–T039 y regresiones de overlays/chat; registrar verde en `specs/007-fix-workspace-ux/implementation-evidence.md`
+- [X] T041 [US5] Deduplicar avisos por operacion sin ocultar errores distintos en `app/features/tasks/composables/useWorkspaceNotices.ts` y `app/features/tasks/components/NoticeRegion.vue`
+- [X] T042 [US5] Emitir una sola identidad de guardado por operacion en `pages/tasks/[id].vue`
+- [X] T043 [P] [US5] Localizar la ruta inexistente y ofrecer retorno al workspace en `error.vue`
+- [X] T044 [P] [US5] Definir titulos contextuales y landmarks con navegacion, region de contexto y `main` unico en `app.vue`, `pages/index.vue`, `pages/library/index.vue`, `pages/reference.vue` y `pages/tasks/[id].vue`
+- [X] T045 [P] [US5] Localizar nombre accesible, tooltip y foco del envio en `app/features/tasks/components/TaskChat.vue`
+- [X] T046 [US5] Ejecutar T038–T039 y regresiones de overlays/chat; registrar verde en `specs/007-fix-workspace-ux/implementation-evidence.md`
 
 **Checkpoint**: Feedback, rutas y controles auditados son unicos, localizados y operables con tecnologia de asistencia.
 

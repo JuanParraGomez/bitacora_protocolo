@@ -26,6 +26,9 @@ const summaryState = ref<WorkspaceSummaryState>('hidden');
 const lastVisibleMessageId = ref<string | null>(null);
 const workspaceState = shallowRef<ReturnType<typeof useWorkspaceState> | null>(null);
 const noticesApi = useWorkspaceNotices();
+useHead(() => ({
+  title: task.value?.nombre?.trim() || 'Workspace',
+}));
 const {
   index,
   projectCollection,
@@ -122,6 +125,7 @@ function rebuildWorkspaceState() {
       taskIds: taskIdsForGroup(group),
     })),
   });
+  sidebarCollapsed.value = workspaceState.value.sidebarCollapsed.value;
   if (task.value) {
     const projectId = projectIdForTask(task.value.id, task.value.projectId || 'legacy');
     workspaceState.value.selectTask(projectId, task.value.id);
@@ -229,13 +233,15 @@ async function load(taskId: string) {
   }
 }
 
-async function save(nextTask?: Task): Promise<boolean> {
+async function save(nextTask?: Task, operationId?: string): Promise<boolean> {
   if (!task.value) return false;
   const priorSave = pendingSave.value;
   const isDetached = Boolean(nextTask && nextTask.id !== task.value.id);
   if (nextTask && !isDetached) task.value = nextTask;
 
   const snapshotTask = snapshot(nextTask ?? task.value);
+  const noticeOperationId = operationId
+    ?? `save:${snapshotTask.id}:${snapshotTask.fase}:${snapshotTask.projectId}:${snapshotTask.nombre}`;
   const action = (async () => {
     if (priorSave) await priorSave;
     try {
@@ -269,6 +275,7 @@ async function save(nextTask?: Task): Promise<boolean> {
       rebuildWorkspaceState();
       saveError.value = '';
       noticesApi.pushNotice({
+        operationId: noticeOperationId,
         title: 'Guardado',
         message: 'La tarea se actualizó sin salir del workspace.',
         tone: 'success',
@@ -278,11 +285,12 @@ async function save(nextTask?: Task): Promise<boolean> {
     } catch {
       saveError.value = 'No se pudo guardar. Reintenta.';
       noticesApi.pushNotice({
+        operationId: noticeOperationId,
         title: 'No se pudo guardar',
         message: 'El cambio quedó en memoria. Puedes reintentar desde el workspace.',
         tone: 'error',
         urgent: true,
-        onRetry: () => { void save(snapshotTask); },
+        onRetry: () => { void save(snapshotTask, noticeOperationId); },
       });
       return false;
     }
@@ -337,8 +345,8 @@ function markDirty(nextTask?: Task) {
   saved.value = false;
 }
 
-function saveFromWorkspace(nextTask?: Task): void {
-  void save(nextTask);
+function saveFromWorkspace(nextTask?: Task, meta?: { operationId?: string }): void {
+  void save(nextTask, meta?.operationId);
 }
 
 async function createProject(name: string) {
@@ -456,6 +464,11 @@ function toggleProject(payload: { projectId: string; expanded: boolean }) {
   workspaceState.value?.setProjectExpanded(payload.projectId, payload.expanded);
 }
 
+function updateSidebarCollapsed(collapsed: boolean) {
+  sidebarCollapsed.value = collapsed;
+  workspaceState.value?.setSidebarCollapsed(collapsed);
+}
+
 function updateDraft(payload: { taskId: string; draft: string }) {
   if (payload.taskId === task.value?.id) composerDraft.value = payload.draft;
   workspaceState.value?.setDraft(payload.taskId, payload.draft);
@@ -492,6 +505,7 @@ function handleLibraryRecordLinked(payload: {
 
   if (payload.status === 'error') {
     noticesApi.pushNotice({
+      operationId: `library-link:${payload.recordId}`,
       title: 'No se pudo vincular la referencia',
       message: payload.reason === 'record-missing'
         ? 'El registro ya no esta disponible en la biblioteca.'
@@ -503,6 +517,7 @@ function handleLibraryRecordLinked(payload: {
   }
 
   noticesApi.pushNotice({
+    operationId: `library-link:${payload.recordId}`,
     title: payload.status === 'linked' ? 'Referencia vinculada' : 'Referencia ya vinculada',
     message: payload.status === 'linked'
       ? `${payload.title} quedo disponible como referencia revisable.`
@@ -583,7 +598,7 @@ onMounted(() => {
         @select-task="selectTask"
         @toggle-project="toggleProject"
         @search-tasks="searchQuery = $event"
-        @update-sidebar-collapsed="sidebarCollapsed = $event"
+        @update-sidebar-collapsed="updateSidebarCollapsed"
         @update-draft="updateDraft"
         @update-summary-state="updateSummaryState"
         @update-last-visible-message="updateLastVisibleMessage"

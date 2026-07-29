@@ -408,11 +408,12 @@ onBeforeUnmount(() => {
       @submit="onSendSubmit"
     >
       <template #footer>
-        <UChatPromptSubmit
-          :status="props.sendStatus"
-          :disabled="props.disabled || props.sendStatus !== 'ready' || !draft.trim()"
-          @reload="retryLatest"
-        />
+    <UChatPromptSubmit
+        aria-label="Enviar mensaje"
+        :status="props.sendStatus"
+        :disabled="props.disabled || props.sendStatus !== 'ready' || !draft.trim()"
+        @reload="retryLatest"
+      />
       </template>
     </UChatPrompt>
   </section>

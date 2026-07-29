@@ -3,7 +3,12 @@ import NewTaskModal from '~/app/features/tasks/components/NewTaskModal.vue';
 import { LEGACY_PROJECT_ID } from '~/app/features/tasks/domain/project.schema';
 import { useTaskIndex } from '~/app/features/tasks/composables/useTaskIndex';
 
+useHead({
+  title: 'Nueva tarea',
+});
+
 const route = useRoute();
+const hydrated = ref(false);
 
 const {
   projectGroups,
@@ -12,6 +17,10 @@ const {
 } = useTaskIndex();
 
 await refresh();
+
+onMounted(() => {
+  hydrated.value = true;
+});
 
 const preferredProjectId = computed(() => String(route.query.projectId || ''));
 
@@ -43,7 +52,7 @@ async function closeNewTask() {
       <NuxtLink to="/">Ir al workspace para crear un proyecto</NuxtLink>
     </section>
     <NewTaskModal
-      v-else
+      v-else-if="hydrated"
       :open="true"
       :project-groups="projectGroups"
       :selected-project-id="selectedProjectId"

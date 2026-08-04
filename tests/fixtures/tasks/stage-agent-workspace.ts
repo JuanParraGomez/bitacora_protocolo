@@ -528,6 +528,50 @@ export const stageAgentWorkspaceWorkspaceState = {
     contradictions: [],
     suggestions: ['Ajustar el canvas', 'Conservar el borrador', 'Verificar el gate'],
   },
+  visualScenarios: {
+    'IMG-UX-01': {
+      taskId: stageAgentWorkspaceTasks.phase1.id,
+      phase: 1 as const,
+      agentMode: 'collapsed' as const,
+      activeMobilePlane: 'stage' as const,
+    },
+    'IMG-UX-02': {
+      taskId: stageAgentWorkspaceTasks.phase2.id,
+      phase: 2 as const,
+      agentMode: 'expanded' as const,
+      turnId: 'turn-stage-agent-001',
+    },
+    'IMG-UX-03': {
+      taskId: stageAgentWorkspaceTasks.phase2.id,
+      phase: 2 as const,
+      agentMode: 'expanded' as const,
+      activeMobilePlane: 'stage' as const,
+      drawerOpen: false,
+    },
+    'IMG-UX-04': {
+      taskId: stageAgentWorkspaceTasks.phase1.id,
+      phase: 1 as const,
+      agentMode: 'collapsed' as const,
+      activeMobilePlane: 'stage' as const,
+    },
+    'IMG-UX-05': {
+      taskId: stageAgentWorkspaceTasks.phase2.id,
+      phase: 2 as const,
+      evaluation: {
+        status: 'error' as const,
+        issues: [
+          { field: 'alcance', cause: 'El alcance no coincide con la evidencia.' },
+          { field: 'criterioExito', cause: 'El criterio de éxito no es verificable.' },
+        ],
+      },
+    },
+    'IMG-UX-06': {
+      taskId: stageAgentWorkspaceTasks.phase4.id,
+      phase: 4 as const,
+      completedPhases: 4,
+      primaryAction: 'Volver a tareas',
+    },
+  },
 } as const;
 
 export const stageAgentWorkspaceRecords = {

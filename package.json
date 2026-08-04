@@ -31,9 +31,11 @@
     "architecture:check": "dependency-cruiser --config .dependency-cruiser.cjs app server shared --output-type err-long",
     "test:architecture": "npx vitest run tests/integration/structure-snapshot.test.ts",
     "test:browser": "npm run test:e2e:red",
+    "test:visual": "playwright test tests/e2e/visual",
+    "test:visual:update": "playwright test tests/e2e/visual --update-snapshots",
     "build:production": "npm run build",
     "verify": "npm run typecheck && npm run test:unit && npm run test:contract && npm run test:migration && npm run test:integration && npm run structure:check && npm run graph:update && npm run graph:check && npm run build",
-    "verify:e2e": "npm run test:e2e:red"
+    "verify:e2e": "playwright test --config tests/e2e/playwright.verify.config.mjs"
   },
   "dependencies": {
     "@nuxt/ui": "^4.10.0",
@@ -45,6 +47,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.62.0",
     "@types/better-sqlite3": "^7.6.13",
     "@vitejs/plugin-vue": "^6.0.8",

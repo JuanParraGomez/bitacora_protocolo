@@ -20,6 +20,7 @@ import StructuredStageSummary from './StructuredStageSummary.vue';
 import TaskCompletionSummary from './TaskCompletionSummary.vue';
 import WorkspaceHeader from './WorkspaceHeader.vue';
 import WorkspacePaneTabs from './WorkspacePaneTabs.vue';
+import { WORKSPACE_SHELL_BREAKPOINTS } from './workspace-shell-presentation';
 import type { WorkspaceNotice } from '../composables/useWorkspaceNotices';
 import type { WorkspaceAgentPanelState, WorkspaceMobilePaneState, WorkspaceOverlayState } from '../composables/useWorkspaceState';
 import { resolveContextualPrimaryAction, resolveEvaluationDisplay } from './workspace-presentation';
@@ -342,8 +343,8 @@ watch(sidebarOpen, async (next) => {
 
 onMounted(() => {
   if (typeof window !== 'undefined') {
-    compactMediaQuery = window.matchMedia('(max-width: 1023px)');
-    mobileMediaQuery = window.matchMedia('(max-width: 767px)');
+    compactMediaQuery = window.matchMedia(`(max-width: ${WORKSPACE_SHELL_BREAKPOINTS.tabletMax}px)`);
+    mobileMediaQuery = window.matchMedia(`(max-width: ${WORKSPACE_SHELL_BREAKPOINTS.mobileMax}px)`);
     compactMediaQuery.addEventListener('change', updateResponsiveMode);
     mobileMediaQuery.addEventListener('change', updateResponsiveMode);
     updateResponsiveMode();
@@ -1250,7 +1251,7 @@ watch(() => [localTask.id, localTask.fase], () => {
   min-width: 0;
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1024px) {
   .workspace-shell {
     grid-template-columns: 1fr;
     height: 100dvh;

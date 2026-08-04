@@ -5,6 +5,7 @@ import DashboardSidebar from '~/app/features/tasks/components/DashboardSidebar.v
 import WorkspaceHeader from '~/app/features/tasks/components/WorkspaceHeader.vue';
 import { createProjectStore } from '~/app/features/tasks/services/project-store';
 import { STORAGE_KEYS, type StorageBatchOperation } from '~/shared/contracts/storage';
+import { WORKSPACE_SHELL_BREAKPOINTS } from '~/app/features/tasks/components/workspace-shell-presentation';
 
 useHead({
   title: 'Workspace',
@@ -208,8 +209,8 @@ async function openLibrary() {
 }
 
 onMounted(() => {
-  compactMediaQuery = window.matchMedia('(max-width: 1023px)');
-  mobileMediaQuery = window.matchMedia('(max-width: 767px)');
+  compactMediaQuery = window.matchMedia(`(max-width: ${WORKSPACE_SHELL_BREAKPOINTS.tabletMax}px)`);
+  mobileMediaQuery = window.matchMedia(`(max-width: ${WORKSPACE_SHELL_BREAKPOINTS.mobileMax}px)`);
   compactMediaQuery.addEventListener('change', updateResponsiveMode);
   mobileMediaQuery.addEventListener('change', updateResponsiveMode);
   updateResponsiveMode();

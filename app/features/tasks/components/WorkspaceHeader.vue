@@ -55,13 +55,17 @@ defineExpose({ focusNavigation });
       ›
     </button>
 
+    <div v-if="props.compactNavigation" class="workspace-header__mobile-logo" data-mobile-logo aria-label="Nexus">Nexus</div>
+
     <div class="workspace-header__identity">
-      <p class="workspace-header__project">{{ props.projectName }}</p>
+      <nav aria-label="Breadcrumb" class="workspace-header__breadcrumb">
+        <span>{{ props.projectName }}</span><span aria-hidden="true">/</span><strong>{{ props.taskName || 'Tarea' }}</strong>
+      </nav>
       <h1>{{ props.taskName || 'Tarea' }}</h1>
     </div>
 
     <div class="workspace-header__stage">
-      <strong>Etapa {{ props.phase }} de 4</strong>
+      <strong data-stage-chip>Etapa {{ props.phase }} de 4</strong>
       <span>{{ props.phaseTitle }}</span>
     </div>
 
@@ -100,6 +104,30 @@ defineExpose({ focusNavigation });
   margin: 0;
 }
 
+.workspace-header__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  min-width: 0;
+  color: #68736c;
+  font-size: .76rem;
+}
+
+.workspace-header__breadcrumb span,
+.workspace-header__breadcrumb strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-header__breadcrumb strong { color: #19261e; }
+
+.workspace-header__mobile-logo {
+  display: none;
+  color: #075237;
+  font-weight: 850;
+}
+
 .workspace-header__identity h1 {
   overflow: hidden;
   color: #101812;
@@ -128,15 +156,22 @@ defineExpose({ focusNavigation });
 }
 
 .workspace-header__stage strong {
+  border-radius: 999px;
+  padding: .3rem .6rem;
   color: #1e2a23;
+  background: #d9f2e3;
 }
 
 @media (max-width: 767px) {
   .workspace-header {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto auto minmax(0, 1fr);
     gap: .65rem;
     padding: max(.75rem, env(safe-area-inset-top)) .8rem .75rem;
   }
+
+  .workspace-header__mobile-logo { display: block; }
+
+  .workspace-header__identity { grid-column: 3; }
 
   .workspace-header__stage {
     grid-column: 2;

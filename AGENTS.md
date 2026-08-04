@@ -1,8 +1,10 @@
 <!-- SPECKIT START -->
-For the current UX remediation decisions, project structure, commands, and
-contracts, read `specs/007-fix-workspace-ux/plan.md`. For migration checkpoints
-and deferred service-extraction criteria, retain
-`specs/001-evolution-ready-foundation/plan.md` as the architectural baseline.
+For the current workspace shell composition, responsive navigation, verification
+commands, and visual contract, read `specs/011-workspace-shell/plan.md`. Before
+running visual Layer B, satisfy the approved/versioned spec 010 prerequisite
+recorded in that plan. For migration checkpoints and deferred service-extraction
+criteria, retain `specs/001-evolution-ready-foundation/plan.md` as the
+architectural baseline.
 
 ## Mandatory Test-First Workflow
 

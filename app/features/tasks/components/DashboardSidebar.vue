@@ -203,7 +203,7 @@ function selectProject(group: WorkspaceProjectGroup) {
       </form>
 
       <label class="task-sidebar__search-label" for="task-search"><WorkspaceShellIcon name="search" /><span>Buscar tareas o proyectos…</span><kbd>⌘K</kbd></label>
-      <input id="task-search" type="search" :value="effectiveSearch" placeholder="Buscar tareas o proyectos…" @input="updateSearch(($event.target as HTMLInputElement).value)">
+      <input id="task-search" type="search" aria-label="Buscar tareas" :value="effectiveSearch" placeholder="Buscar tareas o proyectos…" @input="updateSearch(($event.target as HTMLInputElement).value)">
     </section>
 
     <div class="task-sidebar__projects" data-shell-region="projects">

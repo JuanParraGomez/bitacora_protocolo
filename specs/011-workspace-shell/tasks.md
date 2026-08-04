@@ -27,8 +27,8 @@ fecha, exit code, rojo, verde, regresión, diff y AC permite marcar una tarea
 **Purpose**: asegurar que el contrato visual es ejecutable y que la evidencia
 no mezcla el trabajo no versionado de otra feature.
 
-- [ ] T001 Tarea humana: aprobar explícitamente la spec 011 y seleccionar/autorizar la revisión exacta y operación Git de spec 010 que podrá integrarse; mantener abierta y devolver `HUMAN_DECISION_REQUIRED` mientras `spec.md` siga `Draft` o no exista autorización. Refs: FR-017, AC-008, IMG-UX-01…06
-- [ ] T002 Tras T001, integrar únicamente la revisión Git autorizada de spec 010 en `codex/011-workspace-shell` y verificar que aporta `tests/e2e/visual/stage-agent-workspace.visual.spec.ts`, helpers `tests/e2e/helpers/visual-*.ts`, 24 snapshots, `@axe-core/playwright` y scripts `test:visual*`; no copiar trabajo no versionado. Refs: FR-017, AC-008, IMG-UX-01…06
+- [x] T001 Tarea humana: aprobar explícitamente la spec 011 y seleccionar/autorizar la revisión exacta y operación Git de spec 010 que podrá integrarse; mantener abierta y devolver `HUMAN_DECISION_REQUIRED` mientras `spec.md` siga `Draft` o no exista autorización. Refs: FR-017, AC-008, IMG-UX-01…06
+- [x] T002 Tras T001, integrar únicamente la revisión Git autorizada de spec 010 en `codex/011-workspace-shell` y verificar que aporta `tests/e2e/visual/stage-agent-workspace.visual.spec.ts`, helpers `tests/e2e/helpers/visual-*.ts`, 24 snapshots, `@axe-core/playwright` y scripts `test:visual*`; no copiar trabajo no versionado. Refs: FR-017, AC-008, IMG-UX-01…06
 - [ ] T003 Inicializar checkpoint 011 en `.codex-autopilot/state.json`, inventariar/hashear las 24 baselines aprobadas de `tests/e2e/visual/stage-agent-workspace.visual.spec.ts-snapshots/`, confirmar cuatro viewports y registrar que mockups y baselines son distintos. Refs: FR-015, FR-017, AC-005, AC-008, IMG-UX-01…06
 
 **Checkpoint**: no iniciar pruebas ni código 011 hasta T001–T003 verificadas.
@@ -39,9 +39,9 @@ no mezcla el trabajo no versionado de otra feature.
 
 **Purpose**: crear todos los rojos observables antes de cambiar producción.
 
-- [ ] T004 [P] Capa A ROJA: crear `app/features/tasks/components/DashboardSidebar.test.ts` con orden de regiones, iconos/control con nombre accesible, activo, buscador/⌘K, carpetas/tareas, footer, ausencia de duplicados, proyecto vacío, búsqueda sin hits, create/rename válido e inválido; ejecutar Vitest y registrar fallo por contrato 011 ausente. Refs: FR-001…FR-007, AC-001, AC-003, IMG-UX-01/02/05/06
-- [ ] T005 [P] Capa A ROJA: crear `app/features/tasks/components/WorkspaceHeader.test.ts` con breadcrumb proyecto/tarea, chip Etapa 1 y 4 de 4, subtítulo, nombres largos, hamburger+logo compactos y nombres accesibles; ejecutar Vitest y registrar rojo esperado. Refs: FR-008…FR-010, FR-012, AC-002, AC-004, IMG-UX-01/02/04/05/06
-- [ ] T006 [P] Capa A ROJA: crear `app/features/tasks/components/workspace-shell-presentation.test.ts` para límites 1025/1024 y 768/767, valores inválidos y modos desktop/tablet/mobile; registrar rojo esperado por helper inexistente. Refs: FR-011…FR-013, AC-004, IMG-UX-03/04
+- [x] T004 [P] Capa A ROJA: crear `app/features/tasks/components/DashboardSidebar.test.ts` con orden de regiones, iconos/control con nombre accesible, activo, buscador/⌘K, carpetas/tareas, footer, ausencia de duplicados, proyecto vacío, búsqueda sin hits, create/rename válido e inválido; ejecutar Vitest y registrar fallo por contrato 011 ausente. Refs: FR-001…FR-007, AC-001, AC-003, IMG-UX-01/02/05/06
+- [x] T005 [P] Capa A ROJA: crear `app/features/tasks/components/WorkspaceHeader.test.ts` con breadcrumb proyecto/tarea, chip Etapa 1 y 4 de 4, subtítulo, nombres largos, hamburger+logo compactos y nombres accesibles; ejecutar Vitest y registrar rojo esperado. Refs: FR-008…FR-010, FR-012, AC-002, AC-004, IMG-UX-01/02/04/05/06
+- [x] T006 [P] Capa A ROJA: crear `app/features/tasks/components/workspace-shell-presentation.test.ts` para límites 1025/1024 y 768/767, valores inválidos y modos desktop/tablet/mobile; registrar rojo esperado por helper inexistente. Refs: FR-011…FR-013, AC-004, IMG-UX-03/04
 - [ ] T007 Capa funcional ROJA: ampliar primero `tests/e2e/conversational-workspace.spec.ts` y `tests/e2e/workspace-ux-audit.spec.ts` con shell 011, destinos únicos, footer, drawer cerrado a 1024×768 y header móvil a 390×844; ejecutar serial y registrar fallos esperados sin tocar producción. Refs: FR-003…FR-013, AC-001…AC-004, IMG-UX-03/04
 - [ ] T008 Capa B ROJA: ampliar primero `tests/e2e/visual/stage-agent-workspace.visual.spec.ts` con aserciones de regiones/orden/nombres del shell, destinos únicos y contraste estricto normal/hover/activo para IMG-UX-01/02/05/06 × 4 viewports; ejecutar contra baselines aprobadas y registrar fallos atribuibles al shell anterior. Refs: FR-001…FR-017, AC-003, AC-005, AC-006, IMG-UX-01/02/05/06
 
@@ -58,9 +58,9 @@ una aparición por destino.
 **Independent Test**: `DashboardSidebar.test.ts` verde y regresión funcional de
 búsqueda/create/rename/select/rutas verde, sin depender del nuevo header.
 
-- [ ] T009 [P] [US1] Crear `app/features/tasks/components/WorkspaceShellIcon.vue` con conjunto SVG cerrado para Tareas, Biblioteca, Referencias, Ajustes, Buscar, Carpeta, Chevron, Más y usuario; heredar `currentColor`, ocultar SVG decorativo al árbol accesible y cubrirlo desde `DashboardSidebar.test.ts`. Refs: FR-002, FR-004, AC-001, IMG-UX-01/02/05/06
-- [ ] T010 [US1] Reestructurar `app/features/tasks/components/DashboardSidebar.vue` en marca → navegación vertical → búsqueda “Buscar tareas o proyectos…” + ⌘K → PROYECTOS como carpetas/tareas anidadas → footer de identidad, manteniendo props/emits y búsqueda actual. Refs: FR-001…FR-006, AC-001, IMG-UX-01/02/05/06
-- [ ] T011 [US1] Ajustar en `app/features/tasks/components/DashboardSidebar.vue` estados active/hover/focus, acciones compactas create/rename, proyecto vacío/sin hits y conteo DOM para que Nueva tarea, Biblioteca y Ajustes aparezcan una vez; no usar jerarquía primaria para utilidades. Refs: FR-005, FR-007, FR-014, AC-003, IMG-UX-01/02/05/06
+- [x] T009 [P] [US1] Crear `app/features/tasks/components/WorkspaceShellIcon.vue` con conjunto SVG cerrado para Tareas, Biblioteca, Referencias, Ajustes, Buscar, Carpeta, Chevron, Más y usuario; heredar `currentColor`, ocultar SVG decorativo al árbol accesible y cubrirlo desde `DashboardSidebar.test.ts`. Refs: FR-002, FR-004, AC-001, IMG-UX-01/02/05/06
+- [x] T010 [US1] Reestructurar `app/features/tasks/components/DashboardSidebar.vue` en marca → navegación vertical → búsqueda “Buscar tareas o proyectos…” + ⌘K → PROYECTOS como carpetas/tareas anidadas → footer de identidad, manteniendo props/emits y búsqueda actual. Refs: FR-001…FR-006, AC-001, IMG-UX-01/02/05/06
+- [x] T011 [US1] Ajustar en `app/features/tasks/components/DashboardSidebar.vue` estados active/hover/focus, acciones compactas create/rename, proyecto vacío/sin hits y conteo DOM para que Nueva tarea, Biblioteca y Ajustes aparezcan una vez; no usar jerarquía primaria para utilidades. Refs: FR-005, FR-007, FR-014, AC-003, IMG-UX-01/02/05/06
 - [ ] T012 [US1] Ejecutar y reparar hasta verde `DashboardSidebar.test.ts`, `tests/e2e/conversational-workspace.spec.ts` (búsqueda/create/rename/select) y regresiones `useTaskIndex`/`useWorkspaceState`; registrar conteos, exit codes y alcance en `.codex-autopilot/evidence/phase-us1.json`. Refs: FR-003…FR-007, FR-016, AC-001, AC-003
 
 **Checkpoint**: US1 independiente y verde; T004/T007 parcialmente satisfechas.
@@ -74,8 +74,8 @@ búsqueda/create/rename/select/rutas verde, sin depender del nuevo header.
 **Independent Test**: `WorkspaceHeader.test.ts` verde para fases 1/4 y contexto
 largo; E2E presenta proyecto/tarea correctos sin cambiar ruta ni progreso.
 
-- [ ] T013 [US2] Reestructurar `app/features/tasks/components/WorkspaceHeader.vue` con breadcrumb semántico `proyecto / tarea`, chip verde `Etapa N de 4` y subtítulo de fase, conservando props, emisiones, `focusNavigation()` y `data-focus-target`. Refs: FR-008…FR-010, AC-002, IMG-UX-01/02/05/06
-- [ ] T014 [US2] Implementar en `app/features/tasks/components/WorkspaceHeader.vue` la variante compacta con hamburguesa, logo Nexus y breadcrumb, sin duplicar navegación; resolver truncado/wrap de nombres largos y contraste de chip/foco. Refs: FR-012, FR-013, AC-002, AC-004, IMG-UX-03/04
+- [x] T013 [US2] Reestructurar `app/features/tasks/components/WorkspaceHeader.vue` con breadcrumb semántico `proyecto / tarea`, chip verde `Etapa N de 4` y subtítulo de fase, conservando props, emisiones, `focusNavigation()` y `data-focus-target`. Refs: FR-008…FR-010, AC-002, IMG-UX-01/02/05/06
+- [x] T014 [US2] Implementar en `app/features/tasks/components/WorkspaceHeader.vue` la variante compacta con hamburguesa, logo Nexus y breadcrumb, sin duplicar navegación; resolver truncado/wrap de nombres largos y contraste de chip/foco. Refs: FR-012, FR-013, AC-002, AC-004, IMG-UX-03/04
 - [ ] T015 [US2] Ejecutar y reparar hasta verde `WorkspaceHeader.test.ts`, pruebas de integración de `TaskWorkspace.test.ts` y escenarios E2E de fase 1/4; registrar en `.codex-autopilot/evidence/phase-us2.json` que número/título provienen de datos existentes. Refs: FR-008…FR-010, FR-016, AC-002
 
 **Checkpoint**: US2 independiente y verde; T005 satisfecha.
@@ -89,9 +89,9 @@ largo; E2E presenta proyecto/tarea correctos sin cambiar ruta ni progreso.
 **Independent Test**: helper verde en límites y Playwright serial demuestra
 drawer cerrado inicialmente, hamburguesa, Escape/Tab/selección y cero overflow.
 
-- [ ] T016 [US3] Implementar `app/features/tasks/components/workspace-shell-presentation.ts` con breakpoints inclusivos desktop >1024, tablet 768–1024, mobile ≤767 y constantes de media query, hasta verde T006. Refs: FR-011…FR-013, AC-004, IMG-UX-03/04
-- [ ] T017 [US3] Sustituir límites duplicados de JS/CSS en `app/features/tasks/components/TaskWorkspace.vue` por el contrato compartido e incluir exactamente 1024px en modo compacto, conservando drawer, `inert`, trap de foco y eventos. Refs: FR-011, FR-013, FR-016, AC-004, IMG-UX-03
-- [ ] T018 [US3] Alinear `pages/index.vue` con el mismo contrato responsive sin mover persistencia, `lastActiveTaskId`, create/rename ni navegación; conservar una sola instancia visible del sidebar. Refs: FR-011…FR-013, FR-016, AC-004, IMG-UX-03/04
+- [x] T016 [US3] Implementar `app/features/tasks/components/workspace-shell-presentation.ts` con breakpoints inclusivos desktop >1024, tablet 768–1024, mobile ≤767 y constantes de media query, hasta verde T006. Refs: FR-011…FR-013, AC-004, IMG-UX-03/04
+- [x] T017 [US3] Sustituir límites duplicados de JS/CSS en `app/features/tasks/components/TaskWorkspace.vue` por el contrato compartido e incluir exactamente 1024px en modo compacto, conservando drawer, `inert`, trap de foco y eventos. Refs: FR-011, FR-013, FR-016, AC-004, IMG-UX-03
+- [x] T018 [US3] Alinear `pages/index.vue` con el mismo contrato responsive sin mover persistencia, `lastActiveTaskId`, create/rename ni navegación; conservar una sola instancia visible del sidebar. Refs: FR-011…FR-013, FR-016, AC-004, IMG-UX-03/04
 - [ ] T019 [US3] Ejecutar y reparar hasta verde `workspace-shell-presentation.test.ts`, `workspace-ux-audit.spec.ts`, drawer de `conversational-workspace.spec.ts` y `workspace-overlays.spec.ts` en serie; registrar foco, Escape/Tab y viewports en `.codex-autopilot/evidence/phase-us3.json`. Refs: FR-011…FR-013, AC-004, IMG-UX-03/04
 
 **Checkpoint**: US3 verde; T006/T007 satisfechas y todos los rojos Capa A deben cerrar.

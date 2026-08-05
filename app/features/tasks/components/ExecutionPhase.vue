@@ -96,7 +96,7 @@ watch(() => task.f3, () => emit('dirty'), { deep: true });
 </script>
 
 <template>
-  <section aria-labelledby="phase-three-title" class="phase-workspace">
+  <section aria-label="Ejecución" class="phase-workspace">
     <div class="phase-workspace__content">
       <div class="phase-workspace__form">
         <div v-for="(iteration, index) in task.f3.iteraciones" :key="iteration.id || index" :ref="element => { if (element) iterationRefs[index] = element as HTMLElement }" :aria-label="`Iteración ${index + 1}`">

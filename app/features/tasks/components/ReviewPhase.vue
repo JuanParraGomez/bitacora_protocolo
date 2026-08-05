@@ -67,7 +67,7 @@ watch(() => task.f4, () => emit('dirty'), { deep: true });
 </script>
 
 <template>
-  <section aria-labelledby="phase-four-title" class="phase-workspace">
+  <section aria-label="Revisión" class="phase-workspace">
     <div class="phase-workspace__content">
       <div class="phase-workspace__form">
         <div v-for="(review, index) in task.f4.aar" :key="index">

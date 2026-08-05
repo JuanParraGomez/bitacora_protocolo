@@ -57,7 +57,7 @@ watch(() => task.f2, () => {
 </script>
 
 <template>
-  <section aria-labelledby="phase-two-title" class="phase-workspace">
+  <section aria-label="Descomponer el camino" class="phase-workspace">
     <div class="phase-workspace__content">
       <div class="phase-workspace__form">
         <p>Propósito: convertir el análisis en una guía accionable.</p>

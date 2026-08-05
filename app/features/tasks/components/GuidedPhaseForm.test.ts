@@ -70,6 +70,24 @@ describe('guided-phase-form model', () => {
     expect(wrapper.find('button').text()).not.toContain('Atrás');
   });
 
+  it.each([
+    [stageAgentWorkspaceTasks.phase1, 'Entender el problema'],
+    [stageAgentWorkspaceTasks.phase2, 'Descomponer el camino'],
+    [stageAgentWorkspaceTasks.phase3, 'Ejecución'],
+    [stageAgentWorkspaceTasks.phase4, 'Revisión'],
+  ] as const)('keeps the phase workspace section accessibly named for phase %s', (task, title) => {
+    const wrapper = mountForm({
+      kind: 'evaluate', label: 'Evaluar etapa', disabled: false, nextPhase: null, reason: null, gateReasons: [],
+    }, blockedDisplay, task);
+    const section = wrapper.get('section.phase-workspace');
+    const labelledBy = section.attributes('aria-labelledby');
+    const directLabel = section.attributes('aria-label');
+
+    expect(directLabel || labelledBy).toBeTruthy();
+    if (labelledBy) expect(wrapper.find(`#${labelledBy}`).exists()).toBe(true);
+    expect(directLabel || wrapper.get(`#${labelledBy}`).text()).toContain(title);
+  });
+
   it('renders phase one priority fields in order with informative counters', () => {
     const wrapper = mountForm({
       kind: 'evaluate', label: 'Evaluar etapa', disabled: false, nextPhase: null, reason: null, gateReasons: [],

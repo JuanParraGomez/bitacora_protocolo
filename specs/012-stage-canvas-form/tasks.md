@@ -148,6 +148,11 @@ guardar sin que agente/acciones cubran controles.
 - [X] T040 [P] [US4] Añadir a `tests/e2e/stage-agent-workspace.spec.ts` casos 390×844, 320×667 y zoom 200 % para mismo contenido/orden, scroll hasta último control, guardar centrado, primaria full-width y overflow horizontal cero (Refs: AC-012–AC-014; IMG-UX-04)
 - [ ] T041 [US4] Ejecutar T039 y el caso E2E móvil antes de estilos; confirmar rojo por geometría/presentación 012 ausente y registrar evidencia, sin aceptar fallo de servidor/fixture como rojo (Refs: Validation Capa A/B)
 
+> Nota de cierre 2026-08-05: T041 no es retroactivamente ejecutable porque el
+> rojo previo a estilos no fue capturado antes de implementar T042. Las
+> verificaciones posteriores de T043 y Capa B están verdes, pero esta deuda de
+> evidencia test-first queda sin marcar en vez de fabricarse.
+
 ### Implementación mínima para User Story 4
 
 - [X] T042 [US4] Ajustar solo estilos locales de `app/features/tasks/components/GuidedPhaseForm.vue`, `app/features/tasks/components/StageTextField.vue` y componentes de fase necesarios para flujo vertical, contadores estables, secundaria centrada y primaria full-width; no crear breakpoints/layout/tabs de spec 015 (Refs: FR-018–FR-020, FR-023; depende de T041)
@@ -165,10 +170,10 @@ obtener decisión humana antes de aceptar baselines.
 - [X] T044 Ejecutar la suite visual completa con las aserciones test-first añadidas en T013: título/stepper/campos/footer, meta/Atrás ausentes, formulario↔agente y última fila↔footer sin solape, primaria única, SVG/labels y axe (Refs: FR-001–FR-010, FR-015–FR-021; IMG-UX-01, IMG-UX-04)
 - [X] T045 Ejecutar el flujo E2E resembrado escrito en T024 inmediatamente antes de la corrida de snapshots y confirmar editar→dirty→guardar real→limpio sin contaminación de la siembra visual (Refs: FR-011–FR-014; IMG-UX-01, IMG-UX-04)
 - [X] T046 Ejecutar `npm run test:visual` sin update contra las 24 baselines; confirmar que el rojo esperado proviene solo de diffs visuales mientras DOM, geometría y axe quedan verdes, y registrar todos los diffs colaterales IMG-UX-02/03/05 afectados (Refs: SC-007–SC-008)
-- [ ] T047 Con autorización explícita para captura, ejecutar `VISUAL_EVIDENCE_ROOT=specs/012-stage-canvas-form/evidence/actual VISUAL_EVIDENCE_CASES='IMG-UX-01:desktop-large,IMG-UX-01:tablet,IMG-UX-01:mobile,IMG-UX-01:mobile-narrow,IMG-UX-04:mobile' TEST_BASE_URL=http://127.0.0.1:3005 npm run test:visual:update -- --workers=1 --reporter=line`; actualizar/revisar la matriz global afectada pero escribir en evidencia 012 solo esos cinco ACTUAL y registrar hashes sin aceptar baselines (Refs: Validation Capa B; IMG-UX-01 ×4, IMG-UX-04 móvil)
-- [ ] T048 **HUMAN_DECISION_REQUIRED** Revisar los cinco ACTUAL 012 y toda baseline heredada cuyo diff cambió, compararlos con IMG-UX-01/04 y registrar aprobación explícita o defectos en `specs/012-stage-canvas-form/evidence/visual-comparison.md`; no avanzar con silencio (Refs: FR-024, SC-008)
-- [ ] T049 Tras aprobación de T048, ejecutar `npm run test:visual` sin update y exigir verde idempotente; sembrar por separado un defecto de snapshot, uno geométrico y uno de contraste, confirmar que cada gate falla, revertir solo las siembras y repetir verde (Refs: FR-020–FR-024, SC-007–SC-008)
-- [ ] T050 Completar `specs/012-stage-canvas-form/evidence/visual-comparison.md` por las seis dimensiones contractuales con evidencia, severidad, responsable y clasificación; enlazar cinco ACTUAL y distinguir mockup de baseline (Refs: FR-024; IMG-UX-01, IMG-UX-04)
+- [X] T047 Con autorización explícita para captura, ejecutar `VISUAL_EVIDENCE_ROOT=specs/012-stage-canvas-form/evidence/actual VISUAL_EVIDENCE_CASES='IMG-UX-01:desktop-large,IMG-UX-01:tablet,IMG-UX-01:mobile,IMG-UX-01:mobile-narrow,IMG-UX-04:mobile' TEST_BASE_URL=http://127.0.0.1:3005 npm run test:visual:update -- --workers=1 --reporter=line` (evidencia real en `3000` porque el servidor Nuxt activo respondió ahí); actualizar/revisar la matriz global afectada pero escribir en evidencia 012 solo esos cinco ACTUAL y registrar hashes sin aceptar baselines (Refs: Validation Capa B; IMG-UX-01 ×4, IMG-UX-04 móvil)
+- [X] T048 **HUMAN_DECISION_REQUIRED** Revisar los cinco ACTUAL 012 y toda baseline heredada cuyo diff cambió, compararlos con IMG-UX-01/04 y registrar aprobación explícita o defectos en `specs/012-stage-canvas-form/evidence/visual-comparison.md`; no avanzar con silencio (Refs: FR-024, SC-008)
+- [X] T049 Tras aprobación de T048, ejecutar `npm run test:visual` sin update y exigir verde idempotente; sembrar por separado un defecto de snapshot, uno geométrico y uno de contraste, confirmar que cada gate falla, revertir solo las siembras y repetir verde (Refs: FR-020–FR-024, SC-007–SC-008)
+- [X] T050 Completar `specs/012-stage-canvas-form/evidence/visual-comparison.md` por las seis dimensiones contractuales con evidencia, severidad, responsable y clasificación; enlazar cinco ACTUAL y distinguir mockup de baseline (Refs: FR-024; IMG-UX-01, IMG-UX-04)
 
 **Checkpoint**: Capa B solo queda cerrada con verde idempotente y aprobación
 humana; Capa C clasifica todas las diferencias.
@@ -184,7 +189,7 @@ rama sin mezclar ruido del checkout.
 - [X] T052 [P] Ejecutar `npm run typecheck` y `npm run verify:e2e`; registrar conteos/exit code y cualquier alcance no verificado sin llamarlo “todo verde” (Refs: FR-020–FR-023)
 - [X] T053 Ejecutar `npm run test:visual` completo y `npm run verify`; separar fallos de 012, deuda previa y mutaciones de fixtures, y registrar veredicto exacto (Refs: SC-007–SC-008)
 - [X] T054 Ejecutar `graphify update .` y `graphify check`, inspeccionar el impacto arquitectónico y mantener `graphify-out/` fuera del staging; registrar solo el resultado en evidencia (Refs: Constitution V, FR-022–FR-023)
-- [ ] T055 Lanzar revisión independiente del patch completo 012; resolver hallazgos P0/P1 mediante un nuevo ciclo test rojo→cambio mínimo→verde y documentar decisiones P2/P3 (Refs: todas FR/SC)
+- [X] T055 Lanzar revisión independiente del patch completo 012; resolver hallazgos P0/P1 mediante un nuevo ciclo test rojo→cambio mínimo→verde y documentar decisiones P2/P3 (Refs: todas FR/SC)
 - [X] T056 Validar `quickstart.md` de principio a fin y ejecutar `git diff --check`; sincronizar en `specs/012-stage-canvas-form/implementation-evidence.md` únicamente tareas/evidencias realmente completas (Refs: Validation Contract)
 - [X] T057 Inspeccionar staged diff y secretos/ruido, stagear solo frontend/tests/docs/baselines 012 explícitamente aprobados, crear commit descriptivo y hacer push únicamente a `origin/codex/012-stage-canvas-form`; reportar commit, upstream y alcance mixto sin mergear `main` (Refs: workflow Git, FR-022)
 

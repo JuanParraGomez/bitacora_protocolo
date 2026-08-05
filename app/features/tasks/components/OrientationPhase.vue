@@ -36,7 +36,7 @@ watch(() => task.f1, () => emit('dirty'), { deep: true });
 </script>
 
 <template>
-  <section aria-labelledby="phase-one-title" class="phase-workspace">
+  <section aria-label="Entender el problema" class="phase-workspace">
     <div class="phase-workspace__content">
       <div class="phase-workspace__form">
         <fieldset aria-labelledby="phase-one-priority-title">

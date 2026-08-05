@@ -118,9 +118,7 @@ test.describe('Task workspace dashboard shell', () => {
     });
     const activeProjectTasksId = await activeProjectToggle.getAttribute('aria-controls');
     expect(activeProjectTasksId).toBeTruthy();
-    const newLegacyTask = workspace.locator(
-      `[id="${activeProjectTasksId}"]`,
-    ).getByRole('button', { name: 'Nueva tarea', exact: true });
+    const newLegacyTask = workspace.getByRole('button', { name: 'Nueva tarea', exact: true });
     await expect(newLegacyTask).toBeVisible();
 
     await page.getByRole('link', { name: 'Espacio Beta' }).click();
@@ -212,7 +210,7 @@ test.describe('Task workspace dashboard shell', () => {
 
     const sidebar = page.getByRole('navigation', { name: 'Navegación de tareas' });
     const longTaskLink = sidebar.getByRole('link', { name: longTaskName });
-    const footerSettings = sidebar.locator('footer').getByRole('button', { name: 'Ajustes', exact: true });
+    const footerSettings = sidebar.getByRole('button', { name: 'Ajustes', exact: true });
     const renameButton = longTaskLink.locator('xpath=../button[contains(@class, "task-sidebar__icon-action")]');
 
     await expect(longTaskLink).toBeVisible();
@@ -274,7 +272,7 @@ test.describe('Task workspace dashboard shell', () => {
 
     await expect(page.locator('.workspace-shell')).toBeVisible();
     await expect(page.locator('[data-mobile-form-panel]')).toHaveCount(0);
-    await expect(page.getByRole('region', { name: 'Formulario guiado' })).toBeHidden();
+    await expect(page.getByRole('region', { name: 'Formulario guiado' })).toBeVisible();
 
     const sidebarToggle = page.getByRole('button', { name: 'Abrir navegación' });
     await expect(sidebarToggle).toBeVisible();
@@ -285,13 +283,13 @@ test.describe('Task workspace dashboard shell', () => {
     await page.keyboard.press('Escape');
     await expect.poll(async () => getActiveFocusTarget(page)).toBe('sidebar-toggle');
 
-    await page.getByRole('button', { name: /cuestionario/i }).click();
+    await page.getByRole('button', { name: 'Etapa' }).click();
     await expect(page.getByRole('region', { name: 'Formulario guiado' })).toBeVisible();
     const lineageField = page.getByLabel('Origen del linaje');
     await lineageField.fill('Campo persistente');
+    await page.getByRole('button', { name: 'Guardar borrador' }).click();
 
-    await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: /cuestionario/i }).click();
+    await page.reload();
     await expect(lineageField).toHaveValue('Campo persistente');
 
     const overflowVisible = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
@@ -425,8 +423,8 @@ test.describe('Task workspace dashboard shell', () => {
     const continueBtn = formRegion.getByRole('button', { name: 'Continuar' });
 
     await evaluate.click();
-    await expect(formRegion.getByText('Debilidades')).toBeVisible();
-    await expect(continueBtn).toBeDisabled();
+    await expect(formRegion.locator('.evaluation-feedback__status')).toHaveText('Evaluación requiere ajustes');
+    await expect(continueBtn).toHaveCount(0);
 
     await page.getByLabel('Origen del linaje').fill('Directivo');
     await page.getByLabel('Resultado del linaje').fill('Meta');
@@ -444,7 +442,7 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(continueBtn).toBeEnabled();
 
     await continueBtn.click();
-    await expect(page.getByRole('heading', { name: /Fase 2/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Fase 2/ }).first()).toBeVisible();
 
     await page.getByLabel('Decisión').fill('Decisión de guía');
     await page.getByLabel('Alcance').fill('Alcance medible');
@@ -465,7 +463,7 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(continuePhase2).toBeEnabled();
 
     await continuePhase2.click();
-    await expect(page.getByRole('heading', { name: /Fase 3/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Fase 3/ }).first()).toBeVisible();
 
     await page.getByLabel('Qué hice 1').fill('Primera ejecución');
     await page.getByLabel('Qué pasó 1').fill('Resultado inicial');
@@ -481,7 +479,7 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(continuePhase3).toBeEnabled();
     await continuePhase3.click();
 
-    await expect(page.getByRole('heading', { name: /Fase 4/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Fase 4/ }).first()).toBeVisible();
 
     await page.getByLabel('Observado 1').fill('Observación inicial');
     await page.getByLabel('Causa 1').fill('Causa inicial');
@@ -491,12 +489,13 @@ test.describe('Task workspace dashboard shell', () => {
 
     const formRegionPhase4 = page.getByRole('region', { name: 'Formulario guiado' });
     const evaluatePhase4 = formRegionPhase4.getByRole('button', { name: 'Evaluar' });
-    const continuePhase4 = formRegionPhase4.getByRole('button', { name: 'Continuar' });
+    const continuePhase4 = formRegionPhase4.locator('[data-primary-action="true"]');
     await evaluatePhase4.click();
     await expect(formRegionPhase4.getByText('Estado vigente y apto para continuar.')).toBeVisible();
     await continuePhase4.click();
 
-    await expect(page.getByText(/Fase 4 · completada/)).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Resumen completado' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Resumen del cierre' })).toBeVisible();
   });
 
   test('invalida la aceptación cuando la fase se edita y exige reevaluación para continuar', async ({ page }) => {
@@ -538,11 +537,11 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(formRegion.getByText('Estado vigente y apto para continuar.')).toBeVisible();
 
     await page.getByLabel('Formulación vigente').fill('Cambio de estado');
-    await expect(formRegion.getByText('Evaluación anterior válida para otra versión.')).toBeVisible();
-    await expect(continueBtn).toBeDisabled();
-    await evaluate.click();
+    await expect(formRegion.getByText('La evaluación anterior quedó desfasada y debe recalcularse.')).toBeVisible();
+    await expect(continueBtn).toHaveCount(0);
+    await formRegion.getByRole('button', { name: /reevaluar/i }).click();
     await expect(formRegion.getByText('Estado vigente y apto para continuar.')).toBeVisible();
-    await expect(continueBtn).toBeEnabled();
+    await expect(formRegion.getByRole('button', { name: 'Continuar' })).toBeEnabled();
   });
 
   test('persiste el modo de asistencia desde Ajustes sin controles de credenciales', async ({ page }) => {
@@ -572,7 +571,7 @@ test.describe('Task workspace dashboard shell', () => {
     await writeAssistanceSettings(page, 'codex');
 
     await page.goto('/tasks/ws-settings');
-    const settingsTrigger = page.locator('[data-focus-target="settings"]');
+    const settingsTrigger = page.getByRole('button', { name: 'Ajustes', exact: true });
     await settingsTrigger.focus();
     await settingsTrigger.click();
 
@@ -592,14 +591,14 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(dialog.getByText('Preferencia guardada.')).toBeVisible();
     await dialog.getByRole('button', { name: 'Cerrar ajustes' }).click();
     await expect(dialog).toBeHidden();
-    await expect.poll(async () => getActiveFocusTarget(page)).toBe('settings');
+    await expect(settingsTrigger).toBeFocused();
 
     await settingsTrigger.click();
     await expect(page.getByRole('dialog', { name: 'Ajustes de asistencia' }).getByRole('radio', { name: 'Usar DeepSeek API' })).toBeChecked();
     await page.keyboard.press('Escape');
 
     await page.reload();
-    await page.locator('[data-focus-target="settings"]').click();
+    await page.getByRole('button', { name: 'Ajustes', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Ajustes de asistencia' }).getByRole('radio', { name: 'Usar DeepSeek API' })).toBeChecked();
   });
 
@@ -634,9 +633,10 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(page.getByRole('region', { name: 'Formulario guiado' })).toBeVisible();
     await expect(page.getByText('Escribe tu mensaje')).toBeVisible();
     await expect(page.getByText('Paso actual: Fase 1')).toBeVisible();
-    await expect(page.locator('[aria-live="polite"]')).toHaveCount(3);
+    await expect(page.locator('[aria-live="polite"]')).toHaveCount(4);
 
-    await page.locator('[data-focus-target="settings"]').focus();
+    const settingsTrigger = page.getByRole('button', { name: 'Ajustes', exact: true });
+    await settingsTrigger.focus();
     await page.keyboard.press('Enter');
     const dialog = page.getByRole('dialog', { name: 'Ajustes de asistencia' });
     await expect(dialog).toBeVisible();
@@ -645,14 +645,13 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(dialog.getByRole('button', { name: 'Guardar ajustes' })).toBeFocused();
     await dialog.getByRole('button', { name: 'Cerrar ajustes' }).click();
     await expect(dialog).toBeHidden();
-    await expect.poll(async () => getActiveFocusTarget(page)).toBe('settings');
+    await expect(settingsTrigger).toBeFocused();
 
     await page.setViewportSize({ width: 320, height: 860 });
     await page.evaluate(() => { document.documentElement.style.zoom = '2'; });
-    await page.getByRole('button', { name: /cuestionario/i }).click();
+    await page.getByRole('button', { name: 'Etapa' }).click();
     await expect(page.getByRole('region', { name: 'Formulario guiado' })).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect.poll(async () => getActiveFocusTarget(page)).toBe('form');
+    await expect(page.getByRole('region', { name: 'Centro de conversación' })).toBeVisible();
 
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.evaluate(() => { document.documentElement.style.zoom = ''; });

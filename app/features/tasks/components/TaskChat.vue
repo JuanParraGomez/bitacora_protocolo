@@ -506,7 +506,7 @@ onBeforeUnmount(() => {
 .task-chat__bubble small {
   display: block;
   margin-top: .35rem;
-  color: #7a847e;
+  color: #526058;
   font-size: .74rem;
 }
 

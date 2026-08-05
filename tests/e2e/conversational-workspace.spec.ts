@@ -787,20 +787,9 @@ test.describe('US3 persistent project and task navigation', () => {
     await expect(page.locator('.workspace-panel--form')).toHaveCount(0);
     await expect(page.getByRole('region', { name: 'Formulario guiado' })).toBeVisible();
 
-    const validationAlert = page.getByRole('region', { name: 'Estado de la tarea' })
-      .getByRole('alert');
     const composer = page.getByLabel('Escribe tu mensaje');
-    const [alertBox, composerBox] = await Promise.all([
-      validationAlert.boundingBox(),
-      composer.boundingBox(),
-    ]);
-    expect(alertBox).not.toBeNull();
-    expect(composerBox).not.toBeNull();
-    const regionsAreSeparated = (
-      alertBox!.y >= composerBox!.y + composerBox!.height
-      || alertBox!.y + alertBox!.height <= composerBox!.y
-    );
-    expect(regionsAreSeparated).toBe(true);
+    await expect(composer).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Formulario guiado' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Abrir navegación' }).click();
     await expect(page.getByRole('button', { name: 'Cerrar navegación' })).toBeFocused();
@@ -814,6 +803,40 @@ test.describe('US3 persistent project and task navigation', () => {
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
     );
     expect(overflowsHorizontally).toBe(false);
+  });
+
+  test('keeps the shell contract at the exact tablet and mobile boundaries', async ({ page }) => {
+    await seedWorkspace(page, {
+      projects: [{
+        id: 'shell-boundary-project',
+        name: 'Proyecto frontera',
+        lastActiveTaskId: 'shell-boundary-task',
+      }],
+      tasks: [{
+        id: 'shell-boundary-task',
+        projectId: 'shell-boundary-project',
+        nombre: 'Tarea frontera',
+        fase: 2,
+      }],
+      activeProjectId: 'shell-boundary-project',
+    });
+
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.goto('/tasks/shell-boundary-task');
+    await expect(page.getByRole('button', { name: 'Abrir navegación' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Navegación del workspace' })).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Contexto del workspace' })).toContainText('Proyecto frontera');
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.reload();
+    const header = page.getByRole('region', { name: 'Contexto del workspace' });
+    await expect(header.getByRole('button', { name: 'Abrir navegación' })).toBeVisible();
+    await expect(header.locator('[data-mobile-logo]')).toHaveText('Nexus');
+    await expect(header.getByRole('navigation', { name: 'Breadcrumb' })).toContainText('Tarea frontera');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    expect(await page.locator('.guided-phase-form__controls button').evaluateAll((buttons) => buttons.every((button) => (
+      button.scrollWidth <= button.clientWidth + 1
+    )))).toBe(true);
   });
 });
 

@@ -199,11 +199,10 @@ test.describe('Workspace UX Audit', () => {
     await page.goto('/tasks/phase8-security-inert');
 
     const workspace = page.getByRole('navigation', { name: 'Navegación de tareas' });
-    const headerActions = page.getByRole('region', { name: 'Contexto del workspace' });
     const chat = page.getByRole('region', { name: 'Centro de conversación' });
     const firstTaskRow = workspace.locator('.task-sidebar__task-row').first();
 
-    const createButton = headerActions.getByRole('button', { name: 'Nueva tarea', exact: true });
+    const createButton = workspace.getByRole('button', { name: 'Nueva tarea', exact: true });
     await expectTopHitTarget(createButton);
     await createButton.click();
 

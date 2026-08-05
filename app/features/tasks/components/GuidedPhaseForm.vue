@@ -370,15 +370,21 @@ watch(() => props.task.id, () => {
   min-height: 3.05rem;
   border-color: #007a4d;
   color: #fff;
-  background: linear-gradient(180deg, #078752, #006f47);
+  background: #007a4d;
   box-shadow: 0 13px 28px rgba(0, 95, 62, .18);
 }
 
 .guided-phase-form__controls button:last-child:disabled {
-  color: #67736b;
+  color: #405047;
   border-color: #d8ded9;
   background: #edf1ee;
   box-shadow: none;
+}
+
+.guided-phase-form__primary-action:disabled {
+  color: #405047;
+  border-color: #d8ded9;
+  background: #edf1ee;
 }
 
 .guided-phase-form > :deep(.evaluation-feedback) {
@@ -489,6 +495,10 @@ watch(() => props.task.id, () => {
   .guided-phase-form__header,
   .guided-phase-form > :deep(.phase-workspace) {
     padding-inline: 1rem;
+  }
+
+  .guided-phase-form__controls {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>

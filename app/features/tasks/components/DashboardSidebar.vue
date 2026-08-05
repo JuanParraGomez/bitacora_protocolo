@@ -557,7 +557,7 @@ function selectProject(group: WorkspaceProjectGroup) {
 }
 
 .task-sidebar__task-link small {
-  color: #718078;
+  color: #526058;
   font-size: .68rem;
 }
 

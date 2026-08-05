@@ -279,6 +279,30 @@ async function reportContrast(page: Page, scenarioId: VisualScenarioId, viewport
   for (const violation of report.componentViolations) {
     console.log(`[axe-component-contrast] ${scenarioId}/${viewportName} ratio=${violation.ratio} target=${violation.target} foreground=${violation.foreground} background=${violation.background} html=${violation.html}`);
   }
+  expect(report.violations, `${scenarioId}/${viewportName} axe contrast violations`).toEqual([]);
+  expect(report.componentViolations, `${scenarioId}/${viewportName} component contrast violations`).toEqual([]);
+}
+
+async function assertShellContract(page: Page, viewportName: string, scenarioId: VisualScenarioId) {
+  const header = page.getByRole('region', { name: 'Contexto del workspace' });
+  await expect(header.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible();
+  await expect(header.locator('[data-stage-chip]')).toHaveText(/Etapa [1-4] de 4/);
+
+  if (viewportName === 'desktop-large') {
+    const sidebar = page.getByRole('navigation', { name: 'Navegación de tareas' });
+    await expect(sidebar.locator('[data-shell-region="navigation"]')).toHaveCount(1);
+    await expect(sidebar.locator('[data-shell-region="search"]')).toHaveCount(1);
+    await expect(sidebar.locator('[data-shell-region="projects"]')).toHaveCount(1);
+    await expect(sidebar.locator('[data-shell-region="user-footer"]')).toHaveCount(1);
+    for (const label of ['Biblioteca', 'Ajustes']) {
+      await expect(sidebar.locator(`[aria-label="${label}"]`)).toHaveCount(1);
+    }
+  } else {
+    await expect(header.getByRole('button', { name: 'Abrir navegación' })).toBeVisible();
+  }
+
+  await expect(page.locator('[data-primary-action="true"]')).toHaveCount(1);
+  console.log(`[shell-contract] ${scenarioId}/${viewportName} verified`);
 }
 
 test.describe('stage-agent workspace visual baselines', () => {
@@ -291,6 +315,7 @@ test.describe('stage-agent workspace visual baselines', () => {
           await page.goto(`/tasks/${scenarioTaskIds[scenario.id]}`);
           await waitForStableUi(page);
           await expect(page.getByRole('main')).toBeVisible();
+          await assertShellContract(page, viewport.name, scenario.id);
           await assertVisualGeometry(page, scenario.id, viewport.name);
           await reportContrast(page, scenario.id, viewport.name);
           if (process.env.VISUAL_SEED_DEFECT === 'true' && scenario.id === 'IMG-UX-01' && viewport.name === 'desktop-large') {
@@ -303,6 +328,7 @@ test.describe('stage-agent workspace visual baselines', () => {
           }
           await expect(page).toHaveScreenshot(`${scenario.id}-${viewport.name}.png`, buildScreenshotOptions(page));
           await page.screenshot({ path: artifactPath(scenario.id, viewport.name) });
+          await page.screenshot({ path: `.codex-autopilot/evidence/actual/ACTUAL-${scenario.id}-${viewport.name}.png` });
         });
       }
     });

@@ -29,7 +29,7 @@ no mezcla el trabajo no versionado de otra feature.
 
 - [x] T001 Tarea humana: aprobar explícitamente la spec 011 y seleccionar/autorizar la revisión exacta y operación Git de spec 010 que podrá integrarse; mantener abierta y devolver `HUMAN_DECISION_REQUIRED` mientras `spec.md` siga `Draft` o no exista autorización. Refs: FR-017, AC-008, IMG-UX-01…06
 - [x] T002 Tras T001, integrar únicamente la revisión Git autorizada de spec 010 en `codex/011-workspace-shell` y verificar que aporta `tests/e2e/visual/stage-agent-workspace.visual.spec.ts`, helpers `tests/e2e/helpers/visual-*.ts`, 24 snapshots, `@axe-core/playwright` y scripts `test:visual*`; no copiar trabajo no versionado. Refs: FR-017, AC-008, IMG-UX-01…06
-- [ ] T003 Inicializar checkpoint 011 en `.codex-autopilot/state.json`, inventariar/hashear las 24 baselines aprobadas de `tests/e2e/visual/stage-agent-workspace.visual.spec.ts-snapshots/`, confirmar cuatro viewports y registrar que mockups y baselines son distintos. Refs: FR-015, FR-017, AC-005, AC-008, IMG-UX-01…06
+- [x] T003 Inicializar checkpoint 011 en `.codex-autopilot/state.json`, inventariar/hashear las 24 baselines aprobadas de `tests/e2e/visual/stage-agent-workspace.visual.spec.ts-snapshots/`, confirmar cuatro viewports y registrar que mockups y baselines son distintos. Refs: FR-015, FR-017, AC-005, AC-008, IMG-UX-01…06
 
 **Checkpoint**: no iniciar pruebas ni código 011 hasta T001–T003 verificadas.
 
@@ -61,7 +61,7 @@ búsqueda/create/rename/select/rutas verde, sin depender del nuevo header.
 - [x] T009 [P] [US1] Crear `app/features/tasks/components/WorkspaceShellIcon.vue` con conjunto SVG cerrado para Tareas, Biblioteca, Referencias, Ajustes, Buscar, Carpeta, Chevron, Más y usuario; heredar `currentColor`, ocultar SVG decorativo al árbol accesible y cubrirlo desde `DashboardSidebar.test.ts`. Refs: FR-002, FR-004, AC-001, IMG-UX-01/02/05/06
 - [x] T010 [US1] Reestructurar `app/features/tasks/components/DashboardSidebar.vue` en marca → navegación vertical → búsqueda “Buscar tareas o proyectos…” + ⌘K → PROYECTOS como carpetas/tareas anidadas → footer de identidad, manteniendo props/emits y búsqueda actual. Refs: FR-001…FR-006, AC-001, IMG-UX-01/02/05/06
 - [x] T011 [US1] Ajustar en `app/features/tasks/components/DashboardSidebar.vue` estados active/hover/focus, acciones compactas create/rename, proyecto vacío/sin hits y conteo DOM para que Nueva tarea, Biblioteca y Ajustes aparezcan una vez; no usar jerarquía primaria para utilidades. Refs: FR-005, FR-007, FR-014, AC-003, IMG-UX-01/02/05/06
-- [ ] T012 [US1] Ejecutar y reparar hasta verde `DashboardSidebar.test.ts`, `tests/e2e/conversational-workspace.spec.ts` (búsqueda/create/rename/select) y regresiones `useTaskIndex`/`useWorkspaceState`; registrar conteos, exit codes y alcance en `.codex-autopilot/evidence/phase-us1.json`. Refs: FR-003…FR-007, FR-016, AC-001, AC-003
+- [x] T012 [US1] Ejecutar y reparar hasta verde `DashboardSidebar.test.ts`, `tests/e2e/conversational-workspace.spec.ts` (búsqueda/create/rename/select) y regresiones `useTaskIndex`/`useWorkspaceState`; registrar conteos, exit codes y alcance en `.codex-autopilot/evidence/phase-us1.json`. Refs: FR-003…FR-007, FR-016, AC-001, AC-003
 
 **Checkpoint**: US1 independiente y verde; T004/T007 parcialmente satisfechas.
 
@@ -76,7 +76,7 @@ largo; E2E presenta proyecto/tarea correctos sin cambiar ruta ni progreso.
 
 - [x] T013 [US2] Reestructurar `app/features/tasks/components/WorkspaceHeader.vue` con breadcrumb semántico `proyecto / tarea`, chip verde `Etapa N de 4` y subtítulo de fase, conservando props, emisiones, `focusNavigation()` y `data-focus-target`. Refs: FR-008…FR-010, AC-002, IMG-UX-01/02/05/06
 - [x] T014 [US2] Implementar en `app/features/tasks/components/WorkspaceHeader.vue` la variante compacta con hamburguesa, logo Nexus y breadcrumb, sin duplicar navegación; resolver truncado/wrap de nombres largos y contraste de chip/foco. Refs: FR-012, FR-013, AC-002, AC-004, IMG-UX-03/04
-- [ ] T015 [US2] Ejecutar y reparar hasta verde `WorkspaceHeader.test.ts`, pruebas de integración de `TaskWorkspace.test.ts` y escenarios E2E de fase 1/4; registrar en `.codex-autopilot/evidence/phase-us2.json` que número/título provienen de datos existentes. Refs: FR-008…FR-010, FR-016, AC-002
+- [x] T015 [US2] Ejecutar y reparar hasta verde `WorkspaceHeader.test.ts`, pruebas de integración de `TaskWorkspace.test.ts` y escenarios E2E de fase 1/4; registrar en `.codex-autopilot/evidence/phase-us2.json` que número/título provienen de datos existentes. Refs: FR-008…FR-010, FR-016, AC-002
 
 **Checkpoint**: US2 independiente y verde; T005 satisfecha.
 
@@ -92,7 +92,7 @@ drawer cerrado inicialmente, hamburguesa, Escape/Tab/selección y cero overflow.
 - [x] T016 [US3] Implementar `app/features/tasks/components/workspace-shell-presentation.ts` con breakpoints inclusivos desktop >1024, tablet 768–1024, mobile ≤767 y constantes de media query, hasta verde T006. Refs: FR-011…FR-013, AC-004, IMG-UX-03/04
 - [x] T017 [US3] Sustituir límites duplicados de JS/CSS en `app/features/tasks/components/TaskWorkspace.vue` por el contrato compartido e incluir exactamente 1024px en modo compacto, conservando drawer, `inert`, trap de foco y eventos. Refs: FR-011, FR-013, FR-016, AC-004, IMG-UX-03
 - [x] T018 [US3] Alinear `pages/index.vue` con el mismo contrato responsive sin mover persistencia, `lastActiveTaskId`, create/rename ni navegación; conservar una sola instancia visible del sidebar. Refs: FR-011…FR-013, FR-016, AC-004, IMG-UX-03/04
-- [ ] T019 [US3] Ejecutar y reparar hasta verde `workspace-shell-presentation.test.ts`, `workspace-ux-audit.spec.ts`, drawer de `conversational-workspace.spec.ts` y `workspace-overlays.spec.ts` en serie; registrar foco, Escape/Tab y viewports en `.codex-autopilot/evidence/phase-us3.json`. Refs: FR-011…FR-013, AC-004, IMG-UX-03/04
+- [x] T019 [US3] Ejecutar y reparar hasta verde `workspace-shell-presentation.test.ts`, `workspace-ux-audit.spec.ts`, drawer de `conversational-workspace.spec.ts` y `workspace-overlays.spec.ts` en serie; registrar foco, Escape/Tab y viewports en `.codex-autopilot/evidence/phase-us3.json`. Refs: FR-011…FR-013, AC-004, IMG-UX-03/04
 
 **Checkpoint**: US3 verde; T006/T007 satisfechas y todos los rojos Capa A deben cerrar.
 
@@ -102,11 +102,11 @@ drawer cerrado inicialmente, hamburguesa, Escape/Tab/selección y cero overflow.
 
 **Purpose**: cerrar el grupo TDD Capa B sin confundir baseline y mockup.
 
-- [ ] T020 Ejecutar `TEST_BASE_URL=http://127.0.0.1:3005 npm run test:visual` tras US1–US3; exigir subgates de semántica/geometría/destinos/primaria/contraste verdes y resultado global rojo exclusivamente por diffs de snapshots esperados contra baselines anteriores. Refs: FR-014, FR-015, AC-003, AC-005, AC-006, IMG-UX-01/02/05/06
-- [ ] T021 Generar snapshots candidatos solo con `TEST_BASE_URL=http://127.0.0.1:3005 npm run test:visual:update`, guardar ACTUAL de IMG-UX-01/02/05/06 × 4 viewports en `.codex-autopilot/evidence/actual/` y demostrar que mockups no fueron usados como baselines. Refs: FR-015, FR-017, AC-005, AC-008
-- [ ] T022 Revisar humanamente y aprobar/rechazar el diff de las 16 baselines candidatas; mantener la tarea abierta y el cierre bloqueado hasta decisión explícita del usuario. Refs: FR-017, AC-008, IMG-UX-01/02/05/06
-- [ ] T023 Tras T022 aprobada, repetir `npm run test:visual` verde idempotente y ejecutar defectos sembrados de snapshot/geometría/contraste para demostrar fallo por escenario/viewport; revertir cada defecto y registrar exit codes. Refs: FR-014, FR-017, AC-005, AC-006, AC-008
-- [ ] T024 Crear `.codex-autopilot/reports/visual-comparison.md` con ACTUAL vs IMG-UX-01/02/05/06 por navegación/header, clasificación aprobada/pendiente/defecto y enlaces a los 16 artefactos operativos. Refs: FR-015, AC-007, IMG-UX-01/02/05/06
+- [x] T020 Ejecutar `TEST_BASE_URL=http://127.0.0.1:3005 npm run test:visual` tras US1–US3; exigir subgates de semántica/geometría/destinos/primaria/contraste verdes y resultado global rojo exclusivamente por diffs de snapshots esperados contra baselines anteriores. Refs: FR-014, FR-015, AC-003, AC-005, AC-006, IMG-UX-01/02/05/06
+- [x] T021 Generar snapshots candidatos solo con `TEST_BASE_URL=http://127.0.0.1:3005 npm run test:visual:update`, guardar ACTUAL de IMG-UX-01/02/05/06 × 4 viewports en `.codex-autopilot/evidence/actual/` y demostrar que mockups no fueron usados como baselines. Refs: FR-015, FR-017, AC-005, AC-008
+- [x] T022 Revisar humanamente y aprobar/rechazar el diff de las 16 baselines candidatas; mantener la tarea abierta y el cierre bloqueado hasta decisión explícita del usuario. Refs: FR-017, AC-008, IMG-UX-01/02/05/06
+- [x] T023 Tras T022 aprobada, repetir `npm run test:visual` verde idempotente y ejecutar defectos sembrados de snapshot/geometría/contraste para demostrar fallo por escenario/viewport; revertir cada defecto y registrar exit codes. Refs: FR-014, FR-017, AC-005, AC-006, AC-008
+- [x] T024 Crear `.codex-autopilot/reports/visual-comparison.md` con ACTUAL vs IMG-UX-01/02/05/06 por navegación/header, clasificación aprobada/pendiente/defecto y enlaces a los 16 artefactos operativos. Refs: FR-015, AC-007, IMG-UX-01/02/05/06
 
 **Checkpoint**: T008 y Capa B solo cierran con T022 aprobada y T023 verde.
 
@@ -114,13 +114,13 @@ drawer cerrado inicialmente, hamburguesa, Escape/Tab/selección y cero overflow.
 
 ## Phase 7: Polish & cross-cutting verification
 
-- [ ] T025 Ejecutar Capa A/regresión enfocada completa: Vitest de sidebar/header/helper/TaskWorkspace/useTaskIndex/useWorkspaceState y registrar conteo + exit code en `.codex-autopilot/evidence/phase-final.json`. Refs: AC-001…AC-004
-- [ ] T026 Ejecutar serialmente `npm run typecheck`, `npm run verify:e2e` y `npm run test:visual`; registrar conteos, exit codes, fallos preexistentes vs nuevos y no marcar si queda una regresión 011. Refs: FR-016, FR-017, AC-005, AC-006, AC-008
-- [ ] T027 Ejecutar `npm run verify`, registrar cada subgate y aislar cualquier ruido generado de estructura/Graphify antes de atribuirlo a 011. Refs: FR-016, AC-001…AC-008
-- [ ] T028 Realizar revisión independiente del patch, corregir P0/P1 con TDD y registrar hallazgos/resolución o riesgo aceptado en `.codex-autopilot/reports/final-review.md`. Refs: AC-001…AC-008
-- [ ] T029 Auditar diff sensible: cero `.env`, secretos, SQLite, caches, temporales o artefactos ajenos; confirmar que no cambian `server/`, `shared/`, rutas, modelos ni persistencia. Refs: FR-016
-- [ ] T030 Ejecutar `graphify update .`, verificar `git diff --check`, sincronizar inmediatamente cada tarea VERIFICADA en este `tasks.md` y redactar `.codex-autopilot/reports/final.md` con tareas humanas/pendientes explícitas. Refs: AC-001…AC-008
-- [ ] T031 Tarea humana post-autopilot: con autorización explícita, sanear y sincronizar `.codex-autopilot/evidence/` y `.codex-autopilot/reports/visual-comparison.md` hacia `specs/011-workspace-shell/implementation-evidence.md`, `specs/011-workspace-shell/evidence/actual/` y `specs/011-workspace-shell/evidence/visual-comparison.md`; verificar que solo cambia evidencia prevista. Refs: AC-001…AC-008, IMG-UX-01/02/05/06
+- [x] T025 Ejecutar Capa A/regresión enfocada completa: Vitest de sidebar/header/helper/TaskWorkspace/useTaskIndex/useWorkspaceState y registrar conteo + exit code en `.codex-autopilot/evidence/phase-final.json`. Refs: AC-001…AC-004
+- [x] T026 Ejecutar serialmente `npm run typecheck`, `npm run verify:e2e` y `npm run test:visual`; registrar conteos, exit codes, fallos preexistentes vs nuevos y no marcar si queda una regresión 011. Refs: FR-016, FR-017, AC-005, AC-006, AC-008
+- [x] T027 Ejecutar `npm run verify`, registrar cada subgate y aislar cualquier ruido generado de estructura/Graphify antes de atribuirlo a 011. Refs: FR-016, AC-001…AC-008
+- [x] T028 Realizar revisión independiente del patch, corregir P0/P1 con TDD y registrar hallazgos/resolución o riesgo aceptado en `.codex-autopilot/reports/final-review.md`. Refs: AC-001…AC-008
+- [x] T029 Auditar diff sensible: cero `.env`, secretos, SQLite, caches, temporales o artefactos ajenos; confirmar que no cambian `server/`, `shared/`, rutas, modelos ni persistencia. Refs: FR-016
+- [x] T030 Ejecutar `graphify update .`, verificar `git diff --check`, sincronizar inmediatamente cada tarea VERIFICADA en este `tasks.md` y redactar `.codex-autopilot/reports/final.md` con tareas humanas/pendientes explícitas. Refs: AC-001…AC-008
+- [x] T031 Tarea humana post-autopilot: con autorización explícita, sanear y sincronizar `.codex-autopilot/evidence/` y `.codex-autopilot/reports/visual-comparison.md` hacia `specs/011-workspace-shell/implementation-evidence.md`, `specs/011-workspace-shell/evidence/actual/` y `specs/011-workspace-shell/evidence/visual-comparison.md`; verificar que solo cambia evidencia prevista. Refs: AC-001…AC-008, IMG-UX-01/02/05/06
 
 ---
 

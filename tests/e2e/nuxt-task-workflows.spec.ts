@@ -203,7 +203,7 @@ test.describe('Nuxt task workflows', () => {
     await expect(page).toHaveURL(/\/tasks\/[^/?]+$/);
     await expect(page.locator('main[data-hydrated="true"]')).toBeVisible();
     await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
-    await expect(page.getByText(/Completa al menos una relación de linaje|Define alcance explícito|Define al menos un actor/i)).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Evaluación del asistente' }).getByText(/Completa al menos una relación de linaje|Define alcance explícito|Define al menos un actor/i).first()).toBeVisible();
     await page.getByLabel('Origen del linaje').fill('Brief');
     await page.getByLabel('Resultado del linaje').fill('Mapa validado');
     await page.getByLabel('Confirmar mapeo').check();
@@ -224,7 +224,7 @@ test.describe('Nuxt task workflows', () => {
     await formRegion.getByRole('button', { name: 'Evaluar' }).click();
     await expect(guidedForm.getByText('Estado vigente y apto para continuar.')).toBeVisible();
     await formRegion.getByRole('button', { name: 'Continuar' }).click();
-    await expect(page.getByRole('heading', { name: 'Fase 2 · Descomponer el camino' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Fase 2 · Descomponer el camino' }).first()).toBeVisible();
   });
 
   test('explains the guide and persists accessible criterion labels', async ({ page }) => {
@@ -243,7 +243,7 @@ test.describe('Nuxt task workflows', () => {
     await page.getByLabel('Prioridad 1').selectOption('alta');
     const formRegion = page.getByRole('region', { name: 'Formulario guiado' });
     await formRegion.getByRole('button', { name: 'Evaluar' }).click();
-    await expect(formRegion.getByText(/Debilidades|Estado vigente/)).toBeVisible();
+    await expect(formRegion.locator('.evaluation-feedback__status')).toHaveText(/Evaluación requiere ajustes|Evaluación aceptable/);
     const persisted = await readTask(page, task.id);
     expect(persisted.f2).toMatchObject({ criterios: [{ texto: 'Criterio priorizado', comentario: 'Comentario con evidencia', prioridad: 'alta' }] });
     await page.reload();
@@ -267,7 +267,7 @@ test.describe('Nuxt task workflows', () => {
     await page.getByLabel('Qué pasó 2').fill('Segundo resultado');
     const formRegion = page.getByRole('region', { name: 'Formulario guiado' });
     await formRegion.getByRole('button', { name: 'Evaluar' }).click();
-    await expect(formRegion.getByText(/Debilidades|Estado vigente/)).toBeVisible();
+    await expect(formRegion.locator('.evaluation-feedback__status')).toHaveText(/Evaluación requiere ajustes|Evaluación aceptable/);
     await page.reload();
     await expect(page.getByLabel('Qué hice 2')).toHaveValue('Segundo intento');
   });
@@ -343,7 +343,7 @@ test.describe('Nuxt task workflows', () => {
 
       await page.setViewportSize({ width: 320, height: 1200 });
       await page.goto(`/tasks/${taskId}`);
-      await expect(page.getByRole('button', { name: /cuestionario/i })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Etapa' })).toBeVisible();
       await expect(page.getByLabel(promptField)).toHaveCount(0);
     }
   });

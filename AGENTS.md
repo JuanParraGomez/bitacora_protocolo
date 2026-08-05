@@ -1,9 +1,9 @@
 <!-- SPECKIT START -->
-For the current stage-canvas form composition, manual draft policy, verification
-commands, and IMG-UX-01/04 contract, read
-`specs/012-stage-canvas-form/plan.md`. Preserve the approved/versioned spec 010
-visual infrastructure and the spec 011 shell boundary recorded there. For
-migration checkpoints and deferred service-extraction criteria, retain
+For the current agent rail/chat composition, task-local state, verification
+commands, and IMG-UX-01/02/03 contract, read
+`specs/013-agent-rail-chat/plan.md`. Preserve the approved/versioned spec 010
+visual infrastructure, spec 011 shell, and spec 012 canvas boundary recorded
+there. For migration checkpoints and deferred service-extraction criteria, retain
 `specs/001-evolution-ready-foundation/plan.md` as the architectural baseline.
 
 ## Mandatory Test-First Workflow

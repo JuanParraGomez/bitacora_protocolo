@@ -1,10 +1,10 @@
 <!-- SPECKIT START -->
-For the current workspace shell composition, responsive navigation, verification
-commands, and visual contract, read `specs/011-workspace-shell/plan.md`. Before
-running visual Layer B, satisfy the approved/versioned spec 010 prerequisite
-recorded in that plan. For migration checkpoints and deferred service-extraction
-criteria, retain `specs/001-evolution-ready-foundation/plan.md` as the
-architectural baseline.
+For the current stage-canvas form composition, manual draft policy, verification
+commands, and IMG-UX-01/04 contract, read
+`specs/012-stage-canvas-form/plan.md`. Preserve the approved/versioned spec 010
+visual infrastructure and the spec 011 shell boundary recorded there. For
+migration checkpoints and deferred service-extraction criteria, retain
+`specs/001-evolution-ready-foundation/plan.md` as the architectural baseline.
 
 ## Mandatory Test-First Workflow
 

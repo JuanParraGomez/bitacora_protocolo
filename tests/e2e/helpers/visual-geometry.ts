@@ -2,6 +2,7 @@ export type Box = { x: number; y: number; width: number; height: number };
 export type NamedBox = { name: string; box: Box };
 export type Overlap = { first: string; second: string };
 export type PrimaryAction = { visible: boolean; primary: boolean };
+export type NamedPair = [string, string];
 
 function intersects(first: Box, second: Box): boolean {
   return first.width > 0 && first.height > 0 && second.width > 0 && second.height > 0
@@ -21,6 +22,16 @@ export function assertNoOverlap(regions: NamedBox[]): Overlap[] {
     }
   }
   return overlaps;
+}
+
+export function assertNoOverlapPairs(regions: NamedBox[], pairs: NamedPair[]): Overlap[] {
+  const byName = new Map(regions.map((region) => [region.name, region]));
+  return pairs.flatMap(([firstName, secondName]) => {
+    const first = byName.get(firstName);
+    const second = byName.get(secondName);
+    if (!first || !second || !intersects(first.box, second.box)) return [];
+    return [{ first: firstName, second: secondName }];
+  });
 }
 
 export function countPrimaryActions(actions: PrimaryAction[]): number {

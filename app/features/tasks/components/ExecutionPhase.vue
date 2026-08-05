@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Task } from '../domain/task.schema';
 import { addIteration } from '../domain/task-rules';
-import { nextTick, reactive, ref, toRaw } from 'vue';
+import { nextTick, reactive, ref, toRaw, watch } from 'vue';
+import StageTextField from './StageTextField.vue';
 
 const props = withDefaults(defineProps<{
   task: Task;
@@ -90,59 +91,31 @@ function describedBy(field: string): string | undefined {
   return props.fieldIssueIds[field] || undefined;
 }
 
+watch(() => task.f3, () => emit('dirty'), { deep: true });
+
 </script>
 
 <template>
   <section aria-labelledby="phase-three-title" class="phase-workspace">
-    <h3 id="phase-three-title">Fase 3 · Ejecución</h3>
     <div class="phase-workspace__content">
       <div class="phase-workspace__form">
         <div v-for="(iteration, index) in task.f3.iteraciones" :key="iteration.id || index" :ref="element => { if (element) iterationRefs[index] = element as HTMLElement }" :aria-label="`Iteración ${index + 1}`">
           <h4>Iteración {{ index + 1 }}</h4>
-          <label :for="`iteration-attempt-${index}`">Qué hice {{ index + 1 }}</label>
-          <input :id="`iteration-attempt-${index}`" v-model="iteration.intento" :aria-describedby="index === 0 ? describedBy('f3.iteraciones') : undefined" />
-          <label :for="`iteration-result-${index}`">Qué pasó {{ index + 1 }}</label>
-          <textarea :id="`iteration-result-${index}`" v-model="iteration.resultado" :aria-describedby="index === 0 ? describedBy('f3.iteraciones') : undefined" />
-          <label :for="`iteration-adjustment-${index}`">Qué ajusté {{ index + 1 }}</label>
-          <textarea :id="`iteration-adjustment-${index}`" v-model="iteration.ajuste" :aria-describedby="index === 0 ? describedBy('f3.iteraciones') : undefined" />
-          <label :for="`iteration-objective-${index}`">Objetivo de la iteración</label>
-          <textarea :id="`iteration-objective-${index}`" v-model="iteration.objective" rows="2" />
-          <label :for="`iteration-action-${index}`">Acción aplicada</label>
-          <textarea :id="`iteration-action-${index}`" v-model="iteration.action" rows="2" />
-          <label :for="`iteration-tool-${index}`">Herramienta usada</label>
-          <input :id="`iteration-tool-${index}`" v-model="iteration.tool" />
-          <label :for="`iteration-input-${index}`">Entrada utilizada</label>
-          <textarea :id="`iteration-input-${index}`" v-model="iteration.input" rows="2" />
-          <label :for="`iteration-result-output-${index}`">Resultado de la acción</label>
-          <textarea :id="`iteration-result-output-${index}`" v-model="iteration.result" rows="2" />
-          <label :for="`iteration-evidence-${index}`">Evidencia observada (una por línea)</label>
-          <textarea
-            :id="`iteration-evidence-${index}`"
-            :value="getIterationEvidence(iteration)"
-            rows="3"
-            @input="(event) => onIterationEvidenceInput(index, (event.target as HTMLTextAreaElement).value)"
-          />
-          <label :for="`iteration-learning-${index}`">Aprendizaje</label>
-          <textarea :id="`iteration-learning-${index}`" v-model="iteration.learning" rows="2" />
-          <label :for="`iteration-next-adjustment-${index}`">Siguiente ajuste</label>
-          <textarea :id="`iteration-next-adjustment-${index}`" v-model="iteration.nextAdjustment" rows="2" />
-          <label :for="`iteration-applicable-${index}`">Condiciones aplicables</label>
-          <textarea
-            :id="`iteration-applicable-${index}`"
-            :value="getApplicableConditionRows(index)"
-            rows="2"
-            @input="(event) => setApplicableConditions(index, (event.target as HTMLTextAreaElement).value)"
-          />
+          <StageTextField :id="`iteration-attempt-${index}`" v-model="iteration.intento" :label="`Qué hice ${index + 1}`" icon="action" as="input" :described-by="index === 0 ? describedBy('f3.iteraciones') : undefined" />
+          <StageTextField :id="`iteration-result-${index}`" v-model="iteration.resultado" :label="`Qué pasó ${index + 1}`" icon="result" :described-by="index === 0 ? describedBy('f3.iteraciones') : undefined" />
+          <StageTextField :id="`iteration-adjustment-${index}`" v-model="iteration.ajuste" :label="`Qué ajusté ${index + 1}`" icon="adjustment" :described-by="index === 0 ? describedBy('f3.iteraciones') : undefined" />
+          <StageTextField :id="`iteration-objective-${index}`" v-model="iteration.objective" label="Objetivo de la iteración" icon="objective" :rows="2" />
+          <StageTextField :id="`iteration-action-${index}`" v-model="iteration.action" label="Acción aplicada" icon="action" :rows="2" />
+          <StageTextField :id="`iteration-tool-${index}`" v-model="iteration.tool" label="Herramienta usada" icon="tool" as="input" />
+          <StageTextField :id="`iteration-input-${index}`" v-model="iteration.input" label="Entrada utilizada" icon="input" :rows="2" />
+          <StageTextField :id="`iteration-result-output-${index}`" v-model="iteration.result" label="Resultado de la acción" icon="result" :rows="2" />
+          <StageTextField :id="`iteration-evidence-${index}`" :model-value="getIterationEvidence(iteration)" label="Evidencia observada (una por línea)" icon="evidence" :rows="3" @update:model-value="value => onIterationEvidenceInput(index, value)" />
+          <StageTextField :id="`iteration-learning-${index}`" v-model="iteration.learning" label="Aprendizaje" icon="learning" :rows="2" />
+          <StageTextField :id="`iteration-next-adjustment-${index}`" v-model="iteration.nextAdjustment" label="Siguiente ajuste" icon="adjustment" :rows="2" />
+          <StageTextField :id="`iteration-applicable-${index}`" :model-value="getApplicableConditionRows(index)" label="Condiciones aplicables" icon="conditions" :rows="2" @update:model-value="value => setApplicableConditions(index, value)" />
           <label><input v-model="iteration.success" type="checkbox" /> Iteración exitosa</label>
-          <label :for="`iteration-criteria-${index}`">Criterios de éxito (criterio:ok)</label>
-          <textarea
-            :id="`iteration-criteria-${index}`"
-            :value="getSuccessCriteriaRows(iteration)"
-            rows="2"
-            @input="(event) => setSuccessCriteriaRows(index, (event.target as HTMLTextAreaElement).value)"
-          />
-          <label :for="`iteration-version-${index}`">Versión de método aplicada</label>
-          <input :id="`iteration-version-${index}`" v-model="iteration.methodVersionId" />
+          <StageTextField :id="`iteration-criteria-${index}`" :model-value="getSuccessCriteriaRows(iteration)" label="Criterios de éxito (criterio:ok)" icon="criteria" :rows="2" @update:model-value="value => setSuccessCriteriaRows(index, value)" />
+          <StageTextField :id="`iteration-version-${index}`" v-model="iteration.methodVersionId" label="Versión de método aplicada" icon="version" as="input" />
           <fieldset><legend>Criterios considerados</legend>
             <label v-for="criterion in task.f2.criterios" :key="criterion.id"><input v-model="iteration.criterioIds" type="checkbox" :value="criterion.id" /> {{ criterion.texto || criterion.id }}</label>
           </fieldset>

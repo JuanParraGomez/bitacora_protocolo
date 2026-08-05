@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { currentMethodVersion, deriveCriterionImprovements, deriveMethodMaturity } from '../domain/task-rules';
 import type { Task } from '../domain/task.schema';
 import { reactive, toRaw, watch } from 'vue';
+import StageTextField from './StageTextField.vue';
 
 const props = withDefaults(defineProps<{
   task: Task;
@@ -62,27 +63,22 @@ function syncImprovements() {
 }
 
 watch(() => task.f2.criterios.map(criterion => criterion.id), syncImprovements, { immediate: true });
+watch(() => task.f4, () => emit('dirty'), { deep: true });
 </script>
 
 <template>
   <section aria-labelledby="phase-four-title" class="phase-workspace">
-    <h3 id="phase-four-title">Fase 4 · Revisión</h3>
     <div class="phase-workspace__content">
       <div class="phase-workspace__form">
         <div v-for="(review, index) in task.f4.aar" :key="index">
-          <label :for="`phase-four-observed-${index}`">Observado {{ index + 1 }}</label>
-          <input :id="`phase-four-observed-${index}`" v-model="review.observado" :aria-describedby="index === 0 ? describedBy('f4.aar') : undefined" />
-          <label :for="`phase-four-cause-${index}`">Causa {{ index + 1 }}</label>
-          <input :id="`phase-four-cause-${index}`" v-model="review.causa" :aria-describedby="index === 0 ? describedBy('f4.aar') : undefined" />
+          <StageTextField :id="`phase-four-observed-${index}`" v-model="review.observado" :label="`Observado ${index + 1}`" icon="observed" as="input" :described-by="index === 0 ? describedBy('f4.aar') : undefined" />
+          <StageTextField :id="`phase-four-cause-${index}`" v-model="review.causa" :label="`Causa ${index + 1}`" icon="cause" as="input" :described-by="index === 0 ? describedBy('f4.aar') : undefined" />
         <label><input v-model="review.mia" type="checkbox" /> Fue una suposición propia</label>
       </div>
-      <label for="phase-four-title-input">Título de consolidación</label>
-      <input id="phase-four-title-input" v-model="task.f4.titulo" data-focus-target="form" :aria-describedby="describedBy('f4.titulo')" />
-      <label for="phase-four-change">Cambio procedimental</label>
-      <textarea id="phase-four-change" v-model="task.f4.cambio" :aria-describedby="describedBy('f4.cambio')" />
-      <label>Patrón operativo <textarea v-model="task.f4.patron" /></label>
-      <label for="phase-four-connections">Conexiones y límites</label>
-      <textarea id="phase-four-connections" v-model="task.f4.conexiones" :aria-describedby="describedBy('f4.conexiones')" />
+      <StageTextField id="phase-four-title-input" v-model="task.f4.titulo" label="Título de consolidación" icon="title" as="input" :described-by="describedBy('f4.titulo')" />
+      <StageTextField id="phase-four-change" v-model="task.f4.cambio" label="Cambio procedimental" icon="change" :described-by="describedBy('f4.cambio')" />
+      <StageTextField id="phase-four-pattern" v-model="task.f4.patron" label="Patrón operativo" icon="pattern" />
+      <StageTextField id="phase-four-connections" v-model="task.f4.conexiones" label="Conexiones y límites" icon="connections" :described-by="describedBy('f4.conexiones')" />
 
       <section class="phase-workspace__method-summary">
         <h4>Método consolidado y madurez</h4>
@@ -147,8 +143,7 @@ watch(() => task.f2.criterios.map(criterion => criterion.id), syncImprovements, 
         <p v-if="!task.f2.criterios.length">No hay criterios aplicables todavía.</p>
           <div v-for="(improvement, index) in task.f4.mejorasCriterios" :key="improvement.criterioId">
             <label :for="`improvement-check-${index}`"><input :id="`improvement-check-${index}`" v-model="improvement.confirmado" type="checkbox" /> Criterio {{ improvement.criterioId }} revisado</label>
-            <label :for="`improvement-note-${index}`">Mejora {{ index + 1 }}</label>
-            <textarea :id="`improvement-note-${index}`" v-model="improvement.mejora" />
+            <StageTextField :id="`improvement-note-${index}`" v-model="improvement.mejora" :label="`Mejora ${index + 1}`" icon="improvement" />
           </div>
           <button type="button" @click="task.f4.aar.push({ pred: '', observado: '', causa: '', mia: false })">Añadir confrontación</button>
         </fieldset>

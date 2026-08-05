@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertNoOverlap, countPrimaryActions, type NamedBox } from './visual-geometry';
+import { assertNoOverlap, assertNoOverlapPairs, countPrimaryActions, type NamedBox } from './visual-geometry';
 
 const box = (name: string, x: number, y: number, width: number, height: number): NamedBox => ({
   name,
@@ -30,5 +30,22 @@ describe('visual geometry invariants', () => {
     ])).toBe(1);
     expect(countPrimaryActions([{ visible: true, primary: true }, { visible: true, primary: true }])).toBe(2);
     expect(countPrimaryActions([])).toBe(0);
+  });
+
+  it('checks only declared sibling pairs so nested footer boxes are not false positives', () => {
+    expect(assertNoOverlapPairs([
+      box('canvas', 0, 0, 300, 300),
+      box('form', 10, 10, 280, 280),
+      box('footer', 10, 240, 280, 40),
+      box('agent', 300, 0, 300, 300),
+    ], [
+      ['form', 'agent'],
+      ['footer', 'agent'],
+    ])).toEqual([]);
+
+    expect(assertNoOverlapPairs([
+      box('form', 10, 10, 280, 280),
+      box('agent', 250, 20, 100, 100),
+    ], [['form', 'agent']])).toEqual([{ first: 'form', second: 'agent' }]);
   });
 });

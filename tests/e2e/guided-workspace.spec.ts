@@ -442,7 +442,7 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(continueBtn).toBeEnabled();
 
     await continueBtn.click();
-    await expect(page.getByRole('heading', { name: /Fase 2/ }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Descomponer el camino' }).first()).toBeVisible();
 
     await page.getByLabel('Decisión').fill('Decisión de guía');
     await page.getByLabel('Alcance').fill('Alcance medible');
@@ -463,7 +463,7 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(continuePhase2).toBeEnabled();
 
     await continuePhase2.click();
-    await expect(page.getByRole('heading', { name: /Fase 3/ }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Ejecución' }).first()).toBeVisible();
 
     await page.getByLabel('Qué hice 1').fill('Primera ejecución');
     await page.getByLabel('Qué pasó 1').fill('Resultado inicial');
@@ -479,7 +479,7 @@ test.describe('Task workspace dashboard shell', () => {
     await expect(continuePhase3).toBeEnabled();
     await continuePhase3.click();
 
-    await expect(page.getByRole('heading', { name: /Fase 4/ }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Revisión' }).first()).toBeVisible();
 
     await page.getByLabel('Observado 1').fill('Observación inicial');
     await page.getByLabel('Causa 1').fill('Causa inicial');

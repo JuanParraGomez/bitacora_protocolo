@@ -224,7 +224,7 @@ test.describe('Nuxt task workflows', () => {
     await formRegion.getByRole('button', { name: 'Evaluar' }).click();
     await expect(guidedForm.getByText('Estado vigente y apto para continuar.')).toBeVisible();
     await formRegion.getByRole('button', { name: 'Continuar' }).click();
-    await expect(page.getByRole('heading', { name: 'Fase 2 · Descomponer el camino' }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Descomponer el camino' }).first()).toBeVisible();
   });
 
   test('explains the guide and persists accessible criterion labels', async ({ page }) => {

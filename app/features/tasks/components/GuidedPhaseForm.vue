@@ -50,7 +50,6 @@ const saveError = ref('');
 const currentPhaseInstruction = computed(() => phaseInstructions[phase.value as keyof typeof phaseInstructions]?.[0]);
 const phaseModel = computed(() => buildGuidedPhaseFormModel(props.task, saveState.value, saveError.value));
 const phaseLabel = computed(() => phaseModel.value.phaseLabel ?? currentPhaseInstruction.value?.title ?? `Fase ${phase.value}`);
-const canGoBack = computed(() => props.task.fase > 1);
 const saveCopy = computed(() => resolveGuidedPhaseSaveCopy(saveState.value, saveError.value));
 const fallbackGateResult = computed(() => ({
   allowed: props.canContinue,
@@ -169,7 +168,7 @@ function onPrimaryAction() {
   }
 }
 
-watch(() => props.task.id, () => {
+watch(() => [props.task.id, props.task.fase], () => {
   saveState.value = 'idle';
   saveError.value = '';
 });
@@ -193,26 +192,10 @@ watch(() => props.task.id, () => {
       </ol>
       <p class="guided-phase-form__current-step" role="status" aria-live="polite">Paso actual: Fase {{ phase }}</p>
       <section class="guided-phase-form__save-state" role="status" aria-live="polite">
+        <p v-if="props.isStaleEvaluation" class="guided-phase-form__evaluation-status">Cambios sin evaluar</p>
         <p class="guided-phase-form__save-status">{{ saveCopy.statusLabel }}</p>
         <p class="guided-phase-form__save-helper">{{ saveCopy.helperLabel }}</p>
       </section>
-      <div class="guided-phase-form__controls">
-        <button type="button" class="guided-phase-form__save-button" @click="onSaveDraft">
-          {{ saveCopy.actionLabel }}
-        </button>
-        <button v-if="canGoBack" type="button" @click="onBack">Atrás</button>
-        <button
-          type="button"
-          class="guided-phase-form__primary-action"
-          data-focus-target="form"
-          data-primary-action="true"
-          :disabled="activePrimaryAction.disabled"
-          :title="activePrimaryAction.reason ?? undefined"
-          @click="onPrimaryAction"
-        >
-          {{ activePrimaryAction.label }}
-        </button>
-      </div>
     </header>
 
     <EvaluationFeedback
@@ -256,6 +239,23 @@ watch(() => props.task.id, () => {
       @save="onSavePayload"
       @dirty="onDirtyPayload"
     />
+
+    <footer class="guided-phase-form__controls" data-stage-footer>
+      <button type="button" class="guided-phase-form__save-button" :disabled="saveState === 'saving'" @click="onSaveDraft">
+        {{ saveCopy.actionLabel }}
+      </button>
+      <button
+        type="button"
+        class="guided-phase-form__primary-action"
+        data-focus-target="form"
+        data-primary-action="true"
+        :disabled="activePrimaryAction.disabled"
+        :title="activePrimaryAction.reason ?? undefined"
+        @click="onPrimaryAction"
+      >
+        {{ activePrimaryAction.label }}
+      </button>
+    </footer>
   </div>
 </template>
 
@@ -355,8 +355,11 @@ watch(() => props.task.id, () => {
 
 .guided-phase-form__controls {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: auto minmax(0, 1fr);
   gap: .5rem;
+  align-items: center;
+  padding: 1rem 1.45rem 1.35rem;
+  border-top: 1px solid #dde3de;
 }
 
 .guided-phase-form__controls button {
@@ -365,8 +368,7 @@ watch(() => props.task.id, () => {
   white-space: nowrap;
 }
 
-.guided-phase-form__controls button:last-child {
-  grid-column: 1 / -1;
+.guided-phase-form__controls .guided-phase-form__primary-action {
   min-height: 3.05rem;
   border-color: #007a4d;
   color: #fff;
@@ -499,6 +501,11 @@ watch(() => props.task.id, () => {
 
   .guided-phase-form__controls {
     grid-template-columns: minmax(0, 1fr);
+    padding-inline: 1rem;
+  }
+
+  .guided-phase-form__save-button {
+    justify-self: center;
   }
 }
 </style>

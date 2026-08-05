@@ -876,10 +876,10 @@ watch(() => [localTask.id, localTask.fase], () => {
               @update:model-value="updateMobilePane"
             >
               <template #stage>
-                <section class="workspace-stage" aria-labelledby="workspace-stage-title">
-                  <header class="workspace-stage__header">
-                    <p class="workspace-stage__eyebrow">{{ isCompletedTask ? 'Tarea completada' : 'Etapa activa' }}</p>
-                    <h2 id="workspace-stage-title">{{ isCompletedTask ? 'Lienzo de cierre' : 'Lienzo de la etapa' }}</h2>
+                <section class="workspace-stage" :aria-label="isCompletedTask ? 'Lienzo de cierre' : 'Etapa activa'">
+                  <header v-if="isCompletedTask" class="workspace-stage__header">
+                    <p class="workspace-stage__eyebrow">Tarea completada</p>
+                    <h2 id="workspace-stage-title">Lienzo de cierre</h2>
                   </header>
                   <TaskCompletionSummary
                     v-if="isCompletedTask"
@@ -888,14 +888,6 @@ watch(() => [localTask.id, localTask.fase], () => {
                     @request-return="emit('requestReturn')"
                   />
                   <template v-else>
-                    <StructuredStageSummary
-                      :task="localTask"
-                      :evaluation="latestEvaluation"
-                      :is-stale-evaluation="isEvaluationStale"
-                      :can-continue="canContinue"
-                      :state="effectiveSummaryState"
-                      @update-state="updateSummaryState"
-                    />
                     <section role="region" aria-label="Formulario guiado" class="workspace-stage__form-region">
                       <GuidedPhaseForm
                         :task="localTask"
@@ -917,6 +909,14 @@ watch(() => [localTask.id, localTask.fase], () => {
                         @request-return="emit('requestReturn')"
                       />
                     </section>
+                    <StructuredStageSummary
+                      :task="localTask"
+                      :evaluation="latestEvaluation"
+                      :is-stale-evaluation="isEvaluationStale"
+                      :can-continue="canContinue"
+                      :state="effectiveSummaryState"
+                      @update-state="updateSummaryState"
+                    />
                   </template>
                 </section>
               </template>
@@ -943,10 +943,10 @@ watch(() => [localTask.id, localTask.fase], () => {
           </template>
 
           <template v-else>
-            <section class="workspace-stage" aria-labelledby="workspace-stage-title">
-              <header class="workspace-stage__header">
-                <p class="workspace-stage__eyebrow">{{ isCompletedTask ? 'Tarea completada' : 'Etapa activa' }}</p>
-                <h2 id="workspace-stage-title">{{ isCompletedTask ? 'Lienzo de cierre' : 'Lienzo de la etapa' }}</h2>
+            <section class="workspace-stage" :aria-label="isCompletedTask ? 'Lienzo de cierre' : 'Etapa activa'">
+              <header v-if="isCompletedTask" class="workspace-stage__header">
+                <p class="workspace-stage__eyebrow">Tarea completada</p>
+                <h2 id="workspace-stage-title">Lienzo de cierre</h2>
               </header>
               <TaskCompletionSummary
                 v-if="isCompletedTask"
@@ -955,14 +955,6 @@ watch(() => [localTask.id, localTask.fase], () => {
                 @request-return="emit('requestReturn')"
               />
               <template v-else>
-                <StructuredStageSummary
-                  :task="localTask"
-                  :evaluation="latestEvaluation"
-                  :is-stale-evaluation="isEvaluationStale"
-                  :can-continue="canContinue"
-                  :state="effectiveSummaryState"
-                  @update-state="updateSummaryState"
-                />
                 <section role="region" aria-label="Formulario guiado" class="workspace-stage__form-region">
                   <GuidedPhaseForm
                     :task="localTask"
@@ -984,6 +976,14 @@ watch(() => [localTask.id, localTask.fase], () => {
                     @request-return="emit('requestReturn')"
                   />
                 </section>
+                <StructuredStageSummary
+                  :task="localTask"
+                  :evaluation="latestEvaluation"
+                  :is-stale-evaluation="isEvaluationStale"
+                  :can-continue="canContinue"
+                  :state="effectiveSummaryState"
+                  @update-state="updateSummaryState"
+                />
               </template>
             </section>
 

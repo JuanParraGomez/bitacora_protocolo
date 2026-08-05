@@ -18,10 +18,10 @@ export type GuidedPhaseFormModel = {
 };
 
 const PHASE_LABELS: Record<Task['fase'], string> = {
-  1: 'Fase 1 · Entender el problema',
-  2: 'Fase 2 · Descomponer el camino',
-  3: 'Fase 3 · Ejecución',
-  4: 'Fase 4 · Revisión',
+  1: 'Entender el problema',
+  2: 'Descomponer el camino',
+  3: 'Ejecución',
+  4: 'Revisión',
 };
 
 const PHASE_1_PRIORITY_FIELDS = [

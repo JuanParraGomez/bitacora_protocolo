@@ -30,8 +30,8 @@ function mountWorkspace() {
       stubs: {
         DashboardSidebar: { template: '<div />' },
         WorkspaceHeader: { template: '<button type="button">nav</button>' },
-        StructuredStageSummary: { template: '<div />' },
-        GuidedPhaseForm: { template: '<div />' },
+        StructuredStageSummary: { template: '<div data-testid="structured-summary" />' },
+        GuidedPhaseForm: { template: '<div data-testid="guided-form" />' },
         AgentPanel: {
           props: ['draft', 'expanded'],
           emits: ['updateDraft', 'send', 'toggle'],
@@ -177,6 +177,20 @@ describe('TaskWorkspace', () => {
     const draftEvents = wrapper.emitted('updateDraft') ?? [];
     expect(draftEvents[0]).toEqual([{ taskId: stageAgentWorkspaceTasks.phase3.id, draft: 'borrador persistente' }]);
     expect(wrapper.get('[data-testid="draft-value"]').text()).toContain('borrador persistente');
+  });
+
+  it('makes the guided form the active canvas content without the redundant meta panel', () => {
+    const wrapper = mountWorkspace();
+    const canvas = wrapper.get('.workspace-stage');
+    const text = canvas.text();
+    expect(text).not.toContain('ETAPA ACTIVA');
+    expect(text).not.toContain('Lienzo de la etapa');
+    expect(text).not.toContain('SÍNTESIS OPERATIVA');
+    expect(text).not.toContain('Atrás');
+    expect(canvas.find('[data-testid="guided-form"]').exists()).toBe(true);
+    expect(canvas.find('[data-testid="structured-summary"]').exists()).toBe(true);
+    const regions = Array.from(canvas.element.querySelectorAll('[data-testid]')).map((element) => element.getAttribute('data-testid'));
+    expect(regions.indexOf('guided-form')).toBeLessThan(regions.indexOf('structured-summary'));
   });
 
   it('ignores a late assistant response after the workspace context changes', async () => {

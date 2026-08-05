@@ -35,11 +35,23 @@ export async function captureVisualScreenshot(page: Page, id: string, viewportNa
   const scenario = resolveVisualScenario(id);
   assertCanonicalViewport(viewportName);
   await expect(page).toHaveScreenshot(`${scenario.id}-${viewportName}.png`, buildScreenshotOptions(page));
-  await page.screenshot({ path: artifactPath(id, viewportName) });
+  if (shouldCaptureEvidence(id, viewportName)) {
+    await page.screenshot({ path: artifactPath(id, viewportName) });
+  }
 }
 
 export function artifactPath(id: string, viewportName: string): string {
   const scenario = resolveVisualScenario(id);
   assertCanonicalViewport(viewportName);
-  return `specs/010-visual-testing-infra/evidence/actual/ACTUAL-${scenario.id}-${viewportName}.png`;
+  const root = process.env.VISUAL_EVIDENCE_ROOT?.trim() || 'specs/010-visual-testing-infra/evidence/actual';
+  return `${root.replace(/\/$/, '')}/ACTUAL-${scenario.id}-${viewportName}.png`;
+}
+
+export function shouldCaptureEvidence(id: string, viewportName: string): boolean {
+  resolveVisualScenario(id);
+  assertCanonicalViewport(viewportName);
+  const configured = process.env.VISUAL_EVIDENCE_CASES?.trim();
+  if (!configured) return true;
+  const allowed = configured.split(',').map((entry) => entry.trim()).filter(Boolean);
+  return allowed.includes(`${id}:${viewportName}`);
 }

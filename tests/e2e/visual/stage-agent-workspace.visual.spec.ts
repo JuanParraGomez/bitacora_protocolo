@@ -4,7 +4,7 @@ import { buildPhaseRevision } from '../../../app/features/tasks/domain/task-assi
 import { repairTask, type Task } from '../../../app/features/tasks/domain/task.schema';
 import { stageAgentWorkspaceTasks, stageAgentWorkspaceWorkspaceState } from '../../fixtures/tasks/stage-agent-workspace';
 import { artifactPath, buildScreenshotOptions, waitForStableUi } from '../helpers/visual-capture';
-import { assertNoOverlap, countPrimaryActions, type Box, type NamedBox, type PrimaryAction } from '../helpers/visual-geometry';
+import { assertNoOverlap, assertNoOverlapPairs, countPrimaryActions, type Box, type NamedBox, type PrimaryAction } from '../helpers/visual-geometry';
 import { VISUAL_SCENARIOS, type VisualScenarioId } from '../helpers/visual-scenarios';
 import { WORKSPACE_UX_VIEWPORTS } from '../helpers/workspace-ux';
 
@@ -171,6 +171,32 @@ async function assertVisualGeometry(page: Page, scenarioId: VisualScenarioId, vi
 
   const overlaps = assertNoOverlap(regions);
   expect(overlaps, `${scenarioId}/${viewportName} layout overlaps: ${JSON.stringify(overlaps)}`).toEqual([]);
+
+  if (scenarioId !== 'IMG-UX-06') {
+    const stage = page.locator('.workspace-stage');
+    const stageText = await stage.textContent();
+    expect(stageText).not.toContain('ETAPA ACTIVA');
+    expect(stageText).not.toContain('Lienzo de la etapa');
+    expect(stageText).not.toContain('SÍNTESIS OPERATIVA');
+    expect(stageText).not.toContain('Atrás');
+    expect(await stage.locator('[data-stage-text-field]').count()).toBeGreaterThan(0);
+    expect(await stage.locator('.guided-phase-form__progress-step').count()).toBe(4);
+    const form = await visibleBox(page, '.workspace-stage__form-region');
+    const footer = await visibleBox(page, '[data-stage-footer]');
+    const agent = regions.find((region) => region.name === 'agent')?.box;
+    if (form && agent) {
+      expect(assertNoOverlapPairs([
+        { name: 'form', box: form },
+        { name: 'agent', box: agent },
+      ], [['form', 'agent']])).toEqual([]);
+    }
+    if (footer && agent) {
+      expect(assertNoOverlapPairs([
+        { name: 'footer', box: footer },
+        { name: 'agent', box: agent },
+      ], [['footer', 'agent']])).toEqual([]);
+    }
+  }
 
   const composer = await visibleBox(page, '#task-chat-composer-input');
   if (composer) {

@@ -111,6 +111,22 @@ test.describe('stage-agent workspace', () => {
       await expect(page.getByText('Problema detectado')).toBeVisible();
       await expect(page.getByText('Contexto y confirmación')).toBeVisible();
 
+      if (viewport.width <= 390) {
+        const footer = page.locator('[data-stage-footer]');
+        const saveButton = page.getByRole('button', { name: 'Guardar borrador' });
+        const primary = page.locator('[data-primary-action="true"]');
+        const footerBox = await footer.boundingBox();
+        const saveBox = await saveButton.boundingBox();
+        const primaryBox = await primary.boundingBox();
+        expect(footerBox).not.toBeNull();
+        expect(saveBox).not.toBeNull();
+        expect(primaryBox).not.toBeNull();
+        if (footerBox && saveBox && primaryBox) {
+          expect(Math.abs((saveBox.x + saveBox.width / 2) - (footerBox.x + footerBox.width / 2))).toBeLessThan(3);
+          expect(primaryBox.width).toBeGreaterThanOrEqual(footerBox.width - 32);
+        }
+      }
+
       const overflow = await page.locator('body').evaluate((element) => (
         element.scrollWidth > element.clientWidth
       ));
@@ -195,6 +211,33 @@ test.describe('stage-agent workspace', () => {
     await expect(primaryActions).toHaveCount(1);
     await expect(primaryActions.first()).toHaveText('Evaluar etapa');
     await expect(page.getByRole('button', { name: 'Guardar borrador' })).toBeVisible();
+  });
+
+  test('uses one manual dirty-to-save flow for all four phases without autosave', async ({ page }) => {
+    for (const sourceTask of defaultTasks) {
+      const task = sourceTask.fase === 4 ? buildActivePhaseFourTask() : sourceTask;
+      const indexedTasks = defaultTasks.map((candidate) => candidate.fase === 4 ? task : candidate);
+      await seedWorkspace(page, task, indexedTasks);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(`/tasks/${task.id}`);
+      const stageTab = page.getByRole('tab', { name: 'Etapa' });
+      if (await stageTab.count()) await stageTab.click();
+      let storageWrites = 0;
+      page.on('request', (request) => {
+        if (['PUT', 'POST', 'DELETE'].includes(request.method()) && request.url().includes('/api/storage')) storageWrites += 1;
+      });
+
+      const field = page.getByRole('region', { name: 'Formulario guiado' }).locator('textarea, input:not([type="checkbox"])').first();
+      await field.fill(`${await field.inputValue()} edición manual`);
+      await expect(page.locator('body')).toContainText('Cambios sin guardar');
+      await page.waitForTimeout(100);
+      expect(storageWrites, `phase ${task.fase} must not autosave`).toBe(0);
+
+      await page.getByRole('button', { name: 'Guardar borrador' }).click();
+      await expect(page.locator('body')).toContainText('Borrador guardado');
+      await expect(page.locator('body')).not.toContainText('Cambios sin guardar');
+      await page.reload();
+    }
   });
 
   test('shows the completed summary, survives reload without duplicate records, and returns to tasks', async ({ page }) => {

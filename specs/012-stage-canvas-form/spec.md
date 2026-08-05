@@ -4,7 +4,8 @@
 
 **Created**: 2026-08-05
 
-**Status**: Draft
+**Status**: Approved for implementation on 2026-08-05 by the user's explicit
+request to implement all phases of spec 012.
 
 **Input**: Convertir el lienzo de la etapa activa en el formulario protagonista,
 eliminar la cabecera meta redundante y conservar todos los campos y reglas

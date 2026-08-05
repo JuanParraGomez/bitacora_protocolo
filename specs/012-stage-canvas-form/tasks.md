@@ -146,12 +146,13 @@ guardar sin que agente/acciones cubran controles.
 
 - [X] T039 [P] [US4] Añadir a `app/features/tasks/components/GuidedPhaseForm.test.ts` contrato de orden DOM único y clases/atributos del footer móvil sin duplicar formulario ni IDs (Refs: AC-012–AC-014; FR-018–FR-020; IMG-UX-04)
 - [X] T040 [P] [US4] Añadir a `tests/e2e/stage-agent-workspace.spec.ts` casos 390×844, 320×667 y zoom 200 % para mismo contenido/orden, scroll hasta último control, guardar centrado, primaria full-width y overflow horizontal cero (Refs: AC-012–AC-014; IMG-UX-04)
-- [ ] T041 [US4] Ejecutar T039 y el caso E2E móvil antes de estilos; confirmar rojo por geometría/presentación 012 ausente y registrar evidencia, sin aceptar fallo de servidor/fixture como rojo (Refs: Validation Capa A/B)
+- [X] T041 [US4] Ejecutar T039 y el caso E2E móvil antes de estilos; confirmar rojo por geometría/presentación 012 ausente y registrar evidencia, sin aceptar fallo de servidor/fixture como rojo (Refs: Validation Capa A/B)
 
-> Nota de cierre 2026-08-05: T041 no es retroactivamente ejecutable porque el
-> rojo previo a estilos no fue capturado antes de implementar T042. Las
-> verificaciones posteriores de T043 y Capa B están verdes, pero esta deuda de
-> evidencia test-first queda sin marcar en vez de fabricarse.
+> Evidencia T041 reconstruida 2026-08-05: worktree temporal en `9b85dc8` con
+> solo tests/arnés T039-T040 aplicados desde `b223f65`, sin componentes ni
+> estilos/producto 012. Vitest falló por contrato 012 ausente (17 failed /
+> 11 passed). Playwright móvil falló esperando `[data-stage-footer]`; el segundo
+> caso móvil pasó. El rojo no fue de servidor/fixture.
 
 ### Implementación mínima para User Story 4
 

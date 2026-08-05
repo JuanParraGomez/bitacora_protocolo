@@ -25,6 +25,7 @@ Status: implementation in progress.
 | T052 | `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/guided-workspace.spec.ts --grep 'evalúa, corrige' --workers=1 --reporter=line` | 1 passed | 0 | Updated phase-title contract verified end to end. |
 | T053 | `TEST_BASE_URL=http://127.0.0.1:3005 npm run test:visual -- --workers=1 --reporter=line` | 1 passed, 5 failed | 1 | IMG-UX-06 DOM/geometry/axe green; IMG-UX-01–05 fail only inherited screenshot comparison after 012 redesign. |
 | T056 | `git diff --check` | no whitespace errors | 0 | — |
+| T057 | `git diff --cached --check`; `git commit -m "feat: make stage canvas form primary"`; `git push -u origin codex/012-stage-canvas-form` | commit `b223f65` pushed; upstream configured | 0 | Staged only 012 frontend/tests/docs; Graphify, SQLite fixtures, generated ACTUALs and unrelated worktree changes excluded. |
 
 No test, visual, or aggregate result is claimed until its command has run.
 

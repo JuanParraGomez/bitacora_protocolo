@@ -186,7 +186,7 @@ rama sin mezclar ruido del checkout.
 - [X] T054 Ejecutar `graphify update .` y `graphify check`, inspeccionar el impacto arquitectónico y mantener `graphify-out/` fuera del staging; registrar solo el resultado en evidencia (Refs: Constitution V, FR-022–FR-023)
 - [ ] T055 Lanzar revisión independiente del patch completo 012; resolver hallazgos P0/P1 mediante un nuevo ciclo test rojo→cambio mínimo→verde y documentar decisiones P2/P3 (Refs: todas FR/SC)
 - [X] T056 Validar `quickstart.md` de principio a fin y ejecutar `git diff --check`; sincronizar en `specs/012-stage-canvas-form/implementation-evidence.md` únicamente tareas/evidencias realmente completas (Refs: Validation Contract)
-- [ ] T057 Inspeccionar staged diff y secretos/ruido, stagear solo frontend/tests/docs/baselines 012 explícitamente aprobados, crear commit descriptivo y hacer push únicamente a `origin/codex/012-stage-canvas-form`; reportar commit, upstream y alcance mixto sin mergear `main` (Refs: workflow Git, FR-022)
+- [X] T057 Inspeccionar staged diff y secretos/ruido, stagear solo frontend/tests/docs/baselines 012 explícitamente aprobados, crear commit descriptivo y hacer push únicamente a `origin/codex/012-stage-canvas-form`; reportar commit, upstream y alcance mixto sin mergear `main` (Refs: workflow Git, FR-022)
 
 ---
 

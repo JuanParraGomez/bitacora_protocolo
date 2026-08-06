@@ -54,4 +54,5 @@
 ## Publication
 
 - Commit/push authorized by user on 2026-08-06.
-- SHA/upstream: pending.
+- Implementation/evidence SHA: `5d41487`; push succeeded only to `origin/codex/015-responsive-workspace` after switching the repository-required GitHub identity to `JuanParraGomez`.
+- Upstream confirmed: `[origin/codex/015-responsive-workspace]`. No PR or merge was created.

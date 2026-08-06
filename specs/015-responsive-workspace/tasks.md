@@ -96,7 +96,7 @@
 - [x] T034 Run Capa A, `npm run typecheck`, affected E2E/visual contracts and `npm run verify`; record exact counts/exit codes.
 - [x] T035 Run `git diff --check`, `graphify update .` and graph/structure verification; exclude Graphify caches, SQLite and unrelated evidence from staging.
 - [x] T036 Launch independent patch review; resolve actionable findings through a new test-first cycle and record verdict.
-- [ ] T037 Audit status, stage explicit 015/frontend/test paths, run `git diff --cached --check`, commit and push only `origin/codex/015-responsive-workspace`; record SHA/upstream.
+- [x] T037 Audit status, stage explicit 015/frontend/test paths, run `git diff --cached --check`, commit and push only `origin/codex/015-responsive-workspace`; record SHA/upstream.
 
 ## Dependencies and execution order
 

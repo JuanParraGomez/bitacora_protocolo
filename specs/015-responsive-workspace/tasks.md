@@ -38,12 +38,12 @@
 
 **Independent Test**: component tests resolve tablet, expose hamburger/overflow and preserve adjacent stage/agent regions with one primary maximum. **Refs: IMG-UX-03**
 
-- [ ] T011 [P] [US1] Add header tests for compact breadcrumb, chip/context, overflow actions and accessible names in `app/features/tasks/components/WorkspaceHeader.test.ts`. **Refs: FR-002, FR-004, IMG-UX-03**
-- [ ] T012 [US1] Add TaskWorkspace tests for tablet drawer default/focus, adjacent regions, pending propagation and primary-action maximum in `app/features/tasks/components/TaskWorkspace.test.ts`. **Refs: FR-002, FR-003, FR-006, FR-010, IMG-UX-03**
-- [ ] T013 [US1] Run T011–T012 and record valid red in `implementation-evidence.md`.
-- [ ] T014 [US1] Implement compact header/overflow in `WorkspaceHeader.vue`, reusing existing emitted actions.
-- [ ] T015 [US1] Implement tablet region ownership and independent overflow in `TaskWorkspace.vue` and owning agent styles without changing chat behavior.
-- [ ] T016 [US1] Run focused green and regress existing `WorkspaceHeader`, `TaskWorkspace`, `AgentPanel` and shell tests; synchronize evidence.
+- [x] T011 [P] [US1] Add header tests for compact breadcrumb, chip/context, overflow actions and accessible names in `app/features/tasks/components/WorkspaceHeader.test.ts`. **Refs: FR-002, FR-004, IMG-UX-03**
+- [x] T012 [US1] Add TaskWorkspace tests for tablet drawer default/focus, adjacent regions, pending propagation and primary-action maximum in `app/features/tasks/components/TaskWorkspace.test.ts`. **Refs: FR-002, FR-003, FR-006, FR-010, IMG-UX-03**
+- [x] T013 [US1] Run T011–T012 and record valid red in `implementation-evidence.md`.
+- [x] T014 [US1] Implement compact header/overflow in `WorkspaceHeader.vue`, reusing existing emitted actions.
+- [x] T015 [US1] Implement tablet region ownership and independent overflow in `TaskWorkspace.vue` and owning agent styles without changing chat behavior.
+- [x] T016 [US1] Run focused green and regress existing `WorkspaceHeader`, `TaskWorkspace`, `AgentPanel` and shell tests; synchronize evidence.
 
 **Checkpoint**: IMG-UX-03 structural behavior passes Capa A.
 

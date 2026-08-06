@@ -24,6 +24,7 @@
 | Block | Red command/result | Green command/result | Regression |
 |---|---|---|---|
 | Capa A controller/state | `npx vitest run app/features/tasks/components/workspace-shell-presentation.test.ts app/features/tasks/composables/useWorkspaceState.test.ts app/features/tasks/components/WorkspacePaneTabs.test.ts --reporter=dot` → exit 1, 3 expected failures for missing icons, pending dot and logical focus; 30 passed | same command → exit 0, 33/33 passed | breakpoint and task-local persistence included |
+| Capa A tablet/header | `npx vitest run app/features/tasks/components/WorkspaceHeader.test.ts app/features/tasks/components/TaskWorkspace.test.ts --reporter=dot` → exit 1, 3 expected failures for missing overflow, mobile context and scroll-region contract; 10 passed | `npx vitest run app/features/tasks/components/WorkspaceHeader.test.ts app/features/tasks/components/TaskWorkspace.test.ts app/features/tasks/components/WorkspacePaneTabs.test.ts app/features/tasks/components/AgentPanel.test.ts --reporter=dot` → exit 0, 24/24 passed | header, workspace, pane controller and agent rail |
 | Capa B functional/visual contract | pending | pending | pending |
 | Aggregate | n/a | pending | pending |
 

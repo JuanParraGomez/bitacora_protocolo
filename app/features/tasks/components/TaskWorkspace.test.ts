@@ -9,6 +9,19 @@ import { stageAgentWorkspaceRecords, stageAgentWorkspaceTasks } from '../../../.
 
 const sendMock = vi.fn();
 
+function setViewport(width: number) {
+  vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
+    matches: query.includes('1024') ? width <= 1024 : width <= 767,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })));
+}
+
 vi.mock('../services/mock-workspace-assistant', () => ({
   mockWorkspaceAssistant: {
     send: (...args: unknown[]) => sendMock(...args),
@@ -40,13 +53,13 @@ function mountWorkspace() {
             return { focusConversation: vi.fn() };
           },
           template: `
-            <div>
+            <aside class="agent-panel">
               <button type="button" data-testid="toggle" @click="$emit('toggle')">toggle</button>
               <button type="button" data-testid="draft" @click="$emit('updateDraft', 'borrador persistente')">draft</button>
               <button type="button" data-testid="send" @click="$emit('send', 'mensaje demo')">send</button>
               <span data-testid="expanded">{{ expanded }}</span>
               <span data-testid="draft-value">{{ draft }}</span>
-            </div>
+            </aside>
           `,
         },
         AssistantSettingsModal: { template: '<div />' },
@@ -304,6 +317,18 @@ function mountProposalWorkspace() {
 describe('TaskWorkspace', () => {
   beforeEach(() => {
     sendMock.mockReset();
+    setViewport(1440);
+  });
+
+  it('loads tablet with a closed drawer and two adjacent independent scroll regions', async () => {
+    setViewport(1024);
+    const wrapper = mountWorkspace();
+    await nextTick();
+
+    expect(wrapper.find('.workspace-navigation-drawer').exists()).toBe(false);
+    expect(wrapper.get('.workspace-stage').attributes('data-scroll-region')).toBe('stage');
+    expect(wrapper.get('.agent-panel').attributes('data-scroll-region')).toBe('agent');
+    expect(wrapper.get('.workspace-stage-layout').classes()).toContain('workspace-stage-layout--tablet');
   });
 
   it('keeps the composer draft while the agent panel collapses and expands again', async () => {

@@ -193,6 +193,10 @@ const effectiveMobilePane = computed<WorkspaceMobilePaneState>(() => (
 const isAgentPanelExpanded = computed(() => (
   isMobile.value ? true : effectiveAgentPanelState.value === 'expanded'
 ));
+const isTablet = computed(() => isCompact.value && !isMobile.value);
+const hasAgentPending = computed(() => (
+  phasePendingProposals.value.length > 0 || evaluationRecovery.value.pendingCount > 0
+));
 const phaseSnapshot = computed(() => buildPhaseSnapshot(localTask, localTask.fase).fields);
 const latestEvaluations = computed(() => localTask.assistant.evaluations
   .filter((evaluation) => evaluation.taskId === localTask.id && evaluation.phase === localTask.fase)
@@ -880,6 +884,7 @@ watch(() => [localTask.id, localTask.fase], () => {
           :phase="localTask.fase"
           :phase-title="selectedProjectHasLocalTask ? phaseTitle : 'Crea la primera tarea'"
           :compact-navigation="isCompact"
+          :mobile-context="isMobile"
           :sidebar-collapsed="effectiveSidebarCollapsed"
           @open-navigation="sidebarOpen = true"
           @expand-sidebar="updateSidebarCollapsed(false)"
@@ -888,15 +893,24 @@ watch(() => [localTask.id, localTask.fase], () => {
           @open-settings="openSettings"
         />
 
-        <div v-if="selectedProjectHasLocalTask" class="workspace-stage-layout" :class="{ 'workspace-stage-layout--agent-collapsed': !isAgentPanelExpanded }">
+        <div
+          v-if="selectedProjectHasLocalTask"
+          class="workspace-stage-layout"
+          :class="{
+            'workspace-stage-layout--agent-collapsed': !isAgentPanelExpanded,
+            'workspace-stage-layout--tablet': isTablet,
+            'workspace-stage-layout--mobile': isMobile,
+          }"
+        >
           <template v-if="isMobile">
             <WorkspacePaneTabs
               v-model="fallbackMobilePane"
               class="workspace-stage-layout__tabs"
+              :agent-pending="hasAgentPending"
               @update:model-value="updateMobilePane"
             >
               <template #stage>
-                <section class="workspace-stage" :aria-label="isCompletedTask ? 'Lienzo de cierre' : 'Etapa activa'">
+                <section data-scroll-region="stage" class="workspace-stage" :aria-label="isCompletedTask ? 'Lienzo de cierre' : 'Etapa activa'">
                   <header v-if="isCompletedTask" class="workspace-stage__header">
                     <p class="workspace-stage__eyebrow">Tarea completada</p>
                     <h2 id="workspace-stage-title">Lienzo de cierre</h2>
@@ -943,6 +957,7 @@ watch(() => [localTask.id, localTask.fase], () => {
               </template>
               <template #agent>
                 <AgentPanel
+                  data-scroll-region="agent"
                   :messages="phaseMessages"
                   :suggestions="chatSuggestions"
                   :send-status="chatSendState"
@@ -967,7 +982,7 @@ watch(() => [localTask.id, localTask.fase], () => {
           </template>
 
           <template v-else>
-            <section class="workspace-stage" :aria-label="isCompletedTask ? 'Lienzo de cierre' : 'Etapa activa'">
+            <section data-scroll-region="stage" class="workspace-stage" :aria-label="isCompletedTask ? 'Lienzo de cierre' : 'Etapa activa'">
               <header v-if="isCompletedTask" class="workspace-stage__header">
                 <p class="workspace-stage__eyebrow">Tarea completada</p>
                 <h2 id="workspace-stage-title">Lienzo de cierre</h2>
@@ -1013,6 +1028,7 @@ watch(() => [localTask.id, localTask.fase], () => {
             </section>
 
             <AgentPanel
+              data-scroll-region="agent"
               :messages="phaseMessages"
               :suggestions="chatSuggestions"
               :send-status="chatSendState"

@@ -3,14 +3,17 @@ import type { Task } from '../domain/task.schema';
 import { addIteration } from '../domain/task-rules';
 import { nextTick, reactive, ref, toRaw, watch } from 'vue';
 import StageTextField from './StageTextField.vue';
+import type { EvaluationDisplayIssue } from './workspace-presentation';
 
 const props = withDefaults(defineProps<{
   task: Task;
   saveTask?: () => Promise<boolean>;
   fieldIssueIds?: Record<string, string>;
+  fieldIssues?: Record<string, EvaluationDisplayIssue[]>;
 }>(), {
   saveTask: undefined,
   fieldIssueIds: () => ({}),
+  fieldIssues: () => ({}),
 });
 const task = reactive(toRaw(props.task));
 const emit = defineEmits<{ save: []; dirty: [] }>();
@@ -90,6 +93,9 @@ function appendIteration() {
 function describedBy(field: string): string | undefined {
   return props.fieldIssueIds[field] || undefined;
 }
+function issuesFor(field: string): EvaluationDisplayIssue[] {
+  return props.fieldIssues[field] || [];
+}
 
 watch(() => task.f3, () => emit('dirty'), { deep: true });
 
@@ -101,9 +107,9 @@ watch(() => task.f3, () => emit('dirty'), { deep: true });
       <div class="phase-workspace__form">
         <div v-for="(iteration, index) in task.f3.iteraciones" :key="iteration.id || index" :ref="element => { if (element) iterationRefs[index] = element as HTMLElement }" :aria-label="`Iteración ${index + 1}`">
           <h4>Iteración {{ index + 1 }}</h4>
-          <StageTextField :id="`iteration-attempt-${index}`" v-model="iteration.intento" :label="`Qué hice ${index + 1}`" icon="action" as="input" :described-by="index === 0 ? describedBy('f3.iteraciones') : undefined" />
-          <StageTextField :id="`iteration-result-${index}`" v-model="iteration.resultado" :label="`Qué pasó ${index + 1}`" icon="result" :described-by="index === 0 ? describedBy('f3.iteraciones') : undefined" />
-          <StageTextField :id="`iteration-adjustment-${index}`" v-model="iteration.ajuste" :label="`Qué ajusté ${index + 1}`" icon="adjustment" :described-by="index === 0 ? describedBy('f3.iteraciones') : undefined" />
+          <StageTextField :id="`iteration-attempt-${index}`" v-model="iteration.intento" :label="`Qué hice ${index + 1}`" icon="action" as="input" :described-by="index === 0 ? describedBy('f3.iteraciones') : undefined" :issues="index === 0 ? issuesFor('f3.iteraciones') : []" />
+          <StageTextField :id="`iteration-result-${index}`" v-model="iteration.resultado" :label="`Qué pasó ${index + 1}`" icon="result" :described-by="index === 0 ? describedBy('f3.iteraciones') : undefined" :issues="index === 0 ? issuesFor('f3.iteraciones') : []" />
+          <StageTextField :id="`iteration-adjustment-${index}`" v-model="iteration.ajuste" :label="`Qué ajusté ${index + 1}`" icon="adjustment" :described-by="index === 0 ? describedBy('f3.iteraciones') : undefined" :issues="index === 0 ? issuesFor('f3.iteraciones') : []" />
           <StageTextField :id="`iteration-objective-${index}`" v-model="iteration.objective" label="Objetivo de la iteración" icon="objective" :rows="2" />
           <StageTextField :id="`iteration-action-${index}`" v-model="iteration.action" label="Acción aplicada" icon="action" :rows="2" />
           <StageTextField :id="`iteration-tool-${index}`" v-model="iteration.tool" label="Herramienta usada" icon="tool" as="input" />

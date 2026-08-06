@@ -56,6 +56,12 @@ export type EvaluationDisplay = {
   recovery: 'evaluate' | 'reevaluate' | null;
 };
 
+export type EvaluationRecovery = {
+  corrections: EvaluationDisplayIssue[];
+  pendingCount: number;
+  hasPendingCorrections: boolean;
+};
+
 export type CompletionSummary = {
   progress: string;
   finalOutcome: string;
@@ -70,6 +76,7 @@ const GATE_REASON_FIELD_MAP: Record<TaskPhase, ReadonlyArray<[string, string]>> 
     ['Completa al menos una relación de linaje con dos campos.', 'f1.linaje'],
     ['Confirma el mapeo completo antes de avanzar.', 'f1.checkMapeo'],
     ['Decide si mantienes o reformulas el problema.', 'f1.analisisProblema.decision'],
+    ['Define una hipótesis verificable para poder evaluar el análisis', 'f1.analisisProblema.analisis'],
     ['Completa el problema, la evidencia y el análisis.', 'f1.analisisProblema'],
     ['Justifica la decisión y escribe la formulación vigente.', 'f1.analisisProblema.justificacion'],
     ['Especifica un resultado deseado verificable.', 'f1.resultadoDeseado'],
@@ -103,6 +110,26 @@ const GATE_REASON_FIELD_MAP: Record<TaskPhase, ReadonlyArray<[string, string]>> 
     ['Define un título de cierre para el registro.', 'f4.titulo'],
   ],
 };
+
+export function resolveEvaluationRecovery(snapshot: {
+  phase: TaskPhase;
+  latestEvaluation: PhaseEvaluation | null;
+  isEvaluating: boolean;
+  isStaleEvaluation: boolean;
+  transportError?: string | null;
+  gateResult: GateResult;
+}): EvaluationRecovery {
+  const evaluation = snapshot.latestEvaluation;
+  const corrections = evaluation?.status === 'needs-work'
+    ? normalizeGateReasons(snapshot.phase, evaluation.gateReasons)
+    : [];
+
+  return {
+    corrections,
+    pendingCount: corrections.length,
+    hasPendingCorrections: corrections.length > 0,
+  };
+}
 
 function trimmed(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';

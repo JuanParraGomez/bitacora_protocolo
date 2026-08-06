@@ -676,6 +676,21 @@ export const stageAgentChatFixtures = {
   })),
 } as const;
 
+export const stageAgentEvaluationFixtures = {
+  needsWork: {
+    status: 'needs-work' as const,
+    gateReasons: [
+      'Define una hipótesis verificable para poder evaluar el análisis',
+      'Define criterio(s) de éxito para cerrar la fase.',
+    ],
+  },
+  staleNeedsWork: { status: 'needs-work' as const, isStale: true },
+  initialFailure: { status: 'error' as const, gateReasons: [] },
+  retryTransportFailure: { status: 'error' as const, transportError: 'timeout' },
+  lateResponse: { status: 'needs-work' as const, taskId: 'other-task', phase: 2 },
+  completedTask: { taskState: 'completada' as const },
+} as const;
+
 export function buildStageAgentWorkspaceFixtures() {
   return structuredClone({
     tasks: stageAgentWorkspaceTasks,

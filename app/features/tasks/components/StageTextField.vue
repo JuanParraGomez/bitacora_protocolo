@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { EvaluationDisplayIssue } from './workspace-presentation';
 
 const props = withDefaults(defineProps<{
   id: string;
@@ -10,6 +11,7 @@ const props = withDefaults(defineProps<{
   rows?: number;
   describedBy?: string;
   focusTarget?: string;
+  issues?: EvaluationDisplayIssue[];
 }>(), {
   modelValue: '',
   icon: 'field',
@@ -17,6 +19,7 @@ const props = withDefaults(defineProps<{
   rows: 3,
   describedBy: undefined,
   focusTarget: undefined,
+  issues: () => [],
 });
 
 const emit = defineEmits<{
@@ -25,6 +28,19 @@ const emit = defineEmits<{
 
 const value = computed(() => String(props.modelValue ?? ''));
 const count = computed(() => `${value.value.length}/500`);
+function normalizeIssueId(value: string): string {
+  return value.replace(/\./g, '-').replace(/[^A-Za-z0-9_-]/g, '-');
+}
+const inlineIssues = computed(() => props.issues
+  .map((issue, index) => ({
+    ...issue,
+    id: `stage-inline-issue-${normalizeIssueId(issue.field ?? props.id)}-${index + 1}`,
+  }))
+  .filter((issue) => issue.message.trim().length > 0));
+const effectiveDescribedBy = computed(() => [
+  props.describedBy,
+  ...inlineIssues.value.map((issue) => issue.id),
+].filter(Boolean).join(' ') || undefined);
 
 function updateValue(event: Event) {
   emit('update:modelValue', (event.target as HTMLInputElement | HTMLTextAreaElement).value);
@@ -45,7 +61,8 @@ function updateValue(event: Event) {
       :id="id"
       :value="value"
       :rows="rows"
-      :aria-describedby="describedBy"
+      :aria-describedby="effectiveDescribedBy"
+      :aria-invalid="inlineIssues.length ? 'true' : undefined"
       :data-focus-target="focusTarget"
       @input="updateValue"
     />
@@ -53,10 +70,21 @@ function updateValue(event: Event) {
       v-else
       :id="id"
       :value="value"
-      :aria-describedby="describedBy"
+      :aria-describedby="effectiveDescribedBy"
+      :aria-invalid="inlineIssues.length ? 'true' : undefined"
       :data-focus-target="focusTarget"
       @input="updateValue"
     />
+    <p
+      v-for="issue in inlineIssues"
+      :id="issue.id"
+      :key="issue.id"
+      data-testid="stage-inline-issue"
+      class="stage-text-field__issue"
+      role="alert"
+    >
+      {{ issue.message }}
+    </p>
     <span class="stage-text-field__count" :data-character-count="id">{{ count }}</span>
   </div>
 </template>
@@ -96,5 +124,13 @@ function updateValue(event: Event) {
   color: #526158;
   font-size: 0.75rem;
   line-height: 1.2;
+}
+
+.stage-text-field__issue {
+  margin: 0;
+  color: #8b1e2d;
+  font-size: .8rem;
+  font-weight: 650;
+  line-height: 1.35;
 }
 </style>

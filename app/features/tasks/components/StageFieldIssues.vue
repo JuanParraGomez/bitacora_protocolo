@@ -9,6 +9,8 @@ const props = withDefaults(defineProps<{
   fieldIdMap: () => ({}),
 });
 
+const emit = defineEmits<{ requestAgentRecommendations: [] }>();
+
 function normalizeIssueId(value: string): string {
   return value.replace(/\./g, '-').replace(/[^A-Za-z0-9_-]/g, '-');
 }
@@ -33,7 +35,7 @@ const dedupedIssues = computed(() => {
 const renderedIssues = computed(() => dedupedIssues.value.map((issue, index) => ({
   ...issue,
   id: issue.field
-    ? `stage-issue-${normalizeIssueId(issue.field)}`
+    ? `stage-issue-${normalizeIssueId(issue.field)}-${index + 1}`
     : `stage-issue-general-${index + 1}`,
   controlId: issue.field ? props.fieldIdMap[issue.field] ?? null : null,
 })));
@@ -47,13 +49,13 @@ const issueDescriptionIds = computed(() => renderedIssues.value.map((issue) => i
     class="stage-field-issues"
     aria-labelledby="stage-field-issues-title"
   >
-    <h4 id="stage-field-issues-title">Bloqueos de la etapa</h4>
+    <h4 id="stage-field-issues-title">{{ renderedIssues.length === 1 ? '1 corrección pendiente' : `${renderedIssues.length} correcciones pendientes` }}</h4>
     <p
       data-testid="stage-field-issues-summary"
       class="stage-field-issues__summary"
       :aria-describedby="issueDescriptionIds"
     >
-      La evaluación requiere ajustes antes de continuar.
+      {{ renderedIssues.length === 1 ? '1 corrección pendiente.' : `${renderedIssues.length} correcciones pendientes.` }} La evaluación requiere ajustes antes de continuar.
     </p>
     <ul class="stage-field-issues__list">
       <li
@@ -67,6 +69,14 @@ const issueDescriptionIds = computed(() => renderedIssues.value.map((issue) => i
         {{ issue.message }}
       </li>
     </ul>
+    <button
+      type="button"
+      data-testid="stage-field-issues-agent-link"
+      class="stage-field-issues__agent-link"
+      @click="emit('requestAgentRecommendations')"
+    >
+      Ver recomendaciones del agente
+    </button>
   </section>
 </template>
 
@@ -103,5 +113,17 @@ const issueDescriptionIds = computed(() => renderedIssues.value.map((issue) => i
   padding-left: 1.1rem;
   color: #503700;
   font-size: .82rem;
+}
+
+.stage-field-issues__agent-link {
+  justify-self: start;
+  border: 0;
+  padding: 0;
+  color: #285c45;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
 }
 </style>

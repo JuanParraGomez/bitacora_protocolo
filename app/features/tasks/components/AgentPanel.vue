@@ -14,6 +14,7 @@ const props = withDefaults(defineProps<{
   restoreMessageId?: string | null;
   expanded?: boolean;
   pendingProposals?: number;
+  pendingCorrections?: number;
 }>(), {
   suggestions: () => [],
   sendStatus: 'ready',
@@ -24,6 +25,7 @@ const props = withDefaults(defineProps<{
   restoreMessageId: null,
   expanded: true,
   pendingProposals: 0,
+  pendingCorrections: 0,
 });
 
 const emit = defineEmits<{
@@ -37,7 +39,15 @@ const emit = defineEmits<{
 
 const contentId = useId();
 const toggleButton = ref<HTMLButtonElement | null>(null);
+const contentRegion = ref<HTMLElement | null>(null);
 const isBusy = computed(() => props.sendStatus === 'submitted' || props.sendStatus === 'streaming');
+
+async function focusConversation() {
+  await nextTick();
+  contentRegion.value?.focus({ preventScroll: true });
+}
+
+defineExpose({ focusConversation });
 
 function onContentKeydown(event: KeyboardEvent) {
   if (event.key !== 'Escape' || !props.expanded) return;
@@ -86,9 +96,15 @@ watch(() => props.expanded, async (next, previous) => {
         <span class="agent-panel__toggle-label">{{ props.expanded ? 'Contraer agente' : 'Expandir agente' }}</span>
       </button>
       <span v-if="!props.expanded && props.pendingProposals > 0" data-agent-pending-badge :aria-label="`${props.pendingProposals} propuestas pendientes`">{{ props.pendingProposals }}</span>
+      <span
+        v-if="props.pendingCorrections > 0"
+        data-agent-correction-badge
+        :aria-label="`${props.pendingCorrections} correcciones pendientes`"
+      >{{ props.pendingCorrections }}</span>
     </header>
 
     <div
+      ref="contentRegion"
       :id="contentId"
       class="agent-panel__content"
       :data-expanded="props.expanded ? 'true' : 'false'"
@@ -196,6 +212,22 @@ watch(() => props.expanded, async (next, previous) => {
   position: absolute;
   top: .25rem;
   right: .25rem;
+  display: grid;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 .2rem;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  background: #b42318;
+  font-size: .68rem;
+  font-weight: 800;
+}
+
+[data-agent-correction-badge] {
+  position: absolute;
+  top: .25rem;
+  right: 2rem;
   display: grid;
   min-width: 1.2rem;
   height: 1.2rem;

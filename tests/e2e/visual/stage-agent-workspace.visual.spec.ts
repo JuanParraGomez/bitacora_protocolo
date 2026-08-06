@@ -23,10 +23,11 @@ const scenarioTaskIds: Record<VisualScenarioId, string> = {
 };
 
 function taskForScenario(id: VisualScenarioId): Task {
-  const source = id === 'IMG-UX-06' ? stageAgentWorkspaceTasks.phase4 : id === 'IMG-UX-01' || id === 'IMG-UX-04'
+  const source = id === 'IMG-UX-06' ? stageAgentWorkspaceTasks.phase4 : id === 'IMG-UX-01' || id === 'IMG-UX-04' || id === 'IMG-UX-05'
     ? stageAgentWorkspaceTasks.phase1
     : stageAgentWorkspaceTasks.phase2;
   const task = repairTask(structuredClone(source));
+  if (id === 'IMG-UX-05') task.id = scenarioTaskIds[id];
   if (id === 'IMG-UX-02' || id === 'IMG-UX-03') {
     const revision = buildPhaseRevision(task, task.fase);
     task.assistant.messages = [{
@@ -66,11 +67,14 @@ function taskForScenario(id: VisualScenarioId): Task {
       gateVersion: 'legacy-v1',
       methodVersionId: null,
       evaluatorVersion: 'mock-v1',
-      status: 'error',
+      status: 'needs-work',
       weaknesses: ['El alcance no coincide con la evidencia.', 'El criterio de éxito no es verificable.'],
       recommendations: ['Ajusta el alcance.', 'Define un criterio verificable.'],
       gatePassed: false,
-      gateReasons: ['alcance', 'criterioExito'],
+      gateReasons: [
+        'Define una hipótesis verificable para poder evaluar el análisis',
+        'Define criterio(s) de éxito para cerrar la fase.',
+      ],
       createdAt: 1_725_000_002_000,
     }];
   }
@@ -376,6 +380,14 @@ async function assertShellContract(page: Page, viewportName: string, scenarioId:
   }
 
   await expect(page.locator('[data-primary-action="true"]')).toHaveCount(1);
+  if (scenarioId === 'IMG-UX-05') {
+    await expect(page.getByRole('heading', { name: '2 correcciones pendientes' })).toBeVisible();
+    await expect(page.locator('[data-testid="stage-inline-issue"]').filter({ hasText: 'Define una hipótesis verificable para poder evaluar el análisis' })).toHaveCount(1);
+    await expect(page.locator('[data-testid="stage-inline-issue"]').filter({ hasText: 'Define criterio(s) de éxito para cerrar la fase.' })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Ver recomendaciones del agente' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Reevaluar etapa' })).toHaveCount(1);
+    await expect(page.locator('[data-agent-correction-badge]')).toHaveCount(1);
+  }
   console.log(`[shell-contract] ${scenarioId}/${viewportName} verified`);
 }
 

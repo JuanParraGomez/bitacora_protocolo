@@ -2,14 +2,17 @@
 import type { Task } from '../domain/task.schema';
 import { computed, reactive, toRaw, watch } from 'vue';
 import StageTextField from './StageTextField.vue';
+import type { EvaluationDisplayIssue } from './workspace-presentation';
 
 const props = withDefaults(defineProps<{
   task: Task;
   saveTask?: () => Promise<boolean>;
   fieldIssueIds?: Record<string, string>;
+  fieldIssues?: Record<string, EvaluationDisplayIssue[]>;
 }>(), {
   saveTask: undefined,
   fieldIssueIds: () => ({}),
+  fieldIssues: () => ({}),
 });
 const task = reactive(toRaw(props.task));
 const emit = defineEmits<{ save: []; dirty: [] }>();
@@ -50,6 +53,9 @@ function addCriterion() {
 function describedBy(field: string): string | undefined {
   return props.fieldIssueIds[field] || undefined;
 }
+function issuesFor(field: string): EvaluationDisplayIssue[] {
+  return props.fieldIssues[field] || [];
+}
 
 watch(() => task.f2, () => {
   emit('dirty');
@@ -63,14 +69,14 @@ watch(() => task.f2, () => {
         <p>Propósito: convertir el análisis en una guía accionable.</p>
         <p>Beneficios: hace explícitos los criterios y permite priorizar el trabajo.</p>
         <p>Utilidad: conecta la formulación vigente con la ejecución y la revisión.</p>
-        <StageTextField id="phase-two-decision" v-model="task.f2.decision" label="Decisión" icon="decision" as="input" :described-by="describedBy('f2.decision')" />
-        <StageTextField id="phase-two-scope" v-model="task.f2.alcance" label="Alcance" icon="scope" :described-by="describedBy('f2.alcance')" />
-        <StageTextField id="phase-two-non-goals" v-model="task.f2.noObjetivos" label="No-objetivos" icon="constraints" :described-by="describedBy('f2.alcance')" />
-        <StageTextField id="phase-two-steps" v-model="task.f2.pasos" label="Pasos" icon="steps" :described-by="describedBy('f2.pasos')" />
+        <StageTextField id="phase-two-decision" v-model="task.f2.decision" label="Decisión" icon="decision" as="input" :described-by="describedBy('f2.decision')" :issues="issuesFor('f2.decision')" />
+        <StageTextField id="phase-two-scope" v-model="task.f2.alcance" label="Alcance" icon="scope" :described-by="describedBy('f2.alcance')" :issues="issuesFor('f2.alcance')" />
+        <StageTextField id="phase-two-non-goals" v-model="task.f2.noObjetivos" label="No-objetivos" icon="constraints" :described-by="describedBy('f2.alcance')" :issues="issuesFor('f2.alcance')" />
+        <StageTextField id="phase-two-steps" v-model="task.f2.pasos" label="Pasos" icon="steps" :described-by="describedBy('f2.pasos')" :issues="issuesFor('f2.pasos')" />
         <StageTextField id="phase-two-dependencies" v-model="task.f2.guia" label="Dependencias y orden entre pasos" icon="dependencies" :rows="2" />
-        <StageTextField id="phase-two-subproblems" v-model="subproblemRows" label="Subproblemas" icon="subproblems" :rows="3" :described-by="describedBy('f2.subproblemas')" />
-        <StageTextField id="phase-two-open-questions" v-model="openQuestionRows" label="Preguntas abiertas" icon="questions" :rows="3" :described-by="describedBy('f2.preguntasAbiertas')" />
-        <StageTextField id="phase-two-risks" v-model="riskRows" label="Riesgos detectados" icon="risks" :rows="3" :described-by="describedBy('f2.riesgos')" />
+        <StageTextField id="phase-two-subproblems" v-model="subproblemRows" label="Subproblemas" icon="subproblems" :rows="3" :described-by="describedBy('f2.subproblemas')" :issues="issuesFor('f2.subproblemas')" />
+        <StageTextField id="phase-two-open-questions" v-model="openQuestionRows" label="Preguntas abiertas" icon="questions" :rows="3" :described-by="describedBy('f2.preguntasAbiertas')" :issues="issuesFor('f2.preguntasAbiertas')" />
+        <StageTextField id="phase-two-risks" v-model="riskRows" label="Riesgos detectados" icon="risks" :rows="3" :described-by="describedBy('f2.riesgos')" :issues="issuesFor('f2.riesgos')" />
         <fieldset id="phase-two-predictions" :aria-describedby="describedBy('f2.predicciones')"><legend>Predicciones</legend>
           <div v-for="(prediction, index) in task.f2.predicciones" :key="index">
             <StageTextField :id="`prediction-text-${index}`" v-model="prediction.texto" :label="`Predicción ${index + 1}`" icon="prediction" as="input" />

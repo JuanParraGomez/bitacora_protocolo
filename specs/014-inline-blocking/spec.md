@@ -32,7 +32,8 @@ bloque visual de su campo, conforme a IMG-UX-05.
 2. **AC-002 / IMG-UX-05** — **Given** que una corrección identifica `Análisis` como causa, **When** se presenta el formulario, **Then** el mensaje aparece dentro del bloque de `Análisis`, visual y semánticamente asociado a su control.
 3. **AC-003 / IMG-UX-05** — **Given** que otra corrección identifica `Criterio de éxito`, **When** se presenta el formulario, **Then** el mensaje aparece dentro del bloque de `Criterio de éxito` y no en un contenedor genérico separado.
 4. **AC-004 / IMG-UX-05** — **Given** varias correcciones para un mismo campo, **When** se presenta ese campo, **Then** se muestran todos sus mensajes no duplicados dentro del mismo bloque y el conteo superior refleja las correcciones únicas.
-5. **AC-004A / IMG-UX-05** — **Given** el motivo canónico `Define una hipótesis verificable para poder evaluar el análisis`, **When** se proyecta la evaluación, **Then** se mapea exactamente al campo `Análisis`; y el motivo canónico de criterio verificable se mapea exactamente a `Criterio de éxito`.
+5. **AC-004A / IMG-UX-05** — **Given** el motivo canónico `Define una hipótesis verificable para poder evaluar el análisis`, **When** se proyecta la evaluación, **Then** se mapea exactamente al campo `Análisis`; y `Define criterio(s) de éxito para cerrar la fase.` se mapea exactamente a `Criterio de éxito`.
+6. **AC-004B / IMG-UX-05** — **Given** cualquier otro motivo canónico que ya tenga una asociación exacta en el catálogo presentacional existente de la fase visible, **When** se proyecta la evaluación, **Then** su mensaje aparece dentro del bloque de ese campo existente sin añadir campos, controles, motivos o reglas de captura; un motivo sin asociación permanece solo en el banner.
 
 ---
 
@@ -104,7 +105,7 @@ correcciones a partir de resultados no vigentes.
 
 **Acceptance Scenarios**:
 
-1. **AC-014 / IMG-UX-05** — **Given** una evaluación desfasada, **When** se presenta la etapa, **Then** el estado se identifica como obsoleto, la única primaria permite reevaluar y no aparecen correcciones inline atribuidas como vigentes.
+1. **AC-014 / IMG-UX-05** — **Given** una evaluación desfasada que no proviene de un resultado previo `needs-work`, **When** se presenta la etapa, **Then** el estado se identifica como obsoleto, la única primaria permite reevaluar y no aparecen correcciones inline atribuidas como vigentes; si el resultado `needs-work` de la misma tarea/fase se volvió desfasado únicamente por la edición local posterior, sus correcciones ya visibles permanecen como pendientes de confirmación hasta reevaluar.
 2. **AC-015 / IMG-UX-05** — **Given** un fallo de transporte o evaluación sin correcciones vigentes utilizables, **When** se presenta la etapa, **Then** se conserva el mensaje de error y recuperación correspondiente, sin badge de correcciones ni asociación falsa a campos.
 3. **AC-016 / IMG-UX-05** — **Given** correcciones previamente vigentes y visibles, **When** la reevaluación posterior falla por transporte, **Then** el chip cambia a `Evaluación con error`, la única primaria sigue siendo `Reevaluar etapa` y las correcciones anteriores permanecen visibles como pendientes de confirmación hasta obtener un resultado vigente y aceptable.
 
@@ -145,11 +146,11 @@ correcciones a partir de resultados no vigentes.
 - **FR-010 / IMG-UX-05**: Activar `Ver recomendaciones del agente` MUST abrir el agente si está contraído y trasladar el foco a su conversación; si ya está abierto, MUST conservar su estado y enfocar la misma región.
 - **FR-011 / IMG-UX-05**: El agente MUST mostrar el número de correcciones pendientes tanto en el rail contraído como en el encabezado expandido.
 - **FR-012 / IMG-UX-05**: El conjunto y conteo de correcciones MUST derivarse únicamente de los `gateReasons` no vacíos de la evaluación vigente que requiere ajustes y que aplica a la tarea, fase y revisión visibles; debilidades y recomendaciones siguen siendo contexto del agente y MUST NOT incrementar este conteo.
-- **FR-012A / IMG-UX-05**: La asociación inline MUST usar un catálogo presentacional de coincidencia exacta entre motivo canónico y clave de campo existente; MUST incluir `Análisis` y `Criterio de éxito`, y MUST NOT inferir campos mediante coincidencia parcial o interpretación de texto libre.
+- **FR-012A / IMG-UX-05**: La asociación inline MUST usar un catálogo presentacional de coincidencia exacta entre motivo canónico y clave de campo existente; MUST mapear literalmente `Define una hipótesis verificable para poder evaluar el análisis` a `Análisis` y `Define criterio(s) de éxito para cerrar la fase.` a `Criterio de éxito`, y MUST NOT inferir campos mediante coincidencia parcial o interpretación de texto libre.
 - **FR-013 / IMG-UX-05**: Editar un campo MUST NOT retirar su corrección antes de una reevaluación vigente y aceptable.
 - **FR-014 / IMG-UX-05**: Una reevaluación vigente y aceptable MUST retirar banner, mensajes inline y badges de correcciones sin requerir recarga.
 - **FR-015 / IMG-UX-05**: Tras la limpieza, la única acción primaria MUST volver a `Evaluar etapa` cuando corresponda evaluar, o al avance que el gate existente ya permita.
-- **FR-016 / IMG-UX-05**: Una evaluación desfasada o un fallo inicial sin correcciones previas vigentes MUST conservar una presentación distinguible del estado con correcciones y MUST NOT crear correcciones inline o badges a partir de motivos no vigentes.
+- **FR-016 / IMG-UX-05**: Una evaluación desfasada que no proviene de un resultado `needs-work`, o un fallo inicial sin correcciones previas, MUST conservar una presentación distinguible y MUST NOT crear correcciones inline o badges. Si un resultado `needs-work` aplicable se vuelve desfasado únicamente porque la persona editó la misma tarea/fase, sus correcciones existentes MUST permanecer visibles como pendientes de confirmación hasta una reevaluación vigente.
 - **FR-016A / IMG-UX-05**: Si falla por transporte la reevaluación de una etapa que ya tenía correcciones visibles, el estado MUST mostrar `Evaluación con error`, conservar esas correcciones como pendientes de confirmación y mantener `Reevaluar etapa` como única primaria hasta una reevaluación vigente y aceptable.
 - **FR-017 / IMG-UX-05**: Los estados de corrección MUST conservar legibilidad, contraste, navegación por teclado y asociación accesible en los cuatro viewports contractuales.
 - **FR-018 / IMG-UX-05**: Banner, campos, agente y acción primaria MUST permanecer contenidos en sus regiones, sin overlays, superposiciones ni overflow horizontal.
@@ -216,7 +217,7 @@ correcciones a partir de resultados no vigentes.
 - **SC-005 / IMG-UX-05**: Tras una reevaluación vigente y aceptable, el 100 % de los indicadores de corrección desaparece sin recargar y la acción primaria coincide con el gate existente.
 - **SC-006 / IMG-UX-05**: Los cuatro viewports contractuales presentan cero superposiciones y cero overflow horizontal entre banner, campos, agente y acción primaria.
 - **SC-007 / IMG-UX-05**: Los cuatro viewports registran cero violaciones aplicables de axe-core; cada control con error referencia programáticamente su mensaje inline y, tras activar el enlace de recomendaciones, el foco observable queda dentro de la conversación del agente.
-- **SC-008 / IMG-UX-05**: Las evaluaciones desfasadas, fallidas y tardías conservan el 100 % de sus límites: ninguna genera correcciones inline, conteos o cambios de la etapa visible a partir de datos no vigentes.
+- **SC-008 / IMG-UX-05**: Las evaluaciones desfasadas, fallidas y tardías conservan el 100 % de sus límites: ninguna inventa correcciones inline, conteos o cambios de la etapa visible a partir de datos no aplicables; únicamente un `needs-work` previo de la misma tarea/fase puede conservar sus correcciones ya pendientes durante edición stale o fallo de reevaluación.
 
 ## Assumptions
 
@@ -230,8 +231,10 @@ correcciones a partir de resultados no vigentes.
   al campo de criterio de éxito existentes.
 - Las correcciones permanecen visibles después de editar hasta que una nueva
   evaluación vigente y aceptable confirme la recuperación.
-- Las evaluaciones desfasadas y los fallos sin resultado vigente utilizable son
-  estados de reevaluación, no listas de correcciones actuales.
+- Las evaluaciones desfasadas que no provienen de `needs-work` y los fallos sin
+  resultado previo utilizable son estados de reevaluación, no listas de
+  correcciones actuales. Un `needs-work` de la misma tarea/fase que se vuelve
+  stale por edición conserva sus correcciones como pendientes de confirmación.
 - Si una reevaluación falla después de que ya existían correcciones vigentes,
   estas se conservan como pendientes de confirmación; el fallo no las valida ni
   las descarta.

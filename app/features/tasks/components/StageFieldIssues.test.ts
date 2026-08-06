@@ -27,10 +27,45 @@ describe('StageFieldIssues', () => {
       'Añade al menos una pregunta abierta pendiente.',
       'Reescribe el alcance.',
     ]);
-    expect(issueItems[0]!.attributes('id')).toBe('stage-issue-f2-decision');
+    expect(issueItems[0]!.attributes('id')).toBe('stage-issue-f2-decision-1');
     expect(issueItems[0]!.attributes('data-control-id')).toBe('phase-two-decision');
     expect(wrapper.get('[data-testid="stage-field-issues-summary"]').attributes('aria-describedby')).toBe(
-      'stage-issue-f2-decision stage-issue-f2-preguntasAbiertas stage-issue-general-3',
+      'stage-issue-f2-decision-1 stage-issue-f2-preguntasAbiertas-2 stage-issue-general-3',
     );
+  });
+
+  it('uses unique ids when one field has multiple distinct corrections', () => {
+    const wrapper = mount(StageFieldIssues, {
+      props: {
+        issues: [
+          { field: 'f1.analisisProblema.analisis', message: 'Define una hipótesis verificable.' },
+          { field: 'f1.analisisProblema.analisis', message: 'Conecta el análisis con la evidencia.' },
+        ],
+      },
+    });
+
+    const ids = wrapper.findAll('[data-testid="stage-field-issue"]').map((issue) => issue.attributes('id'));
+    expect(ids).toEqual([
+      'stage-issue-f1-analisisProblema-analisis-1',
+      'stage-issue-f1-analisisProblema-analisis-2',
+    ]);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(wrapper.get('[data-testid="stage-field-issues-summary"]').attributes('aria-describedby')).toBe(ids.join(' '));
+  });
+
+  it('announces the pending correction count and emits the agent recommendation request', async () => {
+    const wrapper = mount(StageFieldIssues, {
+      props: {
+        issues: [
+          { field: 'f1.analisisProblema.analisis', message: 'Define una hipótesis verificable para poder evaluar el análisis' },
+          { field: 'f1.criterioExito', message: 'Define criterio(s) de éxito para cerrar la fase.' },
+        ],
+      },
+    });
+
+    expect(wrapper.get('[data-testid="stage-field-issues-summary"]').text()).toContain('2 correcciones pendientes');
+    expect(wrapper.get('[data-testid="stage-field-issues-agent-link"]').text()).toBe('Ver recomendaciones del agente');
+    await wrapper.get('[data-testid="stage-field-issues-agent-link"]').trigger('click');
+    expect(wrapper.emitted('requestAgentRecommendations')).toHaveLength(1);
   });
 });

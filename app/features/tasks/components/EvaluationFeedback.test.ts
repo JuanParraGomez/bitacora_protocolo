@@ -13,7 +13,7 @@ function mountFeedback(display: EvaluationDisplay) {
 }
 
 describe('EvaluationFeedback', () => {
-  it('presents blocked causes without owning a competing recovery button', () => {
+  it('presents the blocked status without duplicating the correction banner', () => {
     const wrapper = mountFeedback({
       status: 'blocked',
       announcement: 'La evaluación requiere ajustes antes de continuar.',
@@ -25,7 +25,7 @@ describe('EvaluationFeedback', () => {
     });
 
     expect(wrapper.text()).toContain('La evaluación requiere ajustes antes de continuar.');
-    expect(wrapper.text()).toContain('Escribe la decisión o resultado que habilita la tarea.');
+    expect(wrapper.find('.evaluation-feedback__issue-list').exists()).toBe(false);
     expect(wrapper.find('button').exists()).toBe(false);
     expect(wrapper.attributes('aria-live')).toBe('polite');
   });

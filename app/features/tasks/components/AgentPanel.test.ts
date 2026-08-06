@@ -14,6 +14,7 @@ const baseProps = {
   restoreMessageId: null,
   expanded: true,
   pendingProposals: 0,
+  pendingCorrections: 0,
 };
 
 describe('AgentPanel', () => {
@@ -93,5 +94,29 @@ describe('AgentPanel', () => {
     expect(wrapper.text()).not.toContain('Panel estructural');
     expect(wrapper.text()).not.toContain('El agente permanece disponible');
     expect(wrapper.find('[data-testid="task-chat-stub"]').isVisible()).toBe(false);
+  });
+
+  it('shows pending correction count in the collapsed rail and expanded header', async () => {
+    const wrapper = mount(AgentPanel, {
+      props: { ...baseProps, expanded: false, pendingCorrections: 10 },
+      global: { stubs: { TaskChat: { template: '<div>chat</div>' } } },
+    });
+
+    expect(wrapper.get('[data-agent-correction-badge]').text()).toBe('10');
+    expect(wrapper.get('[data-agent-correction-badge]').attributes('aria-label')).toBe('10 correcciones pendientes');
+
+    await wrapper.setProps({ expanded: true });
+    expect(wrapper.get('[data-agent-correction-badge]').text()).toBe('10');
+  });
+
+  it('exposes a focus method for recommendation links', async () => {
+    const wrapper = mount(AgentPanel, {
+      props: baseProps,
+      attachTo: document.body,
+      global: { stubs: { TaskChat: { template: '<div>chat</div>' } } },
+    });
+
+    await (wrapper.vm as unknown as { focusConversation: () => Promise<void> }).focusConversation();
+    expect(document.activeElement).toBe(wrapper.get('[data-agent-panel-content]').element);
   });
 });

@@ -10,7 +10,7 @@ import OrientationPhase from './OrientationPhase.vue';
 import ReviewPhase from './ReviewPhase.vue';
 import StageFieldIssues from './StageFieldIssues.vue';
 import { buildGuidedPhaseFormModel, resolveGuidedPhaseSaveCopy, type GuidedPhaseSaveState } from './guided-phase-form';
-import { resolveContextualPrimaryAction, resolveEvaluationDisplay, type ContextualPrimaryAction, type EvaluationDisplay } from './workspace-presentation';
+import { resolveContextualPrimaryAction, resolveEvaluationDisplay, resolveEvaluationRecovery, type ContextualPrimaryAction, type EvaluationDisplay, type EvaluationDisplayIssue } from './workspace-presentation';
 
 const props = withDefaults(defineProps<{
   task: Task;
@@ -41,7 +41,8 @@ const emit = defineEmits<{
 	  requestEvaluationRetry: [];
 	  requestBack: [];
 	  requestContinue: [];
-	  requestReturn: [];
+  requestReturn: [];
+	  requestAgentRecommendations: [];
 	}>();
 
 const phase = computed(() => props.task.fase);
@@ -72,11 +73,21 @@ const activeEvaluationDisplay = computed(() => props.evaluationDisplay ?? resolv
   transportError: props.evaluationError,
   gateResult: fallbackGateResult.value,
 }));
+const activeRecovery = computed(() => resolveEvaluationRecovery({
+  phase: props.task.fase as TaskPhase,
+  latestEvaluation: props.evaluation,
+  isEvaluating: props.isEvaluating,
+  isStaleEvaluation: props.isStaleEvaluation,
+  transportError: props.evaluationError,
+  gateResult: fallbackGateResult.value,
+}));
+const correctionIssues = computed<EvaluationDisplayIssue[]>(() => activeRecovery.value.corrections);
 const fieldIdMap = {
   'f1.linaje': 'lineage-source',
   'f1.checkMapeo': 'mapping-confirmed',
   'f1.analisisProblema.decision': 'problem-decision',
   'f1.analisisProblema': 'problem-detected',
+  'f1.analisisProblema.analisis': 'problem-analysis',
   'f1.analisisProblema.justificacion': 'problem-justification',
   'f1.resultadoDeseado': 'desired-result',
   'f1.alcance': 'problem-scope',
@@ -100,10 +111,18 @@ const fieldIdMap = {
 } as const;
 const fieldIssueIds = computed(() => {
   const result: Record<string, string> = {};
-  activeEvaluationDisplay.value.issues.forEach((issue) => {
+  correctionIssues.value.forEach((issue, index) => {
     if (!issue.field) return;
-    const id = `stage-issue-${issue.field.replace(/\./g, '-').replace(/[^A-Za-z0-9_-]/g, '-')}`;
+    const id = `stage-issue-${issue.field.replace(/\./g, '-').replace(/[^A-Za-z0-9_-]/g, '-')}-${index + 1}`;
     result[issue.field] = result[issue.field] ? `${result[issue.field]} ${id}` : id;
+  });
+  return result;
+});
+const fieldIssues = computed(() => {
+  const result: Record<string, EvaluationDisplayIssue[]> = {};
+  correctionIssues.value.forEach((issue) => {
+    if (!issue.field) return;
+    result[issue.field] = [...(result[issue.field] || []), issue];
   });
   return result;
 });
@@ -203,8 +222,9 @@ watch(() => [props.task.id, props.task.fase], () => {
       :evaluations="props.evaluationHistory"
     />
     <StageFieldIssues
-      :issues="activeEvaluationDisplay.issues"
+      :issues="correctionIssues"
       :field-id-map="fieldIdMap"
+      @request-agent-recommendations="emit('requestAgentRecommendations')"
     />
 
     <OrientationPhase
@@ -212,6 +232,7 @@ watch(() => [props.task.id, props.task.fase], () => {
       :task="props.task"
       :save-task="props.saveTask"
       :field-issue-ids="fieldIssueIds"
+      :field-issues="fieldIssues"
       @save="onSavePayload"
       @dirty="onDirtyPayload"
     />
@@ -220,6 +241,7 @@ watch(() => [props.task.id, props.task.fase], () => {
       :task="props.task"
       :save-task="props.saveTask"
       :field-issue-ids="fieldIssueIds"
+      :field-issues="fieldIssues"
       @save="onSavePayload"
       @dirty="onDirtyPayload"
     />
@@ -228,6 +250,7 @@ watch(() => [props.task.id, props.task.fase], () => {
       :task="props.task"
       :save-task="props.saveTask"
       :field-issue-ids="fieldIssueIds"
+      :field-issues="fieldIssues"
       @save="onSavePayload"
       @dirty="onDirtyPayload"
     />
@@ -236,6 +259,7 @@ watch(() => [props.task.id, props.task.fase], () => {
       :task="props.task"
       :save-task="props.saveTask"
       :field-issue-ids="fieldIssueIds"
+      :field-issues="fieldIssues"
       @save="onSavePayload"
       @dirty="onDirtyPayload"
     />

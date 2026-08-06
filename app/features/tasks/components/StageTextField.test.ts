@@ -35,4 +35,24 @@ describe('StageTextField', () => {
     expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['changed']);
     expect(wrapper.get('[data-character-count="problem-detected"]').text()).toBe('7/500');
   });
+
+  it('renders all inline corrections inside the field and associates them with the control', () => {
+    const wrapper = mount(StageTextField, {
+      props: {
+        id: 'problem-analysis',
+        label: 'Análisis',
+        modelValue: '',
+        issues: [
+          { field: 'f1.analisisProblema.analisis', message: 'Define una hipótesis verificable para poder evaluar el análisis' },
+          { field: 'f1.analisisProblema.analisis', message: 'Añade una evidencia comprobable.' },
+        ],
+      },
+    });
+
+    const block = wrapper.get('[data-stage-text-field]');
+    expect(block.findAll('[data-testid="stage-inline-issue"]')).toHaveLength(2);
+    expect(block.get('textarea').attributes('aria-invalid')).toBe('true');
+    expect(block.get('textarea').attributes('aria-describedby')).toContain('stage-inline-issue-f1-analisisProblema-analisis-1');
+    expect(block.get('textarea').attributes('aria-describedby')).toContain('stage-inline-issue-f1-analisisProblema-analisis-2');
+  });
 });

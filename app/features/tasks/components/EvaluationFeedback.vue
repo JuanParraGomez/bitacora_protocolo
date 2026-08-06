@@ -68,12 +68,6 @@ const effectiveStatusClass = computed(() => {
     <p class="evaluation-feedback__message">{{ effectiveDisplay.announcement }}</p>
     <p v-if="effectiveDisplay.recovery" class="evaluation-feedback__recovery">Usa la acción principal para reintentar.</p>
 
-    <ul v-if="effectiveDisplay.issues.length" class="evaluation-feedback__issue-list">
-      <li v-for="issue in effectiveDisplay.issues" :key="`${issue.field ?? 'general'}-${issue.message}`">
-        {{ issue.message }}
-      </li>
-    </ul>
-
     <details v-if="hasEvaluationHistory" class="evaluation-feedback__history">
       <summary>Historial de evaluaciones ({{ sortedEvaluationHistory.length }})</summary>
       <ul>

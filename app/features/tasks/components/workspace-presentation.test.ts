@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { stageAgentWorkspaceRecords, stageAgentWorkspaceTasks } from '../../../../tests/fixtures/tasks/stage-agent-workspace';
+import { stageAgentEvaluationFixtures, stageAgentWorkspaceRecords, stageAgentWorkspaceTasks } from '../../../../tests/fixtures/tasks/stage-agent-workspace';
 import type { PhaseEvaluation } from '../domain/task-assistant.schema';
 import type { Task } from '../domain/task.schema';
 import {
   projectCompletionSummary,
   resolveContextualPrimaryAction,
   resolveEvaluationDisplay,
+  resolveEvaluationRecovery,
 } from './workspace-presentation';
 
 function cloneTask(task: Task): Task {
@@ -33,6 +34,140 @@ function makeEvaluation(overrides: Partial<PhaseEvaluation> = {}): PhaseEvaluati
 }
 
 describe('workspace presentation', () => {
+  describe('resolveEvaluationRecovery', () => {
+    it('keeps deterministic stale and failure fixture semantics explicit', () => {
+      expect(stageAgentEvaluationFixtures.needsWork.status).toBe('needs-work');
+      expect(stageAgentEvaluationFixtures.staleNeedsWork.isStale).toBe(true);
+      expect(stageAgentEvaluationFixtures.initialFailure.status).toBe('error');
+      expect(stageAgentEvaluationFixtures.retryTransportFailure.transportError).toBe('timeout');
+      expect(stageAgentEvaluationFixtures.lateResponse.taskId).not.toBe(stageAgentWorkspaceTasks.phase1.id);
+      expect(stageAgentEvaluationFixtures.completedTask.taskState).toBe('completada');
+    });
+    it('maps the two IMG-UX-05 canonical reasons exactly and excludes contextual text', () => {
+      const recovery = resolveEvaluationRecovery({
+        phase: 1,
+        latestEvaluation: makeEvaluation({
+          taskId: stageAgentWorkspaceTasks.phase1.id,
+          phase: 1,
+          status: 'needs-work',
+          gatePassed: false,
+          gateReasons: [
+            'Define una hipótesis verificable para poder evaluar el análisis',
+            'Define criterio(s) de éxito para cerrar la fase.',
+          ],
+          weaknesses: ['No sumar esta debilidad al conteo.'],
+          recommendations: ['No sumar esta recomendación al conteo.'],
+        }),
+        isEvaluating: false,
+        isStaleEvaluation: false,
+        transportError: null,
+        gateResult: { allowed: false, reasons: [] },
+      });
+
+      expect(recovery).toMatchObject({ pendingCount: 2, hasPendingCorrections: true });
+      expect(recovery.corrections).toEqual([
+        {
+          field: 'f1.analisisProblema.analisis',
+          message: 'Define una hipótesis verificable para poder evaluar el análisis',
+        },
+        {
+          field: 'f1.criterioExito',
+          message: 'Define criterio(s) de éxito para cerrar la fase.',
+        },
+      ]);
+    });
+
+    it('deduplicates same-field messages, keeps unknown reasons in the banner, and supports two digits', () => {
+      const reasons = [
+        'Define una hipótesis verificable para poder evaluar el análisis',
+        'Define una hipótesis verificable para poder evaluar el análisis',
+        'Motivo sin asociación exacta',
+        ...Array.from({ length: 9 }, (_, index) => `Motivo adicional ${index + 1}`),
+      ];
+      const recovery = resolveEvaluationRecovery({
+        phase: 1,
+        latestEvaluation: makeEvaluation({
+          taskId: stageAgentWorkspaceTasks.phase1.id,
+          phase: 1,
+          status: 'needs-work',
+          gatePassed: false,
+          gateReasons: reasons,
+          weaknesses: ['weakness'],
+          recommendations: ['recommendation'],
+        }),
+        isEvaluating: false,
+        isStaleEvaluation: false,
+        transportError: null,
+        gateResult: { allowed: false, reasons: [] },
+      });
+
+      expect(recovery.pendingCount).toBe(11);
+      expect(recovery.corrections.find((item) => item.message === 'Motivo sin asociación exacta')).toEqual({
+        field: null,
+        message: 'Motivo sin asociación exacta',
+      });
+    });
+
+    it('preserves needs-work corrections after local staleness and suppresses stale non-blocking results', () => {
+      const blocked = makeEvaluation({
+        taskId: stageAgentWorkspaceTasks.phase1.id,
+        phase: 1,
+        status: 'needs-work',
+        gatePassed: false,
+        gateReasons: ['Define criterio(s) de éxito para cerrar la fase.'],
+        weaknesses: ['weakness'],
+        recommendations: ['recommendation'],
+      });
+      const pending = resolveEvaluationRecovery({
+        phase: 1,
+        latestEvaluation: blocked,
+        isEvaluating: false,
+        isStaleEvaluation: true,
+        transportError: null,
+        gateResult: { allowed: false, reasons: [] },
+      });
+      expect(pending.pendingCount).toBe(1);
+
+      const staleAcceptable = resolveEvaluationRecovery({
+        phase: 1,
+        latestEvaluation: makeEvaluation({ taskId: stageAgentWorkspaceTasks.phase1.id, phase: 1 }),
+        isEvaluating: false,
+        isStaleEvaluation: true,
+        transportError: null,
+        gateResult: { allowed: true, reasons: [] },
+      });
+      expect(staleAcceptable.pendingCount).toBe(0);
+    });
+
+    it('keeps prior corrections on transport failure and clears them on acceptable recovery', () => {
+      const blocked = makeEvaluation({
+        taskId: stageAgentWorkspaceTasks.phase1.id,
+        phase: 1,
+        status: 'needs-work',
+        gatePassed: false,
+        gateReasons: ['Define una hipótesis verificable para poder evaluar el análisis'],
+        weaknesses: ['weakness'],
+        recommendations: ['recommendation'],
+      });
+      expect(resolveEvaluationRecovery({
+        phase: 1,
+        latestEvaluation: blocked,
+        isEvaluating: false,
+        isStaleEvaluation: false,
+        transportError: 'No fue posible contactar el evaluador.',
+        gateResult: { allowed: false, reasons: [] },
+      }).pendingCount).toBe(1);
+      expect(resolveEvaluationRecovery({
+        phase: 1,
+        latestEvaluation: makeEvaluation({ taskId: stageAgentWorkspaceTasks.phase1.id, phase: 1 }),
+        isEvaluating: false,
+        isStaleEvaluation: false,
+        transportError: null,
+        gateResult: { allowed: true, reasons: [] },
+      }).pendingCount).toBe(0);
+    });
+  });
+
   describe('resolveContextualPrimaryAction', () => {
     it.each([
       {

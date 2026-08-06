@@ -1,9 +1,9 @@
 <!-- SPECKIT START -->
-For the current agent rail/chat composition, task-local state, verification
-commands, and IMG-UX-01/02/03 contract, read
-`specs/013-agent-rail-chat/plan.md`. Preserve the approved/versioned spec 010
-visual infrastructure, spec 011 shell, and spec 012 canvas boundary recorded
-there. For migration checkpoints and deferred service-extraction criteria, retain
+For the current inline-blocking presentation, recovery states, verification
+commands, and IMG-UX-05 contract, read
+`specs/014-inline-blocking/plan.md`. Preserve the approved/versioned spec 010
+visual infrastructure, spec 011 shell, spec 012 canvas composition, and spec 013
+agent structure recorded there. For migration checkpoints and deferred service-extraction criteria, retain
 `specs/001-evolution-ready-foundation/plan.md` as the architectural baseline.
 
 ## Mandatory Test-First Workflow

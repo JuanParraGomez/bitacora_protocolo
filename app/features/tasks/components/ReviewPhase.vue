@@ -4,14 +4,17 @@ import { currentMethodVersion, deriveCriterionImprovements, deriveMethodMaturity
 import type { Task } from '../domain/task.schema';
 import { reactive, toRaw, watch } from 'vue';
 import StageTextField from './StageTextField.vue';
+import type { EvaluationDisplayIssue } from './workspace-presentation';
 
 const props = withDefaults(defineProps<{
   task: Task;
   saveTask?: () => Promise<boolean>;
   fieldIssueIds?: Record<string, string>;
+  fieldIssues?: Record<string, EvaluationDisplayIssue[]>;
 }>(), {
   saveTask: undefined,
   fieldIssueIds: () => ({}),
+  fieldIssues: () => ({}),
 });
 const task = reactive(toRaw(props.task));
 const emit = defineEmits<{ save: []; dirty: [] }>();
@@ -23,6 +26,9 @@ const activeOpportunities = computed(() => {
 });
 function describedBy(field: string): string | undefined {
   return props.fieldIssueIds[field] || undefined;
+}
+function issuesFor(field: string): EvaluationDisplayIssue[] {
+  return props.fieldIssues[field] || [];
 }
 function automationEvidenceLabel(opportunity: Task['automationOpportunities'][number]) {
   return opportunity.occurrenceIterationIds.length >= 2
@@ -71,14 +77,14 @@ watch(() => task.f4, () => emit('dirty'), { deep: true });
     <div class="phase-workspace__content">
       <div class="phase-workspace__form">
         <div v-for="(review, index) in task.f4.aar" :key="index">
-          <StageTextField :id="`phase-four-observed-${index}`" v-model="review.observado" :label="`Observado ${index + 1}`" icon="observed" as="input" :described-by="index === 0 ? describedBy('f4.aar') : undefined" />
-          <StageTextField :id="`phase-four-cause-${index}`" v-model="review.causa" :label="`Causa ${index + 1}`" icon="cause" as="input" :described-by="index === 0 ? describedBy('f4.aar') : undefined" />
+          <StageTextField :id="`phase-four-observed-${index}`" v-model="review.observado" :label="`Observado ${index + 1}`" icon="observed" as="input" :described-by="index === 0 ? describedBy('f4.aar') : undefined" :issues="index === 0 ? issuesFor('f4.aar') : []" />
+          <StageTextField :id="`phase-four-cause-${index}`" v-model="review.causa" :label="`Causa ${index + 1}`" icon="cause" as="input" :described-by="index === 0 ? describedBy('f4.aar') : undefined" :issues="index === 0 ? issuesFor('f4.aar') : []" />
         <label><input v-model="review.mia" type="checkbox" /> Fue una suposición propia</label>
       </div>
-      <StageTextField id="phase-four-title-input" v-model="task.f4.titulo" label="Título de consolidación" icon="title" as="input" :described-by="describedBy('f4.titulo')" />
-      <StageTextField id="phase-four-change" v-model="task.f4.cambio" label="Cambio procedimental" icon="change" :described-by="describedBy('f4.cambio')" />
+      <StageTextField id="phase-four-title-input" v-model="task.f4.titulo" label="Título de consolidación" icon="title" as="input" :described-by="describedBy('f4.titulo')" :issues="issuesFor('f4.titulo')" />
+      <StageTextField id="phase-four-change" v-model="task.f4.cambio" label="Cambio procedimental" icon="change" :described-by="describedBy('f4.cambio')" :issues="issuesFor('f4.cambio')" />
       <StageTextField id="phase-four-pattern" v-model="task.f4.patron" label="Patrón operativo" icon="pattern" />
-      <StageTextField id="phase-four-connections" v-model="task.f4.conexiones" label="Conexiones y límites" icon="connections" :described-by="describedBy('f4.conexiones')" />
+      <StageTextField id="phase-four-connections" v-model="task.f4.conexiones" label="Conexiones y límites" icon="connections" :described-by="describedBy('f4.conexiones')" :issues="issuesFor('f4.conexiones')" />
 
       <section class="phase-workspace__method-summary">
         <h4>Método consolidado y madurez</h4>

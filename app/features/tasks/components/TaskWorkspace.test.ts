@@ -32,10 +32,13 @@ function mountWorkspace() {
         DashboardSidebar: { template: '<div />' },
         WorkspaceHeader: { template: '<button type="button">nav</button>' },
         StructuredStageSummary: { template: '<div data-testid="structured-summary" />' },
-        GuidedPhaseForm: { template: '<div data-testid="guided-form" />' },
+        GuidedPhaseForm: { name: 'GuidedPhaseForm', emits: ['requestAgentRecommendations'], template: '<div data-testid="guided-form" />' },
         AgentPanel: {
-          props: ['draft', 'expanded'],
+          props: ['draft', 'expanded', 'pendingCorrections'],
           emits: ['updateDraft', 'send', 'toggle'],
+          setup() {
+            return { focusConversation: vi.fn() };
+          },
           template: `
             <div>
               <button type="button" data-testid="toggle" @click="$emit('toggle')">toggle</button>
@@ -315,6 +318,16 @@ describe('TaskWorkspace', () => {
     const draftEvents = wrapper.emitted('updateDraft') ?? [];
     expect(draftEvents[0]).toEqual([{ taskId: stageAgentWorkspaceTasks.phase3.id, draft: 'borrador persistente' }]);
     expect(wrapper.get('[data-testid="draft-value"]').text()).toContain('borrador persistente');
+  });
+
+  it('routes recommendation requests to the agent while preserving the task-scoped state', async () => {
+    const wrapper = mountWorkspace();
+    wrapper.findComponent({ name: 'GuidedPhaseForm' }).vm.$emit('requestAgentRecommendations');
+    await nextTick();
+
+    expect(wrapper.emitted('updateAgentPanelState')).toEqual([
+      [{ taskId: stageAgentWorkspaceTasks.phase3.id, state: 'expanded' }],
+    ]);
   });
 
   it('makes the guided form the active canvas content without the redundant meta panel', () => {

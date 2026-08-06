@@ -23,7 +23,7 @@ import WorkspacePaneTabs from './WorkspacePaneTabs.vue';
 import { WORKSPACE_SHELL_BREAKPOINTS } from './workspace-shell-presentation';
 import type { WorkspaceNotice } from '../composables/useWorkspaceNotices';
 import type { WorkspaceAgentPanelState, WorkspaceMobilePaneState, WorkspaceOverlayState } from '../composables/useWorkspaceState';
-import { resolveContextualPrimaryAction, resolveEvaluationDisplay } from './workspace-presentation';
+import { resolveContextualPrimaryAction, resolveEvaluationDisplay, resolveEvaluationRecovery } from './workspace-presentation';
 
 const props = withDefaults(defineProps<{
   task: Task;
@@ -113,6 +113,8 @@ const sidebarOpen = ref(false);
 const sidebarDrawerRef = ref<HTMLElement | null>(null);
 const sidebarCloseButtonRef = ref<HTMLButtonElement | null>(null);
 const workspaceHeaderRef = ref<InstanceType<typeof WorkspaceHeader> | null>(null);
+const desktopAgentPanelRef = ref<InstanceType<typeof AgentPanel> | null>(null);
+const mobileAgentPanelRef = ref<InstanceType<typeof AgentPanel> | null>(null);
 const fallbackAgentPanelState = ref<WorkspaceAgentPanelState>('collapsed');
 const fallbackMobilePane = ref<WorkspaceMobilePaneState>('stage');
 const settingsButtonRef = ref<HTMLElement | null>(null);
@@ -219,6 +221,14 @@ const contextualPrimaryAction = computed(() => resolveContextualPrimaryAction({
   transportError: evaluationError.value,
 }));
 const evaluationDisplay = computed(() => resolveEvaluationDisplay({
+  phase: localTask.fase as TaskPhase,
+  latestEvaluation: latestEvaluation.value,
+  isEvaluating: isEvaluating.value,
+  isStaleEvaluation: isEvaluationStale.value,
+  transportError: evaluationError.value,
+  gateResult: fieldGateResult.value,
+}));
+const evaluationRecovery = computed(() => resolveEvaluationRecovery({
   phase: localTask.fase as TaskPhase,
   latestEvaluation: latestEvaluation.value,
   isEvaluating: isEvaluating.value,
@@ -755,6 +765,18 @@ function toggleAgentPanel() {
   updateAgentPanelState(isAgentPanelExpanded.value ? 'collapsed' : 'expanded');
 }
 
+async function focusAgentRecommendations() {
+  if (isMobile.value) {
+    updateMobilePane('agent');
+    await nextTick();
+    await mobileAgentPanelRef.value?.focusConversation();
+    return;
+  }
+  if (!isAgentPanelExpanded.value) updateAgentPanelState('expanded');
+  await nextTick();
+  await desktopAgentPanelRef.value?.focusConversation();
+}
+
 function onChatSubmit(text: string) {
   void handleSendMessage(text);
 }
@@ -898,6 +920,7 @@ watch(() => [localTask.id, localTask.fase], () => {
                         :evaluation-history="evaluationHistory"
                         :primary-action="contextualPrimaryAction"
                         :evaluation-display="evaluationDisplay"
+                        @request-agent-recommendations="focusAgentRecommendations"
                         @dirty="onTaskDirty"
                         @save="onTaskSave"
                         @request-evaluate="onEvaluationRequest"
@@ -930,6 +953,8 @@ watch(() => [localTask.id, localTask.fase], () => {
                   :restore-message-id="props.lastVisibleMessageId"
                   :expanded="true"
                   :pending-proposals="phasePendingProposals.length"
+                  :pending-corrections="evaluationRecovery.pendingCount"
+                  ref="mobileAgentPanelRef"
                   @toggle="toggleAgentPanel"
                   @send="onChatSubmit"
                   @retry="onChatRetry"
@@ -965,7 +990,8 @@ watch(() => [localTask.id, localTask.fase], () => {
                     :evaluation-error="evaluationError"
                     :evaluation-history="evaluationHistory"
                     :primary-action="contextualPrimaryAction"
-                    :evaluation-display="evaluationDisplay"
+                        :evaluation-display="evaluationDisplay"
+                        @request-agent-recommendations="focusAgentRecommendations"
                     @dirty="onTaskDirty"
                     @save="onTaskSave"
                     @request-evaluate="onEvaluationRequest"
@@ -997,6 +1023,8 @@ watch(() => [localTask.id, localTask.fase], () => {
               :restore-message-id="props.lastVisibleMessageId"
               :expanded="isAgentPanelExpanded"
               :pending-proposals="phasePendingProposals.length"
+              :pending-corrections="evaluationRecovery.pendingCount"
+              ref="desktopAgentPanelRef"
               @toggle="toggleAgentPanel"
               @send="onChatSubmit"
               @retry="onChatRetry"

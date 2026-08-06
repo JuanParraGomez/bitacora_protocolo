@@ -7,6 +7,8 @@ import {
 import GuidedPhaseForm from './GuidedPhaseForm.vue';
 import { stageAgentWorkspaceTasks } from '../../../../tests/fixtures/tasks/stage-agent-workspace';
 import type { ContextualPrimaryAction, EvaluationDisplay } from './workspace-presentation';
+import type { PhaseEvaluation } from '../domain/task-assistant.schema';
+import type { Task } from '../domain/task.schema';
 
 const blockedDisplay: EvaluationDisplay = {
   status: 'blocked',
@@ -21,13 +23,20 @@ const blockedDisplay: EvaluationDisplay = {
 function mountForm(
   primaryAction: ContextualPrimaryAction,
   display: EvaluationDisplay = blockedDisplay,
-  task = stageAgentWorkspaceTasks.phase2,
+  task: Task = stageAgentWorkspaceTasks.phase2,
+  extraProps: Partial<{
+    evaluation: PhaseEvaluation | null;
+    isStaleEvaluation: boolean;
+    evaluationError: string;
+    canContinue: boolean;
+  }> = {},
 ) {
   return mount(GuidedPhaseForm, {
     props: {
       task: structuredClone(task),
       primaryAction,
       evaluationDisplay: display,
+      ...extraProps,
     },
     global: {
       stubs: {
@@ -35,6 +44,29 @@ function mountForm(
       },
     },
   });
+}
+
+function makeNeedsWorkEvaluation(
+  task: Task,
+  gateReasons: string[],
+  overrides: Partial<PhaseEvaluation> = {},
+): PhaseEvaluation {
+  return {
+    id: 'guided-form-evaluation-001',
+    taskId: task.id,
+    phase: task.fase,
+    responseRevision: 'rev-stage-agent-current',
+    gateVersion: 'legacy-v1',
+    methodVersionId: null,
+    evaluatorVersion: 'mock-v1',
+    status: 'needs-work',
+    weaknesses: ['La evaluación requiere ajustes.'],
+    recommendations: ['Revisa las correcciones marcadas.'],
+    gatePassed: false,
+    gateReasons,
+    createdAt: 1_725_000_002_000,
+    ...overrides,
+  };
 }
 
 describe('guided-phase-form model', () => {
@@ -266,6 +298,7 @@ describe('guided-phase-form model', () => {
   });
 
   it('associates field-level blocking causes with the matching phase controls', () => {
+    const task = stageAgentWorkspaceTasks.phase2;
     const wrapper = mountForm({
       kind: 'reevaluate',
       label: 'Reevaluar etapa',
@@ -273,11 +306,74 @@ describe('guided-phase-form model', () => {
       nextPhase: null,
       reason: 'Escribe la decisión o resultado que habilita la tarea.',
       gateReasons: ['Escribe la decisión o resultado que habilita la tarea.'],
+    }, blockedDisplay, task, {
+      evaluation: makeNeedsWorkEvaluation(task, [
+        'Escribe la decisión o resultado que habilita la tarea.',
+        'Añade al menos una pregunta abierta pendiente.',
+      ]),
     });
 
     expect(wrapper.get('[data-testid="stage-field-issues-summary"]').text()).toContain('La evaluación requiere ajustes');
-    expect(wrapper.get('input#phase-two-decision').attributes('aria-describedby')).toContain('stage-issue-f2-decision');
-    expect(wrapper.get('textarea#phase-two-open-questions').attributes('aria-describedby')).toContain('stage-issue-f2-preguntasAbiertas');
+    expect(wrapper.get('input#phase-two-decision').attributes('aria-describedby')).toContain('stage-issue-f2-decision-1');
+    expect(wrapper.get('textarea#phase-two-open-questions').attributes('aria-describedby')).toContain('stage-issue-f2-preguntasAbiertas-2');
+  });
+
+  it('does not render recovery corrections from display-only gate issues', () => {
+    const wrapper = mountForm({
+      kind: 'reevaluate',
+      label: 'Reevaluar etapa',
+      disabled: false,
+      nextPhase: null,
+      reason: 'La fase requiere una evaluación vigente.',
+      gateReasons: ['La fase requiere una evaluación vigente.'],
+    }, blockedDisplay);
+
+    expect(wrapper.find('[data-testid="stage-field-issues-summary"]').exists()).toBe(false);
+    expect(wrapper.findAll('[data-testid="stage-inline-issue"]')).toHaveLength(0);
+    expect(wrapper.findAll('[aria-invalid="true"]')).toHaveLength(0);
+    expect(wrapper.get('[data-primary-action="true"]').text()).toBe('Reevaluar etapa');
+  });
+
+  it('keeps the two IMG-UX-05 corrections inside their causative phase-one blocks', () => {
+    const task = stageAgentWorkspaceTasks.phase1;
+    const wrapper = mountForm({
+      kind: 'reevaluate',
+      label: 'Reevaluar etapa',
+      disabled: false,
+      nextPhase: null,
+      reason: null,
+      gateReasons: [],
+    }, {
+      status: 'blocked',
+      announcement: 'La evaluación requiere ajustes antes de continuar.',
+      recovery: 'reevaluate',
+      issues: [
+        { field: 'f1.analisisProblema.analisis', message: 'Define una hipótesis verificable para poder evaluar el análisis' },
+        { field: 'f1.criterioExito', message: 'Define criterio(s) de éxito para cerrar la fase.' },
+      ],
+    }, task, {
+      evaluation: makeNeedsWorkEvaluation(task, [
+        'Define una hipótesis verificable para poder evaluar el análisis',
+        'Define criterio(s) de éxito para cerrar la fase.',
+      ]),
+    });
+
+    const analysisBlock = wrapper.findAll('[data-stage-text-field]').find((node) => node.find('#problem-analysis').exists());
+    const successBlock = wrapper.findAll('[data-stage-text-field]').find((node) => node.find('#success-criteria').exists());
+    expect(analysisBlock?.find('[data-testid="stage-inline-issue"]').text()).toContain('Define una hipótesis');
+    expect(successBlock?.find('[data-testid="stage-inline-issue"]').text()).toContain('Define criterio(s)');
+    expect(wrapper.findAll('[data-primary-action="true"]')).toHaveLength(1);
+  });
+
+  it('forwards the banner recommendation request to the workspace', async () => {
+    const task = stageAgentWorkspaceTasks.phase2;
+    const wrapper = mountForm({
+      kind: 'reevaluate', label: 'Reevaluar etapa', disabled: false, nextPhase: null, reason: null, gateReasons: [],
+    }, blockedDisplay, task, {
+      evaluation: makeNeedsWorkEvaluation(task, ['Escribe la decisión o resultado que habilita la tarea.']),
+    });
+    await wrapper.get('[data-testid="stage-field-issues-agent-link"]').trigger('click');
+    expect(wrapper.emitted('requestAgentRecommendations')).toHaveLength(1);
   });
 
   it('keeps the manual draft state in error when persistence fails', async () => {
@@ -321,6 +417,7 @@ describe('guided-phase-form model', () => {
       gateReasons: ['Completa el problema, la evidencia y el análisis.'],
     };
 
+    const phase1Task = stageAgentWorkspaceTasks.phase1;
     const phase1 = mountForm(primaryAction, {
       status: 'blocked',
       announcement: 'La evaluación requiere ajustes antes de continuar.',
@@ -330,39 +427,51 @@ describe('guided-phase-form model', () => {
         { field: 'f1.analisisProblema', message: 'Completa el problema, la evidencia y el análisis.' },
         { field: 'f1.analisisProblema.justificacion', message: 'Justifica la decisión y escribe la formulación vigente.' },
       ],
-    }, stageAgentWorkspaceTasks.phase1);
+    }, phase1Task, {
+      evaluation: makeNeedsWorkEvaluation(phase1Task, [
+        'Completa al menos una relación de linaje con dos campos.',
+        'Completa el problema, la evidencia y el análisis.',
+        'Justifica la decisión y escribe la formulación vigente.',
+      ]),
+    });
 
-    expect(phase1.get('input#lineage-source').attributes('aria-describedby')).toContain('stage-issue-f1-linaje');
-    expect(phase1.get('input#lineage-result').attributes('aria-describedby')).toContain('stage-issue-f1-linaje');
-    expect(phase1.get('textarea#problem-detected').attributes('aria-describedby')).toContain('stage-issue-f1-analisisProblema');
-    expect(phase1.get('textarea#problem-evidence').attributes('aria-describedby')).toContain('stage-issue-f1-analisisProblema');
-    expect(phase1.get('textarea#problem-analysis').attributes('aria-describedby')).toContain('stage-issue-f1-analisisProblema');
-    expect(phase1.get('textarea#problem-justification').attributes('aria-describedby')).toContain('stage-issue-f1-analisisProblema-justificacion');
-    expect(phase1.get('textarea#current-problem').attributes('aria-describedby')).toContain('stage-issue-f1-analisisProblema-justificacion');
+    expect(phase1.get('input#lineage-source').attributes('aria-describedby')).toContain('stage-issue-f1-linaje-1');
+    expect(phase1.get('input#lineage-result').attributes('aria-describedby')).toContain('stage-issue-f1-linaje-1');
+    expect(phase1.get('textarea#problem-detected').attributes('aria-describedby')).toContain('stage-issue-f1-analisisProblema-2');
+    expect(phase1.get('textarea#problem-evidence').attributes('aria-describedby')).toContain('stage-issue-f1-analisisProblema-2');
+    expect(phase1.get('textarea#problem-analysis').attributes('aria-describedby')).toContain('stage-issue-f1-analisisProblema-2');
+    expect(phase1.get('textarea#problem-justification').attributes('aria-describedby')).toContain('stage-issue-f1-analisisProblema-justificacion-3');
+    expect(phase1.get('textarea#current-problem').attributes('aria-describedby')).toContain('stage-issue-f1-analisisProblema-justificacion-3');
 
+    const phase3Task = stageAgentWorkspaceTasks.phase3;
     const phase3 = mountForm(primaryAction, {
       status: 'blocked',
       announcement: 'La evaluación requiere ajustes antes de continuar.',
       recovery: 'reevaluate',
       issues: [{ field: 'f3.iteraciones', message: 'Registra al menos una iteración completa de ejecución y su siguiente ajuste.' }],
-    }, stageAgentWorkspaceTasks.phase3);
+    }, phase3Task, {
+      evaluation: makeNeedsWorkEvaluation(phase3Task, ['Registra al menos una iteración completa de ejecución y su siguiente ajuste.']),
+    });
 
-    expect(phase3.get('input#iteration-attempt-0').attributes('aria-describedby')).toContain('stage-issue-f3-iteraciones');
-    expect(phase3.get('textarea#iteration-result-0').attributes('aria-describedby')).toContain('stage-issue-f3-iteraciones');
-    expect(phase3.get('textarea#iteration-adjustment-0').attributes('aria-describedby')).toContain('stage-issue-f3-iteraciones');
+    expect(phase3.get('input#iteration-attempt-0').attributes('aria-describedby')).toContain('stage-issue-f3-iteraciones-1');
+    expect(phase3.get('textarea#iteration-result-0').attributes('aria-describedby')).toContain('stage-issue-f3-iteraciones-1');
+    expect(phase3.get('textarea#iteration-adjustment-0').attributes('aria-describedby')).toContain('stage-issue-f3-iteraciones-1');
 
+    const phase4Task = {
+      ...stageAgentWorkspaceTasks.phase4,
+      estado: 'activa' as const,
+    };
     const phase4 = mountForm(primaryAction, {
       status: 'blocked',
       announcement: 'La evaluación requiere ajustes antes de continuar.',
       recovery: 'reevaluate',
       issues: [{ field: 'f4.aar', message: 'Completa observado y causa en cada predicción.' }],
-    }, {
-      ...stageAgentWorkspaceTasks.phase4,
-      estado: 'activa',
+    }, phase4Task, {
+      evaluation: makeNeedsWorkEvaluation(phase4Task, ['Completa observado y causa en cada predicción.']),
     });
 
-    expect(phase4.get('input#phase-four-observed-0').attributes('aria-describedby')).toContain('stage-issue-f4-aar');
-    expect(phase4.get('input#phase-four-cause-0').attributes('aria-describedby')).toContain('stage-issue-f4-aar');
+    expect(phase4.get('input#phase-four-observed-0').attributes('aria-describedby')).toContain('stage-issue-f4-aar-1');
+    expect(phase4.get('input#phase-four-cause-0').attributes('aria-describedby')).toContain('stage-issue-f4-aar-1');
   });
 
   it.each([

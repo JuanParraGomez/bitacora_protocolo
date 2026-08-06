@@ -188,7 +188,7 @@ versionar baselines.
 - [X] T057 Lanzar revisión independiente del patch completo 013; resolver P0/P1 con nuevo ciclo test rojo→cambio mínimo→verde y documentar P2/P3 en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: todas FR/SC)
 - [X] T058 Validar `specs/013-agent-rail-chat/quickstart.md` de principio a fin y ejecutar `git diff --check`; sincronizar `tasks.md`/`implementation-evidence.md` solo con tareas realmente verificadas (Refs: Validation Contract)
 - [X] T059 Inspeccionar staged diff y secretos/ruido, registrar el inventario final en `specs/013-agent-rail-chat/implementation-evidence.md` y stagear únicamente frontend/tests/docs/baselines 013 explícitamente aprobados, excluyendo cambios ajenos, caches, SQLite y resultados temporales (Refs: workflow Git; FR-019, FR-022)
-- [ ] T060 Crear commit descriptivo y hacer push solo a `origin/codex/013-agent-rail-chat`; reportar commit/upstream y no abrir/mergear a `main` sin autorización separada (Refs: workflow Git)
+- [X] T060 Crear commit descriptivo y hacer push solo a `origin/codex/013-agent-rail-chat`; reportar commit/upstream y no abrir/mergear a `main` sin autorización separada (Refs: workflow Git)
 
 ---
 

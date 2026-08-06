@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { buildPhaseRevision } from '../../app/features/tasks/domain/task-assistant-rules';
+import { repairTask } from '../../app/features/tasks/domain/task.schema';
 import { WORKSPACE_UX_VIEWPORTS } from './helpers/workspace-ux';
 import { stageAgentWorkspaceTasks, stageAgentWorkspaceRecords, stageAgentWorkspaceWorkspaceState } from '../fixtures/tasks/stage-agent-workspace';
 
@@ -91,6 +93,68 @@ async function seedWorkspace(page: import('@playwright/test').Page, task: TaskSe
   await seedIndex(page, tasks);
   await seedWorkspaceState(page);
   await seedSettings(page);
+}
+
+function taskWithProposalConversation(suffix = '') {
+  const task = repairTask(structuredClone(stageAgentWorkspaceTasks.phase2));
+  if (suffix) task.id = `${task.id}-${suffix}`;
+  const revision = buildPhaseRevision(task, task.fase);
+  task.assistant.messages = [{
+    id: 'e2e-proposal-message',
+    projectId: task.projectId,
+    taskId: task.id,
+    phase: task.fase,
+    methodVersionId: null,
+    baseRevision: revision,
+    role: 'assistant',
+    parts: [{ type: 'text', text: 'Revisa estas propuestas antes de continuar.' }],
+    status: 'sent',
+    createdAt: 1_725_000_100_000,
+    primaryQuestion: null,
+    contradictions: [],
+    updates: [
+      {
+        id: 'e2e-proposal-accept', sourceMessageId: 'e2e-proposal-message', projectId: task.projectId,
+        taskId: task.id, phase: task.fase, methodVersionId: null, baseRevision: revision,
+        status: 'proposed', field: 'f2.pasos', previousValue: task.f2.pasos, value: 'Pasos aceptados desde el chat',
+      },
+      {
+        id: 'e2e-proposal-edit', sourceMessageId: 'e2e-proposal-message', projectId: task.projectId,
+        taskId: task.id, phase: task.fase, methodVersionId: null, baseRevision: revision,
+        status: 'proposed', field: 'f2.criterios', previousValue: task.f2.criterios, value: [],
+      },
+      {
+        id: 'e2e-proposal-reject', sourceMessageId: 'e2e-proposal-message', projectId: task.projectId,
+        taskId: task.id, phase: task.fase, methodVersionId: null, baseRevision: revision,
+        status: 'proposed', field: 'f2.alcance', previousValue: task.f2.alcance, value: 'Este alcance debe permanecer sin cambios',
+      },
+    ],
+  }];
+  return task;
+}
+
+function taskWithLongIndependentScroll() {
+  const task = repairTask(structuredClone(stageAgentWorkspaceTasks.phase2));
+  const revision = buildPhaseRevision(task, task.fase);
+  const longText = 'Contenido largo para medir el scroll independiente del lienzo. '.repeat(80);
+  task.f2.pasos = longText;
+  task.f2.noObjetivos = longText;
+  task.assistant.messages = Array.from({ length: 18 }, (_, index) => ({
+    id: `e2e-long-message-${index}`,
+    projectId: task.projectId,
+    taskId: task.id,
+    phase: task.fase,
+    methodVersionId: null,
+    baseRevision: revision,
+    role: index % 2 === 0 ? 'assistant' as const : 'user' as const,
+    parts: [{ type: 'text' as const, text: `Mensaje largo ${index}: ${longText}` }],
+    status: 'sent' as const,
+    createdAt: 1_725_000_200_000 + index,
+    primaryQuestion: null,
+    contradictions: [],
+    updates: [],
+  }));
+  return task;
 }
 
 test.describe('stage-agent workspace', () => {
@@ -214,6 +278,70 @@ test.describe('stage-agent workspace', () => {
     await expect(page.locator('.agent-panel')).toHaveAttribute('data-agent-state', 'expanded');
     await page.goto(`/tasks/${second.id}`);
     await expect(page.locator('.agent-panel')).toHaveAttribute('data-agent-state', 'collapsed');
+  });
+
+  test('resolves accept, valid edit, invalid edit and reject proposals through the chat contract', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+
+    const editTask = taskWithProposalConversation('edit');
+    await seedWorkspace(page, editTask, [editTask]);
+    await page.goto(`/tasks/${editTask.id}`);
+    await expect(page.locator('[data-agent-pending-badge]')).toHaveText('3');
+    await page.getByRole('button', { name: 'Expandir agente IA' }).click();
+    const criteriaProposal = page.getByRole('group', { name: 'Propuesta para Criterios' });
+    await criteriaProposal.locator('input').fill('{invalid-json');
+    await criteriaProposal.getByRole('button', { name: 'Editar propuesta' }).click();
+    await expect(criteriaProposal.getByRole('alert')).toBeVisible();
+    await expect(criteriaProposal).toContainText('Propuesta');
+    await criteriaProposal.locator('input').fill('[]');
+    await criteriaProposal.getByRole('button', { name: 'Editar propuesta' }).click();
+    await expect(criteriaProposal).toContainText('Aplicado');
+
+    const acceptTask = taskWithProposalConversation('accept');
+    await seedWorkspace(page, acceptTask, [acceptTask]);
+    await page.goto(`/tasks/${acceptTask.id}`);
+    await page.getByRole('button', { name: 'Expandir agente IA' }).click();
+    const acceptProposal = page.getByRole('group', { name: 'Propuesta para Pasos' });
+    await acceptProposal.getByRole('button', { name: 'Aceptar propuesta' }).click();
+    await expect(acceptProposal).toContainText('Aplicado');
+    await page.getByRole('button', { name: 'Contraer agente IA' }).click();
+    await expect(page.locator('[data-agent-pending-badge]')).toHaveText('2');
+    const acceptedTask = JSON.parse((await (await page.request.get(`/api/storage/${encodeURIComponent(`bitacora:t:${acceptTask.id}`)}`)).json()).value);
+    expect(acceptedTask.f2.pasos).toBe('Pasos aceptados desde el chat');
+
+    const rejectTask = taskWithProposalConversation('reject');
+    await seedWorkspace(page, rejectTask, [rejectTask]);
+    await page.goto(`/tasks/${rejectTask.id}`);
+    await page.getByRole('button', { name: 'Expandir agente IA' }).click();
+    const rejectProposal = page.getByRole('group', { name: 'Propuesta para Alcance' });
+    await rejectProposal.getByRole('button', { name: 'Descartar propuesta' }).click();
+    await expect(rejectProposal).toContainText('Rechazado');
+    await page.getByRole('button', { name: 'Contraer agente IA' }).click();
+    await expect(page.locator('[data-agent-pending-badge]')).toHaveText('2');
+    const rejectedTask = JSON.parse((await (await page.request.get(`/api/storage/${encodeURIComponent(`bitacora:t:${rejectTask.id}`)}`)).json()).value);
+    expect(rejectedTask.f2.alcance).toBe(rejectTask.f2.alcance);
+  });
+
+  test('keeps canvas and chat scrolling independently at tablet width', async ({ page }) => {
+    const task = taskWithLongIndependentScroll();
+    await seedWorkspace(page, task, [task]);
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.goto(`/tasks/${task.id}`);
+    await page.getByRole('button', { name: 'Expandir agente IA' }).click();
+
+    const stage = page.locator('.workspace-stage');
+    const messages = page.locator('.task-chat__messages');
+    await expect.poll(() => stage.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+    await expect.poll(() => messages.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+
+    await stage.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    const chatAfterStageScroll = await messages.evaluate((element) => element.scrollTop);
+    expect(chatAfterStageScroll).toBe(0);
+    await messages.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    const stageAfterChatScroll = await stage.evaluate((element) => element.scrollTop);
+    expect(stageAfterChatScroll).toBeGreaterThan(0);
+    await expect(page.getByPlaceholder('Escribe al agente…')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Adjuntar' })).toBeDisabled();
   });
 
   test('shows a single contextual primary action and removes the external advance bar', async ({ page }) => {

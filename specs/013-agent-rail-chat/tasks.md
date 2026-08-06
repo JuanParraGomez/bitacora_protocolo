@@ -119,15 +119,15 @@ fixtures resembrados y comprobar campo, estado, alerta, badge e idempotencia.
 
 - [X] T029 [P] [US3] Ampliar `app/features/tasks/components/TaskChat.test.ts` con título `Propuesta para <campo>`, valor largo completo, exactamente tres acciones, accept/edit/reject tipados, edit inválido sin emit con alerta/valor conservado y wrap sin overflow (Refs: AC-012–AC-016; FR-010–FR-011, FR-016; IMG-UX-02)
 - [X] T030 [P] [US3] Ampliar `app/features/tasks/components/TaskWorkspace.test.ts` con wiring a `handleProposalDecision`, badge N→N-1→0, filtro de resueltas/otra fase, conflicto vigente, reject no muta y tarea completada read-only (Refs: AC-013–AC-016; FR-011–FR-012, FR-019; IMG-UX-02/05)
-- [ ] T031 [US3] Añadir en `tests/e2e/stage-agent-workspace.spec.ts` flujos independientes accept/edit válido/edit inválido/reject y en `tests/e2e/visual/stage-agent-workspace.visual.spec.ts` tarjeta/acciones secundarias/badge/valor completo sin solape (Refs: AC-012–AC-016; FR-010–FR-012, FR-017, FR-021; IMG-UX-02)
-- [ ] T032 [US3] Ejecutar T029–T031 antes de producto, confirmar rojo por contrato visual/validación 013 ausente y registrar causa exacta en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: Validation Capa A/B)
+- [X] T031 [US3] Añadir en `tests/e2e/stage-agent-workspace.spec.ts` flujos independientes accept/edit válido/edit inválido/reject y en `tests/e2e/visual/stage-agent-workspace.visual.spec.ts` tarjeta/acciones secundarias/badge/valor completo sin solape (Refs: AC-012–AC-016; FR-010–FR-012, FR-017, FR-021; IMG-UX-02)
+- [X] T032 [US3] Ejecutar T029–T031 antes de producto, confirmar rojo por contrato visual/validación 013 ausente y registrar causa exacta en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: Validation Capa A/B)
 
 ### Implementación mínima para User Story 3
 
 - [X] T033 [US3] Actualizar `app/features/tasks/components/TaskChat.vue` para título normativo, valor completo con wrap y exactamente tres acciones secundarias, sin alterar los payloads de decisión existentes (Refs: FR-010–FR-011, FR-016; depende de T032; IMG-UX-02)
 - [X] T034 [US3] Añadir en `app/features/tasks/components/TaskChat.vue` validación de edición con `formUpdateSchema` antes de emitir, conservando draft/error y propuesta pendiente ante valor inválido; no modificar `TaskWorkspace.vue` ni rules para acomodar el caso (Refs: FR-011–FR-012, FR-019; depende de T033; IMG-UX-02/05)
 - [X] T035 [US3] Ejecutar T029–T030 junto con `app/features/tasks/domain/task-assistant-rules.test.ts`, exigir verde para accept/edit/reject/contexto/revisión/idempotencia y registrar evidencia sin modificar dominio (Refs: SC-004–SC-005)
-- [ ] T036 [US3] Ejecutar T031 serial con storage resembrado por decisión, corregir solo integración frontend 013 y registrar verde/badge/campo/alerta en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: SC-004–SC-005, SC-008)
+- [X] T036 [US3] Ejecutar T031 serial con storage resembrado por decisión, corregir solo integración frontend 013 y registrar verde/badge/campo/alerta en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: SC-004–SC-005, SC-008)
 
 **Checkpoint**: propuestas controladas por decisión humana y badge derivado exacto.
 
@@ -144,9 +144,9 @@ largos por separado en tablet; comprobar móvil heredado y cero solapes.
 ### Tests RED para User Story 4
 
 - [X] T037 [P] [US4] Ampliar `app/features/tasks/components/TaskChat.test.ts` con placeholder exacto, `Enviar`, adjunto disabled+descripción, orden de foco, texto vacío/whitespace, submitted/streaming/error/retry y borrador conservado (Refs: AC-017–AC-018; FR-013–FR-014, FR-016; IMG-UX-02/03)
-- [ ] T038 [P] [US4] Añadir en `tests/e2e/stage-agent-workspace.spec.ts` conversación/lienzo largos a 1024×768, scrollTop independiente en ambos sentidos, compositor/último mensaje alcanzables, contraer durante envío y regresión tabs ≤767 (Refs: AC-017–AC-020; FR-013–FR-019; IMG-UX-03)
+- [X] T038 [P] [US4] Añadir en `tests/e2e/stage-agent-workspace.spec.ts` conversación/lienzo largos a 1024×768, scrollTop independiente en ambos sentidos, compositor/último mensaje alcanzables, contraer durante envío y regresión tabs ≤767 (Refs: AC-017–AC-020; FR-013–FR-019; IMG-UX-03)
 - [X] T039 [US4] Ampliar `tests/e2e/visual/stage-agent-workspace.visual.spec.ts` para consumir `VISUAL_RUN_MODE`: `contract` omite snapshot, `evidence` captura ACTUAL enmascarado y `baseline` conserva `toHaveScreenshot`; añadir contención/overflow/axe/teclado/foco para IMG-UX-01 stage móvil e IMG-UX-02 agent móvil, y contratos completos en ≥768 (Refs: FR-013–FR-018, FR-020–FR-022; IMG-UX-01/02/03)
-- [ ] T040 [US4] Ejecutar T037–T039 antes de producto, confirmar rojo por compositor/scroll/accesibilidad 013 ausentes y registrar comando, conteo y causa en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: Validation Capa A/B)
+- [X] T040 [US4] Ejecutar T037–T039 antes de producto, confirmar rojo por compositor/scroll/accesibilidad 013 ausentes y registrar comando, conteo y causa en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: Validation Capa A/B)
 
 ### Implementación mínima para User Story 4
 
@@ -183,11 +183,11 @@ versionar baselines.
 
 - [X] T053 [P] Ejecutar Vitest enfocado de `AgentPanel`, `TaskChat`, `TaskWorkspace`, `useWorkspaceState`, rules y helpers; registrar comando, total y exit code en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: Validation Capa A)
 - [X] T054 [P] Ejecutar `npm run typecheck` y `npm run verify:e2e` serial contra el servidor explícito; registrar conteos/exit code y alcance no verificado en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: FR-016–FR-019)
-- [ ] T055 Ejecutar `npm run test:visual` completo y `npm run verify`; separar fallos 013, deuda previa y contaminación de fixtures, y registrar veredicto exacto en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: SC-008–SC-009)
+- [X] T055 Ejecutar `npm run test:visual` completo y `npm run verify`; separar fallos 013, deuda previa y contaminación de fixtures, y registrar veredicto exacto en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: SC-008–SC-009)
 - [X] T056 Ejecutar `graphify update .` y `npm run graph:check`, revisar impacto AgentPanel↔TaskChat↔TaskWorkspace↔useWorkspaceState y mantener `graphify-out/` fuera del staging (Refs: Constitution V)
 - [X] T057 Lanzar revisión independiente del patch completo 013; resolver P0/P1 con nuevo ciclo test rojo→cambio mínimo→verde y documentar P2/P3 en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: todas FR/SC)
-- [ ] T058 Validar `specs/013-agent-rail-chat/quickstart.md` de principio a fin y ejecutar `git diff --check`; sincronizar `tasks.md`/`implementation-evidence.md` solo con tareas realmente verificadas (Refs: Validation Contract)
-- [ ] T059 Inspeccionar staged diff y secretos/ruido, registrar el inventario final en `specs/013-agent-rail-chat/implementation-evidence.md` y stagear únicamente frontend/tests/docs/baselines 013 explícitamente aprobados, excluyendo cambios ajenos, caches, SQLite y resultados temporales (Refs: workflow Git; FR-019, FR-022)
+- [X] T058 Validar `specs/013-agent-rail-chat/quickstart.md` de principio a fin y ejecutar `git diff --check`; sincronizar `tasks.md`/`implementation-evidence.md` solo con tareas realmente verificadas (Refs: Validation Contract)
+- [X] T059 Inspeccionar staged diff y secretos/ruido, registrar el inventario final en `specs/013-agent-rail-chat/implementation-evidence.md` y stagear únicamente frontend/tests/docs/baselines 013 explícitamente aprobados, excluyendo cambios ajenos, caches, SQLite y resultados temporales (Refs: workflow Git; FR-019, FR-022)
 - [ ] T060 Crear commit descriptivo y hacer push solo a `origin/codex/013-agent-rail-chat`; reportar commit/upstream y no abrir/mergear a `main` sin autorización separada (Refs: workflow Git)
 
 ---

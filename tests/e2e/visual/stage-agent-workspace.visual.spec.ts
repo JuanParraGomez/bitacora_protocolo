@@ -221,6 +221,14 @@ async function assertVisualGeometry(page: Page, scenarioId: VisualScenarioId, vi
   }
 
   const composer = await visibleBox(page, '#task-chat-composer-input');
+  if (scenarioId === 'IMG-UX-02') {
+    const proposal = page.locator('.task-chat__proposal').first();
+    await expect(proposal, `${scenarioId}/${viewportName} proposal card`).toBeVisible();
+    await expect(proposal.locator('.task-chat__proposal-actions button')).toHaveCount(3);
+    await expect(proposal).toContainText('Valor propuesto:');
+    const proposalOverflow = await proposal.evaluate((element) => element.scrollWidth > element.clientWidth);
+    expect(proposalOverflow, `${scenarioId}/${viewportName} proposal should wrap without overflow`).toBe(false);
+  }
   if (composer && viewportName !== 'mobile' && viewportName !== 'mobile-narrow') {
     const agent = regions.find((region) => region.name === 'agent');
     expect(agent, `${scenarioId}/${viewportName} composer is visible without an agent panel`).toBeDefined();

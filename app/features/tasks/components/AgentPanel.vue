@@ -13,6 +13,7 @@ const props = withDefaults(defineProps<{
   draft?: string;
   restoreMessageId?: string | null;
   expanded?: boolean;
+  pendingProposals?: number;
 }>(), {
   suggestions: () => [],
   sendStatus: 'ready',
@@ -22,6 +23,7 @@ const props = withDefaults(defineProps<{
   draft: undefined,
   restoreMessageId: null,
   expanded: true,
+  pendingProposals: 0,
 });
 
 const emit = defineEmits<{
@@ -57,15 +59,19 @@ watch(() => props.expanded, async (next, previous) => {
 <template>
   <aside
     class="agent-panel"
+    :data-agent-state="props.expanded ? 'expanded' : 'collapsed'"
     role="region"
     aria-label="Panel del agente"
     :aria-busy="isBusy ? 'true' : 'false'"
   >
     <header class="agent-panel__rail">
       <div class="agent-panel__identity">
-        <p class="agent-panel__eyebrow">Agente</p>
-        <h2>Panel estructural</h2>
-        <p class="agent-panel__state">{{ props.expanded ? 'Abierto' : 'Contraído' }}</p>
+        <span class="agent-panel__sparkle" data-agent-icon="sparkle" aria-hidden="true">✦</span>
+        <div class="agent-panel__identity-copy">
+          <p class="agent-panel__eyebrow">Agente IA</p>
+          <h2>Agente IA</h2>
+          <p class="agent-panel__state">{{ props.expanded ? 'Listo para orientar esta etapa' : 'Expandir para conversar' }}</p>
+        </div>
       </div>
       <button
         ref="toggleButton"
@@ -73,10 +79,13 @@ watch(() => props.expanded, async (next, previous) => {
         class="agent-panel__toggle"
         :aria-expanded="props.expanded"
         :aria-controls="contentId"
+        :aria-label="props.expanded ? 'Contraer agente IA' : 'Expandir agente IA'"
         @click="emit('toggle')"
       >
-        {{ props.expanded ? 'Contraer agente' : 'Expandir agente' }}
+        <span :data-agent-chevron="props.expanded ? 'collapse' : 'expand'" aria-hidden="true">{{ props.expanded ? '‹' : '›' }}</span>
+        <span class="agent-panel__toggle-label">{{ props.expanded ? 'Contraer agente' : 'Expandir agente' }}</span>
       </button>
+      <span v-if="!props.expanded && props.pendingProposals > 0" data-agent-pending-badge :aria-label="`${props.pendingProposals} propuestas pendientes`">{{ props.pendingProposals }}</span>
     </header>
 
     <div
@@ -84,7 +93,8 @@ watch(() => props.expanded, async (next, previous) => {
       class="agent-panel__content"
       :data-expanded="props.expanded ? 'true' : 'false'"
       data-agent-panel-content
-      tabindex="0"
+      :tabindex="props.expanded ? 0 : -1"
+      :aria-hidden="props.expanded ? 'false' : 'true'"
       @keydown="onContentKeydown"
     >
       <TaskChat
@@ -103,9 +113,6 @@ watch(() => props.expanded, async (next, previous) => {
         @update-draft="emit('updateDraft', $event)"
         @visible-message="emit('visibleMessage', $event)"
       />
-      <p v-if="!props.expanded" class="agent-panel__collapsed-copy">
-        El agente permanece disponible sin cubrir la etapa.
-      </p>
     </div>
   </aside>
 </template>
@@ -121,7 +128,14 @@ watch(() => props.expanded, async (next, previous) => {
   background: #fff;
 }
 
+.agent-panel[data-agent-state='collapsed'] {
+  width: min(7rem, 12%);
+  min-width: 3.5rem;
+  border-radius: .75rem;
+}
+
 .agent-panel__rail {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -129,6 +143,69 @@ watch(() => props.expanded, async (next, previous) => {
   padding: .85rem .95rem;
   border-bottom: 1px solid #dce3de;
   background: linear-gradient(180deg, #f8fbf9, #fff);
+}
+
+.agent-panel__identity {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: .6rem;
+}
+
+.agent-panel__sparkle {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: #08724c;
+  background: #e5f5ed;
+  font-size: 1rem;
+}
+
+.agent-panel__identity-copy {
+  min-width: 0;
+}
+
+.agent-panel[data-agent-state='collapsed'] .agent-panel__identity-copy,
+.agent-panel[data-agent-state='collapsed'] .agent-panel__toggle-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.agent-panel[data-agent-state='collapsed'] .agent-panel__rail {
+  justify-content: center;
+  padding: .55rem .4rem;
+}
+
+.agent-panel[data-agent-state='collapsed'] .agent-panel__toggle {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+[data-agent-pending-badge] {
+  position: absolute;
+  top: .25rem;
+  right: .25rem;
+  display: grid;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 .2rem;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  background: #b42318;
+  font-size: .68rem;
+  font-weight: 800;
 }
 
 .agent-panel__identity h2,
@@ -172,10 +249,4 @@ watch(() => props.expanded, async (next, previous) => {
   height: 100%;
 }
 
-.agent-panel__collapsed-copy {
-  margin: 0;
-  padding: 1rem .95rem 1.1rem;
-  color: #5d6962;
-  font-size: .86rem;
-}
 </style>

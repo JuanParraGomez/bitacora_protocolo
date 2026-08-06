@@ -170,6 +170,8 @@ describe('TaskWorkspace', () => {
   it('keeps the composer draft while the agent panel collapses and expands again', async () => {
     const wrapper = mountWorkspace();
 
+    expect(wrapper.get('[data-testid="expanded"]').text()).toBe('false');
+
     await wrapper.get('[data-testid="draft"]').trigger('click');
     await wrapper.get('[data-testid="toggle"]').trigger('click');
     await wrapper.get('[data-testid="toggle"]').trigger('click');

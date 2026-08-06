@@ -142,4 +142,52 @@ describe('TaskChat', () => {
       baseRevision: 'rev-1',
     }]);
   });
+
+  it('renders identities and accessible metadata for both chat roles', () => {
+    const wrapper = mountChat({
+      messages: [
+        createMessage({ id: 'assistant-1', role: 'assistant', parts: [{ type: 'text', text: 'Orientación' }] }),
+        createMessage({ id: 'user-1', role: 'user', parts: [{ type: 'text', text: 'Mi respuesta' }], createdAt: 1_725_000_000_001 }),
+      ],
+    });
+
+    expect(wrapper.findAll('[data-message-avatar]')).toHaveLength(2);
+    expect(wrapper.text()).toContain('Agente IA');
+    expect(wrapper.text()).toContain('Tú');
+    expect(wrapper.find('[data-message-id="user-1"]').classes()).toContain('task-chat__bubble--user');
+    expect(wrapper.find('[data-message-id="assistant-1"] time').exists()).toBe(true);
+    expect(wrapper.find('[data-message-id="user-1"] time').exists()).toBe(true);
+  });
+
+  it('uses the proposal title, preserves long values and validates edits before emitting', async () => {
+    const longValue = 'Valor largo '.repeat(20).trim();
+    const wrapper = mountChat({
+      messages: [createMessage({ updates: [
+        {
+          id: 'proposal-schema', sourceMessageId: 'message-1', projectId: 'legacy', taskId: 'task-1', phase: 2,
+          methodVersionId: null, baseRevision: 'rev-1', field: 'f2.criterios', value: [], previousValue: [], status: 'proposed',
+        },
+        {
+          id: 'proposal-long', sourceMessageId: 'message-1', projectId: 'legacy', taskId: 'task-1', phase: 2,
+          methodVersionId: null, baseRevision: 'rev-1', field: 'f2.decision', value: longValue, previousValue: '', status: 'proposed',
+        },
+      ] })],
+    });
+
+    expect(wrapper.text()).toContain('Propuesta para Criterios');
+    expect(wrapper.text()).toContain(longValue);
+    expect(wrapper.find('.task-chat__proposal').findAll('.task-chat__proposal-actions button')).toHaveLength(3);
+    await wrapper.get('#proposal-edit-proposal-schema').setValue('["invalido"]');
+    await wrapper.get('button[aria-label="Editar propuesta"]').trigger('click');
+
+    expect(wrapper.emitted('proposalDecision')).toBeUndefined();
+    expect(wrapper.get('[role="alert"]').exists()).toBe(true);
+  });
+
+  it('exposes the canonical composer placeholder and disabled attachment control', () => {
+    const wrapper = mountChat();
+
+    expect(wrapper.get('[aria-labelledby="task-chat-composer-label"]').attributes('placeholder')).toBe('Escribe al agente…');
+    expect(wrapper.get('[data-testid="attach-file"]').attributes('aria-disabled')).toBe('true');
+  });
 });

@@ -3,8 +3,8 @@ import AxeBuilder from '@axe-core/playwright';
 import { buildPhaseRevision } from '../../../app/features/tasks/domain/task-assistant-rules';
 import { repairTask, type Task } from '../../../app/features/tasks/domain/task.schema';
 import { stageAgentWorkspaceTasks, stageAgentWorkspaceWorkspaceState } from '../../fixtures/tasks/stage-agent-workspace';
-import { artifactPath, buildScreenshotOptions, waitForStableUi } from '../helpers/visual-capture';
-import { assertNoOverlap, assertNoOverlapPairs, countPrimaryActions, type Box, type NamedBox, type PrimaryAction } from '../helpers/visual-geometry';
+import { artifactPath, buildEvidenceScreenshotOptions, buildScreenshotOptions, shouldCaptureEvidence, shouldCaptureEvidenceScreenshot, shouldCompareBaseline, waitForStableUi } from '../helpers/visual-capture';
+import { assertContained, assertNoOverlap, assertNoOverlapPairs, countPrimaryActions, isWithinWidthLimit, type Box, type NamedBox, type PrimaryAction } from '../helpers/visual-geometry';
 import { VISUAL_SCENARIOS, type VisualScenarioId } from '../helpers/visual-scenarios';
 import { WORKSPACE_UX_VIEWPORTS } from '../helpers/workspace-ux';
 
@@ -95,6 +95,7 @@ function workspaceStateForScenario(id: VisualScenarioId, taskId: string) {
   if (id === 'IMG-UX-01' || id === 'IMG-UX-04') base.agentPanelByTask[taskId] = 'collapsed';
   if (id === 'IMG-UX-02' || id === 'IMG-UX-03') base.agentPanelByTask[taskId] = 'expanded';
   if (id === 'IMG-UX-04') base.mobilePaneByTask[taskId] = 'stage';
+  if (id === 'IMG-UX-02' || id === 'IMG-UX-03') base.mobilePaneByTask[taskId] = 'agent';
   return base;
 }
 
@@ -172,6 +173,27 @@ async function assertVisualGeometry(page: Page, scenarioId: VisualScenarioId, vi
   const overlaps = assertNoOverlap(regions);
   expect(overlaps, `${scenarioId}/${viewportName} layout overlaps: ${JSON.stringify(overlaps)}`).toEqual([]);
 
+  const agent = regions.find((region) => region.name === 'agent')?.box;
+  const stage = regions.find((region) => region.name === 'canvas')?.box;
+  if (agent && stage && viewportName !== 'mobile' && viewportName !== 'mobile-narrow') {
+    expect(assertContained(agent, {
+      x: Math.min(agent.x, stage.x),
+      y: Math.min(agent.y, stage.y),
+      width: Math.max(agent.x + agent.width, stage.x + stage.width) - Math.min(agent.x, stage.x),
+      height: Math.max(agent.y + agent.height, stage.y + stage.height) - Math.min(agent.y, stage.y),
+    })).toBe(true);
+    if (scenarioId === 'IMG-UX-01') {
+      expect(await page.locator('.agent-panel').getAttribute('data-agent-state')).toBe('collapsed');
+      expect(isWithinWidthLimit({ width: agent.width }, stage.width + agent.width, { maxPixels: 112, maxRatio: .12 })).toBe(true);
+      await expect(page.getByRole('button', { name: 'Expandir agente IA' })).toHaveAttribute('aria-expanded', 'false');
+    }
+  }
+
+  const stageOverflow = await page.locator('.workspace-stage').evaluate((element) => getComputedStyle(element).overflowY);
+  const messagesOverflow = await page.locator('.task-chat__messages').evaluate((element) => getComputedStyle(element).overflowY);
+  expect(stageOverflow === 'auto' || stageOverflow === 'scroll').toBe(true);
+  expect(messagesOverflow === 'auto' || messagesOverflow === 'scroll').toBe(true);
+
   if (scenarioId !== 'IMG-UX-06') {
     const stage = page.locator('.workspace-stage');
     const stageText = await stage.textContent();
@@ -199,7 +221,7 @@ async function assertVisualGeometry(page: Page, scenarioId: VisualScenarioId, vi
   }
 
   const composer = await visibleBox(page, '#task-chat-composer-input');
-  if (composer) {
+  if (composer && viewportName !== 'mobile' && viewportName !== 'mobile-narrow') {
     const agent = regions.find((region) => region.name === 'agent');
     expect(agent, `${scenarioId}/${viewportName} composer is visible without an agent panel`).toBeDefined();
     if (agent) {
@@ -211,9 +233,14 @@ async function assertVisualGeometry(page: Page, scenarioId: VisualScenarioId, vi
   }
 
   const actions = await visiblePrimaryActions(page);
-  expect(countPrimaryActions(actions), `${scenarioId}/${viewportName} visible primary actions`).toBe(1);
+  const primaryExpected = viewportName === 'mobile' || viewportName === 'mobile-narrow'
+    ? (scenarioId === 'IMG-UX-01' || scenarioId === 'IMG-UX-04' ? 1 : 0)
+    : 1;
+  expect(countPrimaryActions(actions), `${scenarioId}/${viewportName} visible primary actions`).toBe(primaryExpected);
   const primaryAction = await visibleBox(page, '[data-primary-action="true"]');
-  expect(primaryAction, `${scenarioId}/${viewportName} primary action box`).not.toBeNull();
+  if (primaryExpected === 1) {
+    expect(primaryAction, `${scenarioId}/${viewportName} primary action box`).not.toBeNull();
+  }
   const controls = [
     ...(composer ? [{ name: 'composer', box: composer }] : []),
     ...(primaryAction ? [{ name: 'actions', box: primaryAction }] : []),
@@ -352,9 +379,15 @@ test.describe('stage-agent workspace visual baselines', () => {
               document.body.append(defect);
             });
           }
-          await expect(page).toHaveScreenshot(`${scenario.id}-${viewport.name}.png`, buildScreenshotOptions(page));
-          await page.screenshot({ path: artifactPath(scenario.id, viewport.name) });
-          await page.screenshot({ path: `.codex-autopilot/evidence/actual/ACTUAL-${scenario.id}-${viewport.name}.png` });
+          if (process.env.VISUAL_SEED_DEFECT === 'true' && scenario.id === 'IMG-UX-01' && viewport.name === 'desktop-large') {
+            await expect(page.locator('#visual-seeded-defect')).toHaveCount(0);
+          }
+          if (shouldCompareBaseline()) {
+            await expect(page).toHaveScreenshot(`${scenario.id}-${viewport.name}.png`, buildScreenshotOptions(page));
+          }
+          if (shouldCaptureEvidenceScreenshot() && shouldCaptureEvidence(scenario.id, viewport.name)) {
+            await page.screenshot({ path: artifactPath(scenario.id, viewport.name), ...buildEvidenceScreenshotOptions(page) });
+          }
         });
       }
     });

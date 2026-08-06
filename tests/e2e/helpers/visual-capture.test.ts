@@ -4,6 +4,10 @@ import {
   VISUAL_CAPTURE_OPTIONS,
   artifactPath,
   buildScreenshotOptions,
+  getVisualRunMode,
+  shouldCompareBaseline,
+  shouldCaptureEvidenceScreenshot,
+  buildEvidenceScreenshotOptions,
 } from './visual-capture';
 
 describe('visual capture configuration', () => {
@@ -42,5 +46,32 @@ describe('visual capture configuration', () => {
     expect(shouldCaptureEvidence('IMG-UX-01', 'desktop-large')).toBe(true);
     expect(shouldCaptureEvidence('IMG-UX-01', 'tablet')).toBe(false);
     expect(shouldCaptureEvidence('IMG-UX-04', 'mobile')).toBe(true);
+  });
+
+  it('resolves baseline, contract and evidence modes without updating snapshots', () => {
+    vi.stubEnv('VISUAL_RUN_MODE', 'contract');
+    expect(getVisualRunMode()).toBe('contract');
+    expect(shouldCompareBaseline()).toBe(false);
+    expect(shouldCaptureEvidenceScreenshot()).toBe(false);
+
+    vi.stubEnv('VISUAL_RUN_MODE', 'evidence');
+    expect(getVisualRunMode()).toBe('evidence');
+    expect(shouldCompareBaseline()).toBe(false);
+    expect(shouldCaptureEvidenceScreenshot()).toBe(true);
+
+    vi.stubEnv('VISUAL_RUN_MODE', 'baseline');
+    expect(getVisualRunMode()).toBe('baseline');
+    expect(shouldCompareBaseline()).toBe(true);
+    expect(shouldCaptureEvidenceScreenshot()).toBe(false);
+  });
+
+  it('uses the 013 evidence root and omits baseline diff options in evidence mode', () => {
+    vi.stubEnv('VISUAL_RUN_MODE', 'evidence');
+    vi.stubEnv('VISUAL_EVIDENCE_ROOT', 'specs/013-agent-rail-chat/evidence/actual');
+    expect(artifactPath('IMG-UX-02', 'tablet')).toBe(
+      'specs/013-agent-rail-chat/evidence/actual/ACTUAL-IMG-UX-02-tablet.png',
+    );
+    expect(buildEvidenceScreenshotOptions()).toMatchObject({ animations: 'disabled' });
+    expect(buildEvidenceScreenshotOptions()).not.toHaveProperty('maxDiffPixelRatio');
   });
 });

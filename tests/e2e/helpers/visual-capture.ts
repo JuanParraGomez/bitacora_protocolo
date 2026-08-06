@@ -15,6 +15,21 @@ export const VISUAL_CAPTURE_OPTIONS = {
   mask: DYNAMIC_MASK_SELECTORS,
 };
 
+export type VisualRunMode = 'baseline' | 'contract' | 'evidence';
+
+export function getVisualRunMode(): VisualRunMode {
+  const mode = process.env.VISUAL_RUN_MODE?.trim();
+  return mode === 'contract' || mode === 'evidence' ? mode : 'baseline';
+}
+
+export function shouldCompareBaseline(): boolean {
+  return getVisualRunMode() === 'baseline';
+}
+
+export function shouldCaptureEvidenceScreenshot(): boolean {
+  return getVisualRunMode() === 'evidence';
+}
+
 export async function waitForStableUi(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');
   await page.evaluate(async () => {
@@ -31,12 +46,21 @@ export function buildScreenshotOptions(page?: Page) {
   };
 }
 
+export function buildEvidenceScreenshotOptions(page?: Page) {
+  return {
+    animations: 'disabled' as const,
+    mask: page ? DYNAMIC_MASK_SELECTORS.map((selector) => page.locator(selector)) : [...DYNAMIC_MASK_SELECTORS],
+  };
+}
+
 export async function captureVisualScreenshot(page: Page, id: string, viewportName: string): Promise<void> {
   const scenario = resolveVisualScenario(id);
   assertCanonicalViewport(viewportName);
-  await expect(page).toHaveScreenshot(`${scenario.id}-${viewportName}.png`, buildScreenshotOptions(page));
-  if (shouldCaptureEvidence(id, viewportName)) {
-    await page.screenshot({ path: artifactPath(id, viewportName) });
+  if (shouldCompareBaseline()) {
+    await expect(page).toHaveScreenshot(`${scenario.id}-${viewportName}.png`, buildScreenshotOptions(page));
+  }
+  if (shouldCaptureEvidenceScreenshot() && shouldCaptureEvidence(id, viewportName)) {
+    await page.screenshot({ path: artifactPath(id, viewportName), ...buildEvidenceScreenshotOptions(page) });
   }
 }
 

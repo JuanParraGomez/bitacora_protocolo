@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { assertNoOverlap, assertNoOverlapPairs, countPrimaryActions, type NamedBox } from './visual-geometry';
+import {
+  assertContained,
+  assertNoOverlap,
+  assertNoOverlapPairs,
+  countPrimaryActions,
+  isWithinWidthLimit,
+  hasIndependentScroll,
+  type NamedBox,
+} from './visual-geometry';
 
 const box = (name: string, x: number, y: number, width: number, height: number): NamedBox => ({
   name,
@@ -47,5 +55,21 @@ describe('visual geometry invariants', () => {
       box('form', 10, 10, 280, 280),
       box('agent', 250, 20, 100, 100),
     ], [['form', 'agent']])).toEqual([{ first: 'form', second: 'agent' }]);
+  });
+
+  it('enforces the rail width in absolute pixels or relative to its container', () => {
+    expect(isWithinWidthLimit({ width: 96 }, 1024, { maxPixels: 112, maxRatio: 0.12 })).toBe(true);
+    expect(isWithinWidthLimit({ width: 140 }, 1024, { maxPixels: 112, maxRatio: 0.12 })).toBe(false);
+    expect(isWithinWidthLimit({ width: 80 }, 480, { maxPixels: 112, maxRatio: 0.12 })).toBe(false);
+  });
+
+  it('checks that the agent remains contained by the workspace column', () => {
+    expect(assertContained({ x: 300, y: 10, width: 200, height: 700 }, { x: 0, y: 0, width: 520, height: 720 })).toBe(true);
+    expect(assertContained({ x: 300, y: 10, width: 240, height: 700 }, { x: 0, y: 0, width: 520, height: 720 })).toBe(false);
+  });
+
+  it('detects independent scroll movement for stage and agent regions', () => {
+    expect(hasIndependentScroll({ before: 0, after: 120 }, { before: 0, after: 0 })).toBe(true);
+    expect(hasIndependentScroll({ before: 0, after: 0 }, { before: 0, after: 0 })).toBe(false);
   });
 });

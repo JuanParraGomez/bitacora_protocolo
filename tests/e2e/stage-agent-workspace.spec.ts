@@ -106,6 +106,8 @@ test.describe('stage-agent workspace', () => {
         await expect(page.getByRole('tablist', { name: 'Planos del workspace' })).toBeVisible();
       } else {
         await expect(page.getByRole('region', { name: 'Panel del agente' })).toBeVisible();
+        await expect(page.locator('.agent-panel')).toHaveAttribute('data-agent-state', 'collapsed');
+        await expect(page.getByRole('button', { name: 'Expandir agente IA' })).toHaveAttribute('aria-expanded', 'false');
       }
       await expect(page.getByRole('button', { name: 'Guardar borrador' })).toBeVisible();
       await expect(page.getByText('Problema detectado')).toBeVisible();
@@ -181,7 +183,7 @@ test.describe('stage-agent workspace', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`/tasks/${stageAgentWorkspaceTasks.phase3.id}`);
 
-    await page.getByRole('button', { name: 'Expandir agente' }).click();
+    await page.getByRole('button', { name: 'Expandir agente IA' }).click();
     await expect(page.getByRole('region', { name: 'Panel del agente' })).toHaveAttribute('aria-busy', 'false');
     await expect(page.getByLabel('Chat de asistencia')).toBeVisible();
 
@@ -197,6 +199,21 @@ test.describe('stage-agent workspace', () => {
     await expect(page.getByRole('region', { name: 'Formulario guiado' })).toBeVisible();
 
     await expect(page.getByRole('navigation', { name: 'Navegación de tareas' })).toHaveCount(0);
+  });
+
+  test('persists agent rail preference per task and keeps pending badge task-local', async ({ page }) => {
+    const first = structuredClone(stageAgentWorkspaceTasks.phase1);
+    const second = structuredClone(stageAgentWorkspaceTasks.phase2);
+    await seedWorkspace(page, first, [first, second]);
+    await seedTask(page, second);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`/tasks/${first.id}`);
+    await page.getByRole('button', { name: 'Expandir agente IA' }).click();
+    await expect(page.locator('.agent-panel')).toHaveAttribute('data-agent-state', 'expanded');
+    await page.reload();
+    await expect(page.locator('.agent-panel')).toHaveAttribute('data-agent-state', 'expanded');
+    await page.goto(`/tasks/${second.id}`);
+    await expect(page.locator('.agent-panel')).toHaveAttribute('data-agent-state', 'collapsed');
   });
 
   test('shows a single contextual primary action and removes the external advance bar', async ({ page }) => {

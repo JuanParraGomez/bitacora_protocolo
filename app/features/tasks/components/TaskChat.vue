@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch, type ComponentPublicInstance } from 'vue';
-import type { AssistantMessage, ProposalDecision } from '../domain/task-assistant.schema';
+import { formUpdateSchema, type AssistantMessage, type ProposalDecision } from '../domain/task-assistant.schema';
 
 type ChatSendStatus = 'ready' | 'submitted' | 'streaming' | 'error';
 type ChatUpdate = {
@@ -68,7 +68,9 @@ const draft = computed({
 const sortedMessages = computed<ChatMessage[]>(() => {
   return [...props.messages]
     .slice()
-    .sort((left, right) => left.createdAt - right.createdAt)
+    .map((message, index) => ({ message, index }))
+    .sort((left, right) => left.message.createdAt - right.message.createdAt || left.index - right.index)
+    .map(({ message }) => message)
     .map((message) => ({
       ...message,
       updates: (message.updates as ChatUpdate[] | undefined)?.map((update) => update) ?? [],
@@ -111,7 +113,7 @@ function updateKey(message: ChatMessage, update: ChatUpdate): string {
 }
 
 function updateValueText(update: ChatUpdate): string {
-  return typeof update.value === 'string' ? update.value.slice(0, 80) : String(update.value);
+  return typeof update.value === 'string' ? update.value : String(update.value);
 }
 
 function fieldLabel(field: string): string {
@@ -132,6 +134,7 @@ function fieldLabel(field: string): string {
     'f2.noObjetivos': 'No objetivos',
     'f2.pasos': 'Pasos',
     'f2.guia': 'Guía',
+    'f2.criterios': 'Criterios',
     'f3.notas': 'Notas de iteración',
     'f4.cambio': 'Cambio consolidado',
     'f4.titulo': 'Título del método',
@@ -187,6 +190,10 @@ function decide(update: ChatUpdate, action: ProposalDecision['action']) {
     let value: unknown;
     try {
       value = parseProposalEditValue(update);
+      const validation = formUpdateSchema.safeParse({ ...update, value });
+      if (!validation.success) {
+        throw new Error('El valor no coincide con el formato del campo.');
+      }
       delete proposalEditErrors[update.id];
     } catch (cause) {
       proposalEditErrors[update.id] = cause instanceof Error ? cause.message : 'Revisa el valor editado.';
@@ -314,14 +321,18 @@ onBeforeUnmount(() => {
     >
       <template #content="{ message }">
         <article
+          v-if="extractText(message)"
           :class="['task-chat__bubble', message.role === 'user' ? 'task-chat__bubble--user' : 'task-chat__bubble--assistant']"
           :data-message-id="message.id"
         >
-          <span v-if="message.role === 'assistant'" class="task-chat__avatar" aria-hidden="true">✦</span>
+          <span class="task-chat__avatar" data-message-avatar aria-hidden="true">{{ message.role === 'assistant' ? '✦' : 'Tú' }}</span>
           <div class="task-chat__bubble-content">
+            <div class="task-chat__message-heading">
+              <strong>{{ message.role === 'assistant' ? 'Agente IA' : 'Tú' }}</strong>
+              <time :datetime="new Date(message.createdAt).toISOString()">{{ new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</time>
+            </div>
             <p class="task-chat__message-body">{{ extractText(message) }}</p>
             <p v-if="message.primaryQuestion" class="task-chat__primary-question">{{ message.primaryQuestion }}</p>
-            <small>{{ new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</small>
           </div>
         </article>
         <p
@@ -346,7 +357,7 @@ onBeforeUnmount(() => {
             class="task-chat__proposal"
           >
             <header>
-              <strong>{{ fieldLabel((update as ChatUpdate).field) }}</strong>
+              <strong>Propuesta para {{ fieldLabel((update as ChatUpdate).field) }}</strong>
               <span>{{ updateStatusLabel(update as ChatUpdate) }}</span>
             </header>
             <p>Valor anterior: {{ previousValueText(update as ChatUpdate) }}</p>
@@ -400,7 +411,7 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <label id="task-chat-composer-label" class="task-chat__composer-label" for="task-chat-composer-input">Escribe tu mensaje</label>
+    <label id="task-chat-composer-label" class="task-chat__composer-label" for="task-chat-composer-input">Escribe al agente…</label>
 
     <UChatPrompt
       id="task-chat-composer-input"
@@ -410,17 +421,18 @@ onBeforeUnmount(() => {
       as="form"
       aria-labelledby="task-chat-composer-label"
       :disabled="props.disabled"
-      :placeholder="`Escribe un mensaje para ${props.workspaceLabel}`"
+      placeholder="Escribe al agente…"
       :loading="props.sendStatus === 'submitted' || props.sendStatus === 'streaming'"
       @submit="onSendSubmit"
     >
       <template #footer>
-    <UChatPromptSubmit
-        aria-label="Enviar mensaje"
-        :status="props.sendStatus"
-        :disabled="props.disabled || props.sendStatus !== 'ready' || !draft.trim()"
-        @reload="retryLatest"
-      />
+        <button type="button" data-testid="attach-file" aria-disabled="true" disabled title="Los adjuntos estarán disponibles próximamente">Adjuntar</button>
+        <UChatPromptSubmit
+          aria-label="Enviar mensaje"
+          :status="props.sendStatus"
+          :disabled="props.disabled || props.sendStatus !== 'ready' || !draft.trim()"
+          @reload="retryLatest"
+        />
       </template>
     </UChatPrompt>
   </section>
@@ -464,8 +476,19 @@ onBeforeUnmount(() => {
 }
 
 .task-chat__bubble--user {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   margin-left: auto;
+}
+
+.task-chat__bubble--user .task-chat__avatar {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.task-chat__bubble--user .task-chat__bubble-content {
+  grid-column: 1;
+  grid-row: 1;
 }
 
 .task-chat__avatar {
@@ -496,6 +519,22 @@ onBeforeUnmount(() => {
 .task-chat__message-body {
   margin: 0;
   white-space: pre-wrap;
+}
+
+.task-chat__message-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .35rem;
+  color: #25332b;
+  font-size: .78rem;
+}
+
+.task-chat__message-heading time {
+  color: #526058;
+  font-size: .72rem;
+  font-weight: 500;
 }
 
 .task-chat__primary-question {
@@ -613,6 +652,15 @@ onBeforeUnmount(() => {
   padding: .9rem 1.35rem 1.05rem;
   border-top: 1px solid #dde3de;
   background: #fff;
+}
+
+.task-chat__composer :deep([data-testid='attach-file']) {
+  min-height: 2.25rem;
+  border: 1px solid #cbd7d0;
+  border-radius: .45rem;
+  padding: 0 .7rem;
+  color: #64736a;
+  background: #f4f7f5;
 }
 
 .task-chat__composer-label {

@@ -181,15 +181,9 @@ const effectiveDraft = computed(() => props.composerDraft ?? fallbackDrafts[loca
 const effectiveSummaryState = computed(() => (
   props.summaryState ?? fallbackSummaryStates[localTask.id] ?? 'collapsed'
 ));
-const shouldOpenAgentByDefault = computed(() => (
-  localTask.fase === 1
-  || phaseMessages.value.length > 0
-  || effectiveDraft.value.trim().length > 0
-  || isCompact.value
-));
 const effectiveAgentPanelState = computed<WorkspaceAgentPanelState>(() => (
   props.agentPanelState
-  ?? (shouldOpenAgentByDefault.value ? 'expanded' : fallbackAgentPanelState.value)
+  ?? fallbackAgentPanelState.value
 ));
 const effectiveMobilePane = computed<WorkspaceMobilePaneState>(() => (
   props.mobilePane ?? fallbackMobilePane.value
@@ -868,7 +862,7 @@ watch(() => [localTask.id, localTask.fase], () => {
           @open-settings="openSettings"
         />
 
-        <div v-if="selectedProjectHasLocalTask" class="workspace-stage-layout">
+        <div v-if="selectedProjectHasLocalTask" class="workspace-stage-layout" :class="{ 'workspace-stage-layout--agent-collapsed': !isAgentPanelExpanded }">
           <template v-if="isMobile">
             <WorkspacePaneTabs
               v-model="fallbackMobilePane"
@@ -931,6 +925,7 @@ watch(() => [localTask.id, localTask.fase], () => {
                   :draft="effectiveDraft"
                   :restore-message-id="props.lastVisibleMessageId"
                   :expanded="true"
+                  :pending-proposals="phasePendingProposals.length"
                   @toggle="toggleAgentPanel"
                   @send="onChatSubmit"
                   @retry="onChatRetry"
@@ -997,6 +992,7 @@ watch(() => [localTask.id, localTask.fase], () => {
               :draft="effectiveDraft"
               :restore-message-id="props.lastVisibleMessageId"
               :expanded="isAgentPanelExpanded"
+              :pending-proposals="phasePendingProposals.length"
               @toggle="toggleAgentPanel"
               @send="onChatSubmit"
               @retry="onChatRetry"
@@ -1120,6 +1116,10 @@ watch(() => [localTask.id, localTask.fase], () => {
   min-height: 0;
   height: 100%;
   padding: 1rem;
+}
+
+.workspace-stage-layout--agent-collapsed {
+  grid-template-columns: minmax(0, 1fr) minmax(3.5rem, 7rem);
 }
 
 .workspace-stage {
@@ -1251,6 +1251,16 @@ watch(() => [localTask.id, localTask.fase], () => {
   min-width: 0;
 }
 
+@media (min-width: 768px) and (max-width: 1024px) {
+  .workspace-stage-layout {
+    grid-template-columns: minmax(0, 1.18fr) minmax(16rem, .82fr);
+  }
+
+  .workspace-stage-layout--agent-collapsed {
+    grid-template-columns: minmax(0, 1fr) minmax(3.5rem, 7rem);
+  }
+}
+
 @media (max-width: 1024px) {
   .workspace-shell {
     grid-template-columns: 1fr;
@@ -1265,11 +1275,6 @@ watch(() => [localTask.id, localTask.fase], () => {
     border-radius: .8rem;
   }
 
-  .workspace-stage-layout {
-    grid-template-columns: 1fr;
-    height: auto;
-    min-height: 100%;
-  }
 }
 
 @media (max-width: 767px) {

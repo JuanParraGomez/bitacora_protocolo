@@ -642,6 +642,40 @@ export const stageAgentWorkspaceRecords = {
   ],
 } as const;
 
+export const stageAgentChatFixtures = {
+  roles: {
+    assistant: { role: 'assistant', name: 'Agente IA', avatar: 'sparkle' },
+    user: { role: 'user', name: 'Tú', avatar: 'user' },
+  },
+  messagesWithTiedTime: [
+    { id: 'chat-assistant-1', role: 'assistant', createdAt: baseTimestamp + 50_000, text: 'Primero' },
+    { id: 'chat-user-1', role: 'user', createdAt: baseTimestamp + 50_000, text: 'Después' },
+  ],
+  emptyMessage: { id: 'chat-empty', role: 'assistant', createdAt: baseTimestamp + 60_000, text: '' },
+  proposals: {
+    none: [],
+    one: [{ id: 'proposal-one', field: 'f2.decision', value: 'Una propuesta', status: 'proposed' }],
+    many: [
+      { id: 'proposal-one', field: 'f2.decision', value: 'Una propuesta', status: 'proposed' },
+      { id: 'proposal-two', field: 'f2.alcance', value: 'Otra propuesta', status: 'proposed' },
+    ],
+  },
+  longProposal: {
+    id: 'proposal-long',
+    field: 'f2.decision',
+    value: 'Una propuesta extensa que debe conservarse completa y envolver sin desbordar el chat.',
+    status: 'proposed',
+  },
+  invalidEdit: { id: 'proposal-invalid', field: 'f2.criterios', value: '{invalido', status: 'proposed' },
+  retry: { id: 'chat-retry', role: 'user', status: 'error', text: 'Reintentar este mensaje' },
+  longConversation: Array.from({ length: 24 }, (_, index) => ({
+    id: `chat-long-${index + 1}`,
+    role: index % 2 === 0 ? 'assistant' : 'user',
+    createdAt: baseTimestamp + 70_000 + index * 1_000,
+    text: `Mensaje largo ${index + 1}`,
+  })),
+} as const;
+
 export function buildStageAgentWorkspaceFixtures() {
   return structuredClone({
     tasks: stageAgentWorkspaceTasks,

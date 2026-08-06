@@ -13,6 +13,7 @@ const baseProps = {
   draft: '',
   restoreMessageId: null,
   expanded: true,
+  pendingProposals: 0,
 };
 
 describe('AgentPanel', () => {
@@ -75,5 +76,22 @@ describe('AgentPanel', () => {
 
     expect(region.attributes('aria-busy')).toBe('true');
     expect(content.attributes('tabindex')).toBe('0');
+  });
+
+  it('renders a compact accessible rail with identity, sparkle, chevron and pending badge', () => {
+    const wrapper = mount(AgentPanel, {
+      props: { ...baseProps, expanded: false, pendingProposals: 2 },
+      global: { stubs: { TaskChat: { template: '<div data-testid="task-chat-stub">chat</div>' } } },
+    });
+
+    expect(wrapper.attributes('data-agent-state')).toBe('collapsed');
+    expect(wrapper.text()).toContain('Agente IA');
+    expect(wrapper.find('[data-agent-icon="sparkle"]').exists()).toBe(true);
+    expect(wrapper.find('[data-agent-chevron="expand"]').exists()).toBe(true);
+    expect(wrapper.get('button[aria-label="Expandir agente IA"]').attributes('aria-expanded')).toBe('false');
+    expect(wrapper.get('[data-agent-pending-badge]').text()).toBe('2');
+    expect(wrapper.text()).not.toContain('Panel estructural');
+    expect(wrapper.text()).not.toContain('El agente permanece disponible');
+    expect(wrapper.find('[data-testid="task-chat-stub"]').isVisible()).toBe(false);
   });
 });

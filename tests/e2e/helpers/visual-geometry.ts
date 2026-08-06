@@ -3,6 +3,8 @@ export type NamedBox = { name: string; box: Box };
 export type Overlap = { first: string; second: string };
 export type PrimaryAction = { visible: boolean; primary: boolean };
 export type NamedPair = [string, string];
+export type WidthLimit = { maxPixels: number; maxRatio: number };
+export type ScrollState = { before: number; after: number };
 
 function intersects(first: Box, second: Box): boolean {
   return first.width > 0 && first.height > 0 && second.width > 0 && second.height > 0
@@ -36,4 +38,19 @@ export function assertNoOverlapPairs(regions: NamedBox[], pairs: NamedPair[]): O
 
 export function countPrimaryActions(actions: PrimaryAction[]): number {
   return actions.filter((action) => action.visible && action.primary).length;
+}
+
+export function isWithinWidthLimit(box: Pick<Box, 'width'>, containerWidth: number, limit: WidthLimit): boolean {
+  return box.width <= limit.maxPixels && box.width <= containerWidth * limit.maxRatio;
+}
+
+export function assertContained(inner: Box, outer: Box): boolean {
+  return inner.x >= outer.x
+    && inner.y >= outer.y
+    && inner.x + inner.width <= outer.x + outer.width
+    && inner.y + inner.height <= outer.y + outer.height;
+}
+
+export function hasIndependentScroll(first: ScrollState, second: ScrollState): boolean {
+  return (first.before !== first.after) !== (second.before !== second.after);
 }

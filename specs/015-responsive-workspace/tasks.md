@@ -4,113 +4,213 @@
 
 **Prerequisites**: `spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/visual-acceptance.md`, `quickstart.md`
 
-**Tests**: Mandatory strict TDD. Every behavior block records a valid red before product changes.
+**Tests**: Obligatorios y test-first. Cada bloque de comportamiento registra un
+rojo válido antes de tocar producción, seguido por verde focal y regresión.
+
+**Organization**: Las tareas se agrupan por historia para que tablet, móvil y
+reflow puedan validarse como incrementos independientes. **Refs: IMG-UX-03, IMG-UX-04**
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: paralelizable porque usa archivos distintos y no depende de trabajo incompleto.
+- **[US1]**: tablet con dos regiones autónomas.
+- **[US2]**: móvil Etapa/Agente sin pérdida de trabajo.
+- **[US3]**: 320 px, zoom 200% y accesibilidad.
+
+---
 
 ## Phase 1: Setup and authority
 
-- [x] T001 Verify clean isolated branch/worktree, exact base and frontend-only boundary in `specs/015-responsive-workspace/implementation-evidence.md`.
-- [x] T002 [P] Verify IMG-UX-03/04 manifest, Specs 010–014 ownership and baseline separation in `specs/015-responsive-workspace/plan.md`.
-- [x] T003 [P] Document canonical breakpoint inclusivity and current task-local pane persistence in `specs/015-responsive-workspace/plan.md` and `data-model.md`.
-- [x] T004 Record current baseline hashes and Graphify/source authority without versioning generated query noise in `specs/015-responsive-workspace/implementation-evidence.md`.
+**Purpose**: fijar rama, autoridad visual, límites frontend y evidencia inicial.
 
-**Checkpoint**: authority, lineage and visual gates are explicit.
+- [ ] T001 Verificar rama `codex/015-responsive-workspace`, upstream, worktree y exclusión de backend en `specs/015-responsive-workspace/implementation-evidence.md`
+- [ ] T002 [P] Verificar trazabilidad IMG-UX-03/04 y ownership de Specs 010–014 en `docs/ux-ui/mockups/rediseño-agente/manifest.md` y `specs/015-responsive-workspace/plan.md`
+- [ ] T003 [P] Registrar hashes de baselines IMG-UX-03/04 y estado `HUMAN_DECISION_REQUIRED` en `specs/015-responsive-workspace/implementation-evidence.md`
+- [ ] T004 [P] Confirmar versiones Nuxt/Vue/Vitest/Playwright y comandos de verificación en `specs/015-responsive-workspace/quickstart.md`
 
----
-
-## Phase 2: Capa A foundation — breakpoints, persistence and pane controller
-
-**Purpose**: lock the existing state authority and missing controller behavior before layout changes.
-
-- [x] T005 [P] [US2] Add boundary/invalid-input and CSS-contract tests for the unique breakpoints in `app/features/tasks/components/workspace-shell-presentation.test.ts`. **Refs: FR-001, IMG-UX-03, IMG-UX-04**
-- [x] T006 [P] [US2] Add storage reopen, cross-task isolation and invalid pane tests in `app/features/tasks/composables/useWorkspaceState.test.ts`. **Refs: FR-008, IMG-UX-04**
-- [x] T007 [US2] Add tests for icons, pending dot 0/positive, mounted inactive pane and focus after click/keyboard selection in `app/features/tasks/components/WorkspacePaneTabs.test.ts`. **Refs: FR-005–FR-007, IMG-UX-04**
-- [x] T008 Run T005–T007 focused; record expected red only for missing 015 behavior in `specs/015-responsive-workspace/implementation-evidence.md`.
-- [x] T009 [US2] Implement the smallest pane-controller/presentation change in `WorkspacePaneTabs.vue` and `workspace-shell-presentation.ts`; do not duplicate persistence.
-- [x] T010 Run focused green plus `useWorkspaceState.test.ts` regression and synchronize tasks/evidence immediately.
-
-**Checkpoint**: selector/state behavior is green independently of shell styling.
+**Checkpoint**: autoridad, alcance y separación ACTUAL/baseline son reproducibles.
 
 ---
 
-## Phase 3: User Story 1 — tablet structural layout (Priority: P1)
+## Phase 2: Foundational responsive contracts
 
-**Goal**: drawer closed, compact header and two independently scrolling regions at 1024×768.
+**Purpose**: bloquear breakpoints, persistencia y semántica compartida antes de componer historias.
 
-**Independent Test**: component tests resolve tablet, expose hamburger/overflow and preserve adjacent stage/agent regions with one primary maximum. **Refs: IMG-UX-03**
+- [ ] T005 [P] Añadir pruebas límite 767/768/1024/1025, ancho inválido y paridad CSS en `app/features/tasks/components/workspace-shell-presentation.test.ts`
+- [ ] T006 [P] Añadir pruebas de apertura, persistencia, aislamiento entre tareas y valor inválido de pane en `app/features/tasks/composables/useWorkspaceState.test.ts`
+- [ ] T007 Ejecutar T005–T006 en rojo y registrar comando, conteo y causa esperada en `specs/015-responsive-workspace/implementation-evidence.md`
+- [ ] T008 Implementar únicamente la corrección de clasificación/persistencia necesaria en `app/features/tasks/components/workspace-shell-presentation.ts` y `app/features/tasks/composables/useWorkspaceState.ts`
+- [ ] T009 Reejecutar verde focal y regresión de estado; sincronizar T005–T008 en `specs/015-responsive-workspace/tasks.md` y `specs/015-responsive-workspace/implementation-evidence.md`
 
-- [x] T011 [P] [US1] Add header tests for compact breadcrumb, chip/context, overflow actions and accessible names in `app/features/tasks/components/WorkspaceHeader.test.ts`. **Refs: FR-002, FR-004, IMG-UX-03**
-- [x] T012 [US1] Add TaskWorkspace tests for tablet drawer default/focus, adjacent regions, pending propagation and primary-action maximum in `app/features/tasks/components/TaskWorkspace.test.ts`. **Refs: FR-002, FR-003, FR-006, FR-010, IMG-UX-03**
-- [x] T013 [US1] Run T011–T012 and record valid red in `implementation-evidence.md`.
-- [x] T014 [US1] Implement compact header/overflow in `WorkspaceHeader.vue`, reusing existing emitted actions.
-- [x] T015 [US1] Implement tablet region ownership and independent overflow in `TaskWorkspace.vue` and owning agent styles without changing chat behavior.
-- [x] T016 [US1] Run focused green and regress existing `WorkspaceHeader`, `TaskWorkspace`, `AgentPanel` and shell tests; synchronize evidence.
-
-**Checkpoint**: IMG-UX-03 structural behavior passes Capa A.
+**Checkpoint**: los tres modos y el pane por tarea tienen una sola autoridad verde.
 
 ---
 
-## Phase 4: User Story 2 — mobile single plane (Priority: P1)
+## Phase 3: User Story 1 — Tablet con regiones autónomas (Priority: P1) 🎯 MVP
 
-**Goal**: exact context line, safe pane switching, complete fields/footer and task-local restoration.
+**Goal**: drawer cerrado, header compacto y lienzo/agente paralelos con scroll independiente a 1024×768. **Refs: IMG-UX-03**
 
-**Independent Test**: fill stage + agent draft, switch both ways and change tasks; values, pane and logical focus survive. **Refs: IMG-UX-04**
+**Independent Test**: abrir una tarea extensa a 1024×768, confirmar drawer cerrado,
+hamburguesa/overflow, mover cada scroll sin alterar el otro y contar como máximo
+una primaria visible.
 
-- [x] T017 [US2] Add TaskWorkspace tests for exact context line, pending dot aggregation, pane events, draft/field preservation and focus in `TaskWorkspace.test.ts`. **Refs: FR-005–FR-008, IMG-UX-04**
-- [x] T018 [P] [US2] Add GuidedPhaseForm responsive contract tests for full field/counter presence, centered save text and single full-width primary semantics in `GuidedPhaseForm.test.ts`. **Refs: FR-009, FR-010, IMG-UX-04**
-- [x] T019 [US2] Run T017–T018 and record valid red in `implementation-evidence.md`.
-- [x] T020 [US2] Recompose mobile context/panes minimally in `TaskWorkspace.vue` and `WorkspaceHeader.vue`, preserving 012–014 DOM/data behavior.
-- [x] T021 [US2] Adjust only responsive owner styles in `GuidedPhaseForm.vue`/`WorkspacePaneTabs.vue` so fields precede nonessential meta and footer meets IMG-UX-04.
-- [x] T022 [US2] Run focused green plus all phase component regressions and synchronize evidence.
+### Tests for User Story 1 — write and run red first
 
-**Checkpoint**: IMG-UX-04 behavior passes Capa A at component level.
+- [ ] T010 [P] [US1] Añadir pruebas de breadcrumb, chip, overflow, acciones y nombres accesibles en `app/features/tasks/components/WorkspaceHeader.test.ts`
+- [ ] T011 [P] [US1] Añadir pruebas de drawer cerrado, abrir/cerrar/Escape, retorno de foco, preferencia desktop intacta, regiones adyacentes y máximo de primarias en `app/features/tasks/components/TaskWorkspace.test.ts`
+- [ ] T012 [P] [US1] Añadir prueba E2E de scroll bidireccional con movimiento/estabilidad simétricos en `tests/e2e/stage-agent-workspace.spec.ts`
+- [ ] T013 [US1] Ejecutar T010–T012 en rojo y registrar fallos esperados IMG-UX-03 en `specs/015-responsive-workspace/implementation-evidence.md`
 
----
+### Implementation for User Story 1
 
-## Phase 5: User Story 3 — 320 px, zoom and accessibility (Priority: P2)
+- [ ] T014 [US1] Implementar header compacto, breadcrumb, chip y menú overflow reutilizando destinos existentes en `app/features/tasks/components/WorkspaceHeader.vue`
+- [ ] T015 [US1] Implementar drawer tablet cerrado, foco de apertura/cierre/Escape y layout paralelo en `app/features/tasks/components/TaskWorkspace.vue`
+- [ ] T016 [US1] Confinar ancho y overflow del rail/contenido del agente en `app/features/tasks/components/AgentPanel.vue` y `app/features/tasks/components/TaskChat.vue`
+- [ ] T017 [US1] Reejecutar verde de header/workspace/agente y el recorrido 1024×768; registrar conteos en `specs/015-responsive-workspace/implementation-evidence.md`
 
-**Goal**: no lost content, overflow or overlap under narrow/reflow conditions.
-
-- [x] T023 [US3] Add Playwright responsive journey tests for 1024 tablet, 390 stage/agent, 320 field/list completeness, pane persistence/draft and primary maximum in `tests/e2e/stage-agent-workspace.spec.ts`. **Refs: FR-003, FR-007–FR-011, IMG-UX-03, IMG-UX-04**
-- [x] T024 [US3] Add visual contract assertions/snapshots for IMG-UX-03 tablet agent and IMG-UX-04 mobile stage/agent at 390 and 320 in `tests/e2e/visual/stage-agent-workspace.visual.spec.ts`. **Refs: FR-011–FR-013, IMG-UX-03, IMG-UX-04**
-- [x] T025 [P] [US3] Extend geometry helpers/tests for document/pane horizontal overflow, region overlap, independent scroll and 200% zoom in `tests/e2e/helpers/visual-geometry.ts` and `.test.ts`.
-- [x] T026 [US3] Add axe contrast checks for both panes and record exact scenario/viewports in the visual spec.
-- [x] T027 Run T023–T026 with one explicit server/base URL and `--workers=1`; record valid contract red without snapshot update.
-- [x] T028 Implement only the responsive CSS/attributes required by T027 in owning frontend components; do not weaken tests or update baselines.
-- [x] T029 Re-run functional/visual contract to green, then helper regressions; synchronize evidence.
-
-**Checkpoint**: Capa B contract green; visual acceptance remains pending.
+**Checkpoint**: US1 funciona y se prueba independientemente contra IMG-UX-03.
 
 ---
 
-## Phase 6: Capa C and human visual gate
+## Phase 4: User Story 2 — Móvil sin pérdida de trabajo (Priority: P1)
 
-- [x] T030 Capture candidate ACTUAL images for IMG-UX-03/04 into `specs/015-responsive-workspace/evidence/actual/` without changing baselines; verify baseline hashes.
-- [x] T031 Complete ACTUAL vs IMG-UX-03/04 comparison in `evidence/visual-comparison.md` across hierarchy, content, geometry, interaction, responsive and accessibility.
-- [ ] T032 Request explicit human review; keep `HUMAN_DECISION_REQUIRED` until approved.
-- [ ] T033 Only after T032 approval, update the selected baselines and rerun the same selection idempotently.
+**Goal**: un solo plano, contexto exacto, selector Etapa/Agente y estado/draft/foco conservados por tarea. **Refs: IMG-UX-04**
+
+**Independent Test**: en 390×844 editar formulario y composer, alternar panes,
+visitar dos tareas con panes distintos, recargar y recuperar valores/foco sin modal.
+
+### Tests for User Story 2 — write and run red first
+
+- [ ] T018 [P] [US2] Añadir pruebas de iconos, selección teclado/click, `inert`, foco lógico y pending dot 0/positivo en `app/features/tasks/components/WorkspacePaneTabs.test.ts`
+- [ ] T019 [P] [US2] Añadir pruebas de línea exacta de contexto, agregación de pendientes y wiring de panes en `app/features/tasks/components/TaskWorkspace.test.ts`
+- [ ] T020 [P] [US2] Añadir pruebas de campos/contadores, guardar centrado y primaria full-width en `app/features/tasks/components/GuidedPhaseForm.test.ts`
+- [ ] T021 [US2] Añadir recorrido con dos tareas que verifique drafts/foco durante alternancia en sesión y, tras reload, solo pane por tarea y valores con persistencia ya contractual en `tests/e2e/stage-agent-workspace.spec.ts`
+- [ ] T022 [US2] Ejecutar T018–T021 en rojo y registrar causas IMG-UX-04 en `specs/015-responsive-workspace/implementation-evidence.md`
+
+### Implementation for User Story 2
+
+- [ ] T023 [US2] Implementar selector segmentado con iconos, dot accesible, panes montados y foco sin scroll en `app/features/tasks/components/WorkspacePaneTabs.vue`
+- [ ] T024 [US2] Integrar contexto móvil, pane persistido y pendientes derivados sin store nuevo en `app/features/tasks/components/TaskWorkspace.vue`
+- [ ] T025 [US2] Ocultar el control de colapso redundante solo en el caller móvil manteniendo Agente expandido en `app/features/tasks/components/AgentPanel.vue`
+- [ ] T026 [US2] Reordenar presentación móvil para campos primero, guardar textual centrado y primaria full-width en `app/features/tasks/components/GuidedPhaseForm.vue`
+- [ ] T027 [US2] Reejecutar verde de panes/workspace/form/agente y recorrido 390×844; registrar conteos en `specs/015-responsive-workspace/implementation-evidence.md`
+
+**Checkpoint**: US2 conserva formulario, composer, pane y foco por tarea contra IMG-UX-04.
 
 ---
 
-## Phase 7: Regression, review and publication
+## Phase 5: User Story 3 — 320 px, zoom y accesibilidad (Priority: P2)
 
-- [x] T034 Run Capa A, `npm run typecheck`, affected E2E/visual contracts and `npm run verify`; record exact counts/exit codes.
-- [x] T035 Run `git diff --check`, `graphify update .` and graph/structure verification; exclude Graphify caches, SQLite and unrelated evidence from staging.
-- [x] T036 Launch independent patch review; resolve actionable findings through a new test-first cycle and record verdict.
-- [x] T037 Audit status, stage explicit 015/frontend/test paths, run `git diff --cached --check`, commit and push only `origin/codex/015-responsive-workspace`; record SHA/upstream.
+**Goal**: conservar todos los datos y controles sin overflow ni solapes en 320 px y zoom 200%. **Refs: IMG-UX-03, IMG-UX-04**
 
-## Dependencies and execution order
+**Independent Test**: recorrer Etapa/Agente a 320×667 y zoom 200% en 1024, 390 y
+320; footer, composer, tabs y regiones permanecen alcanzables, no solapados y con
+contraste automatizable.
 
-- Phase 1 blocks all edits.
-- Phase 2 controller/state foundation blocks tablet/mobile integration.
-- Tablet and mobile share owners and run sequentially: Phase 3 then Phase 4.
-- Capa B depends on Capa A green; Capa C depends on contract green.
-- Baseline update depends on explicit human approval; publication may report that gate pending but cannot claim visual approval.
-- Within every block: tests → expected red → evidence → minimum implementation → green/regression → ledger sync.
+### Tests for User Story 3 — write and run red first
 
-## Task summary
+- [ ] T028 [P] [US3] Añadir helpers/pruebas de ancho de viewport, containment, overlap y primarias en `tests/e2e/helpers/visual-geometry.ts` y `tests/e2e/helpers/visual-geometry.test.ts`
+- [ ] T029 [US3] Añadir assertions 320 px de cero overflow y contenido completo en `tests/e2e/stage-agent-workspace.spec.ts`
+- [ ] T030 [US3] Añadir contratos IMG-UX-03/04 para 1024, 390 y 320, ambos panes y zoom 200% en `tests/e2e/visual/stage-agent-workspace.visual.spec.ts`
+- [ ] T031 [US3] Añadir axe-core de contraste para Etapa y Agente en `tests/e2e/visual/stage-agent-workspace.visual.spec.ts`
+- [ ] T032 [US3] Ejecutar T028–T031 sin actualizar snapshots y registrar rojos de geometría/contraste en `specs/015-responsive-workspace/implementation-evidence.md`
 
-- Total: 37 tasks.
-- US1 tablet: 6 story tasks plus shared gates.
-- US2 mobile/state: 12 story tasks plus shared gates.
-- US3 narrow/zoom/a11y: 7 story tasks plus shared gates.
-- Human-only gate: T032; baseline update protected by T033.
+### Implementation for User Story 3
+
+- [ ] T033 [US3] Eliminar mínimos intrínsecos del formulario/footer mediante tracks flexibles y wrap en `app/features/tasks/components/GuidedPhaseForm.vue`
+- [ ] T034 [US3] Confinar grid, contenido y composer del agente para reflow en `app/features/tasks/components/AgentPanel.vue` y `app/features/tasks/components/TaskChat.vue`
+- [ ] T035 [US3] Permitir wrap sin pérdida ni intercepción de tabs móviles en `app/features/tasks/components/WorkspacePaneTabs.vue`
+- [ ] T036 [US3] Ajustar la columna tablet sin crear otro breakpoint de viewport en `app/features/tasks/components/TaskWorkspace.vue`
+- [ ] T037 [US3] Reejecutar helpers, E2E y visual contractual a verde con `--workers=1`; registrar axe/zoom/overflow en `specs/015-responsive-workspace/implementation-evidence.md`
+
+**Checkpoint**: US3 cumple invariantes de 320 px, zoom y contraste en ambos panes.
+
+---
+
+## Phase 6: Evidence, regression and protected visual gate
+
+**Purpose**: cerrar evidencia automatizada sin convertir candidatos en baselines aprobadas.
+
+- [ ] T038 Capturar IMG-UX-03 tablet e IMG-UX-04 mobile/mobile-narrow Etapa/Agente en `specs/015-responsive-workspace/evidence/actual/`
+- [ ] T039 Comparar jerarquía, contenido visible, geometría, interacción, reflow y accesibilidad en `specs/015-responsive-workspace/evidence/visual-comparison.md`
+- [ ] T040 Verificar que hashes de baselines permanecen intactos y registrar `HUMAN_DECISION_REQUIRED` en `specs/015-responsive-workspace/implementation-evidence.md`
+- [ ] T041 Ejecutar Vitest afectado, E2E completo, visual contractual, typecheck, estructura, Graphify y build según `specs/015-responsive-workspace/quickstart.md`
+- [ ] T042 Ejecutar `git diff --check`, excluir caches Graphify/SQLite y documentar el audit en `specs/015-responsive-workspace/implementation-evidence.md`
+- [ ] T043 Lanzar revisión independiente del patch y resolver hallazgos accionables mediante otro ciclo test-first en `specs/015-responsive-workspace/implementation-evidence.md`
+- [ ] T044 Solicitar aprobación humana explícita de los candidatos y mantener T045 bloqueada en `specs/015-responsive-workspace/evidence/visual-comparison.md`
+- [ ] T045 Actualizar baselines seleccionadas solo después de T044 y registrar rerun idempotente en `specs/015-responsive-workspace/implementation-evidence.md`
+- [ ] T046 Registrar SHA/upstream y publicar únicamente `origin/codex/015-responsive-workspace`, permitiendo `HUMAN_DECISION_REQUIRED` sin actualizar baselines, en `specs/015-responsive-workspace/implementation-evidence.md`
+
+---
+
+## Dependencies & Execution Order
+
+### Phase dependencies
+
+- **Phase 1** no tiene dependencias.
+- **Phase 2** depende de Phase 1 y bloquea todas las historias.
+- **US1 y US2** comparten propietarios; ejecutar secuencialmente US1 → US2 para evitar conflictos, aunque sus pruebas independientes pueden prepararse en paralelo.
+- **US3** depende de la composición de US1/US2.
+- **Phase 6** depende de las tres historias verdes.
+- **T045** depende estrictamente de aprobación humana T044; una suite verde no sustituye ese gate.
+- **T046** depende de T042–T043, no de T044–T045; publicar la rama puede dejar el gate humano pendiente y no implica aprobar baselines.
+
+### User story completion order
+
+```text
+Setup -> Foundation -> US1 tablet -> US2 mobile -> US3 reflow/a11y -> Evidence -> Human gate
+```
+
+### Within every story
+
+1. Escribir pruebas completas.
+2. Ejecutar y confirmar rojo por comportamiento faltante, no por harness.
+3. Aplicar el cambio mínimo en el propietario.
+4. Ejecutar verde focal y regresión afectada.
+5. Sincronizar inmediatamente `tasks.md` e `implementation-evidence.md`.
+
+## Parallel Opportunities
+
+- T002–T004 pueden ejecutarse en paralelo.
+- T005 y T006 pueden prepararse en paralelo.
+- T010–T012 usan archivos distintos y pueden escribirse en paralelo antes del rojo US1.
+- T018–T020 pueden escribirse en paralelo; T021 integra su comportamiento.
+- T028 puede prepararse en paralelo con el diseño inicial de T029–T031.
+- T038 y la preparación documental de T039 pueden comenzar juntas después de T037.
+
+## Parallel Example: User Story 2
+
+```text
+Task T018: WorkspacePaneTabs component contract
+Task T019: TaskWorkspace mobile wiring contract
+Task T020: GuidedPhaseForm mobile footer contract
+```
+
+Después de esos tres tests, T021 integra el recorrido real y T022 consolida el rojo.
+
+## Implementation Strategy
+
+### MVP first
+
+1. Completar Setup y Foundation.
+2. Entregar US1 tablet como primer incremento verificable IMG-UX-03.
+3. Detenerse y validar drawer, regiones, scroll y primaria antes de móvil.
+
+### Incremental delivery
+
+1. US1: estructura tablet.
+2. US2: ciclo móvil y estado por tarea.
+3. US3: estrecho, zoom y axe.
+4. Capa C: candidatos y comparación.
+5. Gate humano: aprobación o rechazo; solo entonces baseline.
+
+## Task Summary
+
+- **Total**: 46 tareas.
+- **Setup/Foundation**: 9.
+- **US1**: 8.
+- **US2**: 10.
+- **US3**: 10.
+- **Evidence/closure**: 9.
+- **Suggested MVP**: Phase 1 + Phase 2 + US1.
+- **Human-only**: T044; T045 permanece protegida hasta aprobación explícita.

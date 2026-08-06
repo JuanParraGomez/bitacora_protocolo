@@ -20,9 +20,11 @@
 
 ## Zoom 200%
 
-- Reflow remains usable with no overlapping interactive regions.
+- Reflow remains usable at 1024, 390 and 320 with no overlapping interactive regions.
 - All essential controls remain reachable by keyboard and scrolling.
 - No clipped field/list data and no fixed footer covering content.
+- Tablet retains non-overlapping stage/agent regions; móvil permite alternar
+  ambos tabs sin intercepción y mantiene footer/composer dentro del viewport.
 
 ## Accessibility and evidence
 
@@ -31,3 +33,4 @@
 - Axe-core contrast runs in stage and agent panes for IMG-UX-03/04.
 - Mockups are references, not Playwright baselines.
 - ACTUAL captures require explicit human approval before baseline update.
+- A green contract or inspected ACTUAL does not close the human gate.

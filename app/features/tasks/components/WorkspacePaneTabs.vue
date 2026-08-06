@@ -7,9 +7,11 @@ const props = withDefaults(defineProps<{
   modelValue: WorkspacePane;
   stageLabel?: string;
   agentLabel?: string;
+  agentPending?: boolean;
 }>(), {
   stageLabel: 'Etapa',
   agentLabel: 'Agente',
+  agentPending: false,
 });
 
 const emit = defineEmits<{
@@ -34,6 +36,7 @@ function focusTab(key: WorkspacePane) {
 }
 
 function selectPane(key: WorkspacePane) {
+  focusTab(key);
   emit('update:modelValue', key);
 }
 
@@ -89,7 +92,10 @@ function onTabKeydown(event: KeyboardEvent, key: WorkspacePane) {
         @click="selectPane('stage')"
         @keydown="onTabKeydown($event, 'stage')"
       >
-        {{ props.stageLabel }}
+        <svg data-pane-icon="stage" class="workspace-pane-tabs__icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M5 4.5h10M5 10h10M5 15.5h6" />
+        </svg>
+        <span>{{ props.stageLabel }}</span>
       </button>
       <button
         :id="agentTabId"
@@ -103,7 +109,13 @@ function onTabKeydown(event: KeyboardEvent, key: WorkspacePane) {
         @click="selectPane('agent')"
         @keydown="onTabKeydown($event, 'agent')"
       >
-        {{ props.agentLabel }}
+        <svg data-pane-icon="agent" class="workspace-pane-tabs__icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M4 5.5h12v8H9l-3.5 2v-2H4zM7 9.5h.01M10 9.5h.01M13 9.5h.01" />
+        </svg>
+        <span>{{ props.agentLabel }}</span>
+        <span v-if="props.agentPending" data-agent-pending class="workspace-pane-tabs__pending">
+          <span class="workspace-pane-tabs__sr-only">con pendientes</span>
+        </span>
       </button>
     </div>
 
@@ -144,25 +156,63 @@ function onTabKeydown(event: KeyboardEvent, key: WorkspacePane) {
 }
 
 .workspace-pane-tabs__tablist {
-  display: inline-grid;
-  grid-auto-flow: column;
-  gap: .45rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .2rem;
   align-items: center;
+  padding: .2rem;
+  border: 1px solid #cad6cf;
+  border-radius: .75rem;
+  background: #edf3ef;
 }
 
 .workspace-pane-tabs__tab {
+  position: relative;
+  display: inline-flex;
+  gap: .45rem;
+  align-items: center;
+  justify-content: center;
   min-height: 2.45rem;
   padding: 0 .95rem;
-  border: 1px solid #cad6cf;
-  border-radius: 999px;
+  border: 0;
+  border-radius: .58rem;
   color: #173026;
-  background: #fff;
+  background: transparent;
 }
 
 .workspace-pane-tabs__tab[aria-selected='true'] {
   border-color: #0c7e53;
   color: #fff;
   background: #0c7e53;
+}
+
+.workspace-pane-tabs__icon {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.workspace-pane-tabs__pending {
+  width: .45rem;
+  height: .45rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: #f4a340;
+}
+
+.workspace-pane-tabs__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .workspace-pane-tabs__panel {

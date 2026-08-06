@@ -11,7 +11,7 @@
 - [x] T001 Verify clean isolated branch/worktree, exact base and frontend-only boundary in `specs/015-responsive-workspace/implementation-evidence.md`.
 - [x] T002 [P] Verify IMG-UX-03/04 manifest, Specs 010–014 ownership and baseline separation in `specs/015-responsive-workspace/plan.md`.
 - [x] T003 [P] Document canonical breakpoint inclusivity and current task-local pane persistence in `specs/015-responsive-workspace/plan.md` and `data-model.md`.
-- [ ] T004 Record current baseline hashes and Graphify/source authority without versioning generated query noise in `specs/015-responsive-workspace/implementation-evidence.md`.
+- [x] T004 Record current baseline hashes and Graphify/source authority without versioning generated query noise in `specs/015-responsive-workspace/implementation-evidence.md`.
 
 **Checkpoint**: authority, lineage and visual gates are explicit.
 
@@ -21,12 +21,12 @@
 
 **Purpose**: lock the existing state authority and missing controller behavior before layout changes.
 
-- [ ] T005 [P] [US2] Add boundary/invalid-input and CSS-contract tests for the unique breakpoints in `app/features/tasks/components/workspace-shell-presentation.test.ts`. **Refs: FR-001, IMG-UX-03, IMG-UX-04**
-- [ ] T006 [P] [US2] Add storage reopen, cross-task isolation and invalid pane tests in `app/features/tasks/composables/useWorkspaceState.test.ts`. **Refs: FR-008, IMG-UX-04**
-- [ ] T007 [US2] Add tests for icons, pending dot 0/positive, mounted inactive pane and focus after click/keyboard selection in `app/features/tasks/components/WorkspacePaneTabs.test.ts`. **Refs: FR-005–FR-007, IMG-UX-04**
-- [ ] T008 Run T005–T007 focused; record expected red only for missing 015 behavior in `specs/015-responsive-workspace/implementation-evidence.md`.
-- [ ] T009 [US2] Implement the smallest pane-controller/presentation change in `WorkspacePaneTabs.vue` and `workspace-shell-presentation.ts`; do not duplicate persistence.
-- [ ] T010 Run focused green plus `useWorkspaceState.test.ts` regression and synchronize tasks/evidence immediately.
+- [x] T005 [P] [US2] Add boundary/invalid-input and CSS-contract tests for the unique breakpoints in `app/features/tasks/components/workspace-shell-presentation.test.ts`. **Refs: FR-001, IMG-UX-03, IMG-UX-04**
+- [x] T006 [P] [US2] Add storage reopen, cross-task isolation and invalid pane tests in `app/features/tasks/composables/useWorkspaceState.test.ts`. **Refs: FR-008, IMG-UX-04**
+- [x] T007 [US2] Add tests for icons, pending dot 0/positive, mounted inactive pane and focus after click/keyboard selection in `app/features/tasks/components/WorkspacePaneTabs.test.ts`. **Refs: FR-005–FR-007, IMG-UX-04**
+- [x] T008 Run T005–T007 focused; record expected red only for missing 015 behavior in `specs/015-responsive-workspace/implementation-evidence.md`.
+- [x] T009 [US2] Implement the smallest pane-controller/presentation change in `WorkspacePaneTabs.vue` and `workspace-shell-presentation.ts`; do not duplicate persistence.
+- [x] T010 Run focused green plus `useWorkspaceState.test.ts` regression and synchronize tasks/evidence immediately.
 
 **Checkpoint**: selector/state behavior is green independently of shell styling.
 

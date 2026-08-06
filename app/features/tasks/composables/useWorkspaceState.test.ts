@@ -355,6 +355,23 @@ describe('workspace state', () => {
     expect(workspace.setMobilePane('task-a1', 'drawer' as unknown as 'stage')).toBe(false);
   });
 
+  it('reopens the selected mobile pane per task without leaking the preference', () => {
+    const storage = createMemoryStorage();
+    const first = createState(storage);
+
+    expect(first.setMobilePane('task-a1', 'agent')).toBe(true);
+    expect(first.setMobilePane('task-a2', 'stage')).toBe(true);
+    expect(first.setMobilePane('task-b1', 'agent')).toBe(true);
+
+    const reopened = createState(storage);
+    expect(reopened.mobilePaneFor('task-a1')).toBe('agent');
+    expect(reopened.mobilePaneFor('task-a2')).toBe('stage');
+    expect(reopened.mobilePaneFor('task-b1')).toBe('agent');
+
+    expect(reopened.setMobilePane('task-a1', 'stage')).toBe(true);
+    expect(reopened.mobilePaneFor('task-b1')).toBe('agent');
+  });
+
   it('clears per-task agent and mobile pane preferences without affecting other tasks', () => {
     const workspace = createState();
 

@@ -137,8 +137,8 @@ contraste automatizable.
 - [x] T041 Ejecutar Vitest afectado, E2E completo, visual contractual, typecheck, estructura, Graphify y build según `specs/015-responsive-workspace/quickstart.md`
 - [x] T042 Ejecutar `git diff --check`, excluir caches Graphify/SQLite y documentar el audit en `specs/015-responsive-workspace/implementation-evidence.md`
 - [x] T043 Lanzar revisión independiente del patch y resolver hallazgos accionables mediante otro ciclo test-first en `specs/015-responsive-workspace/implementation-evidence.md`
-- [ ] T044 Solicitar aprobación humana explícita de los candidatos y mantener T045 bloqueada en `specs/015-responsive-workspace/evidence/visual-comparison.md`
-- [ ] T045 Actualizar baselines seleccionadas solo después de T044 y registrar rerun idempotente en `specs/015-responsive-workspace/implementation-evidence.md`
+- [x] T044 Registrar aprobación humana explícita de los candidatos en `specs/015-responsive-workspace/evidence/visual-comparison.md`
+- [x] T045 Actualizar baselines seleccionadas solo después de T044 y registrar rerun idempotente en `specs/015-responsive-workspace/implementation-evidence.md`
 - [x] T046 Registrar SHA/upstream y publicar únicamente `origin/codex/015-responsive-workspace`, permitiendo `HUMAN_DECISION_REQUIRED` sin actualizar baselines, en `specs/015-responsive-workspace/implementation-evidence.md`
 
 ---

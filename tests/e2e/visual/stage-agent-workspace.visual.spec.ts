@@ -156,6 +156,39 @@ async function visiblePrimaryActions(page: Page): Promise<PrimaryAction[]> {
   }));
 }
 
+async function visibleStageFieldBoxes(page: Page): Promise<NamedBox[]> {
+  return page.locator('[data-pane="stage"] [data-stage-text-field]').evaluateAll((elements) => elements.flatMap((element, index) => {
+    const style = window.getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    const viewportWidth = document.documentElement.clientWidth;
+    const viewportHeight = document.documentElement.clientHeight;
+    const isVisible = style.display !== 'none'
+      && style.visibility !== 'hidden'
+      && rect.width > 0
+      && rect.height > 0
+      && rect.bottom > 0
+      && rect.right > 0
+      && rect.top < viewportHeight
+      && rect.left < viewportWidth;
+    if (!isVisible) return [];
+    return [{
+      name: `stage-field-${index + 1}`,
+      box: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+    }];
+  }));
+}
+
+async function assertStageFooterDoesNotOverlapVisibleFields(page: Page, scenarioId: VisualScenarioId, viewportName: string) {
+  const footer = await visibleBox(page, '[data-stage-footer]');
+  if (!footer) return;
+  const visibleFields = await visibleStageFieldBoxes(page);
+  const footerFieldOverlaps = assertNoOverlap([
+    { name: 'stage-footer', box: footer },
+    ...visibleFields,
+  ]);
+  expect(footerFieldOverlaps, `${scenarioId}/${viewportName} footer overlaps visible stage fields: ${JSON.stringify(footerFieldOverlaps)}`).toEqual([]);
+}
+
 async function assertVisualGeometry(page: Page, scenarioId: VisualScenarioId, viewportName: string) {
   if (process.env.VISUAL_SEED_GEOMETRY_DEFECT === 'true' && scenarioId === 'IMG-UX-01' && viewportName === 'desktop-large') {
     await page.locator('.agent-panel').evaluate((element) => {
@@ -273,6 +306,9 @@ async function assertVisualGeometry(page: Page, scenarioId: VisualScenarioId, vi
   const primaryAction = await visibleBox(page, '[data-primary-action="true"]');
   if (primaryExpected === 1) {
     expect(primaryAction, `${scenarioId}/${viewportName} primary action box`).not.toBeNull();
+  }
+  if (scenarioId === 'IMG-UX-04' && (viewportName === 'mobile' || viewportName === 'mobile-narrow')) {
+    await assertStageFooterDoesNotOverlapVisibleFields(page, scenarioId, viewportName);
   }
   const controls = [
     ...(composer ? [{ name: 'composer', box: composer }] : []),
@@ -504,6 +540,7 @@ test.describe('stage-agent workspace visual baselines', () => {
             await page.locator('[data-stage-footer]').scrollIntoViewIfNeeded();
             await expect(page.getByRole('button', { name: 'Guardar borrador' })).toBeVisible();
             await expect(page.locator('[data-primary-action="true"]')).toBeVisible();
+            await assertStageFooterDoesNotOverlapVisibleFields(page, scenario.id, `${viewport.name}-zoom-stage`);
             await page.evaluate(() => { document.documentElement.style.zoom = ''; });
           }
           if (scenario.id === 'IMG-UX-03' && viewport.name === 'tablet') {

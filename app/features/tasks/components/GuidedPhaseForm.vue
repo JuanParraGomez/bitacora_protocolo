@@ -541,7 +541,9 @@ watch(() => [props.task.id, props.task.fase], () => {
 
 @media (max-width: 767px) {
   .guided-phase-form {
-    max-height: 100vh;
+    grid-template-rows: none;
+    grid-auto-rows: auto;
+    max-height: none;
   }
 
   .guided-phase-form__header,
@@ -575,6 +577,7 @@ watch(() => [props.task.id, props.task.fase], () => {
 
   .guided-phase-form--compact > :deep(.phase-workspace) {
     order: 10;
+    min-height: auto;
     overflow: visible;
   }
 

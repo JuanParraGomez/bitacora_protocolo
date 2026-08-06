@@ -35,8 +35,9 @@
 
 - Explicit server/base URL: `TEST_BASE_URL=http://127.0.0.1:3005`; all storage-writing visual runs used `--workers=1`.
 - Five candidate ACTUAL captures were produced: tablet agent; mobile stage/agent; mobile-narrow stage/agent.
-- Selected baseline SHA-256 values remain identical to preflight; no baseline was created or updated.
-- Human visual approval remains **HUMAN_DECISION_REQUIRED**. The protected baseline comparison is intentionally red until that decision.
+- Follow-up visual audit found a real mobile-narrow footer/field overlap not covered by the prior geometry assertion. A new Playwright assertion failed first with `IMG-UX-04/mobile-narrow footer overlaps visible stage fields: [{"first":"stage-footer","second":"stage-field-2"}]`.
+- The compact mobile form grid was corrected so the stage footer participates in normal content flow and cannot cover visible `data-stage-text-field` controls.
+- Human visual closure was explicitly requested by the user on 2026-08-06 with `ok arregal y cierra las tareas` after the footer overlap was rejected as blocking. Selected baselines were updated only after that request, then rerun without update.
 - `git diff --check` passed. Migration-created SQLite fixture mutations were restored; generated Graphify outputs/caches were excluded from the product patch after the required update/check.
 
 ## Independent review cycle
@@ -64,3 +65,15 @@
 - Commit/push authorized by user on 2026-08-06.
 - Implementation/evidence baseline SHA: `5d41487`; this execution audit is recorded in the follow-up documentation commit and pushed only to `origin/codex/015-responsive-workspace` after switching the repository-required GitHub identity to `JuanParraGomez`.
 - Upstream confirmed: `[origin/codex/015-responsive-workspace]`. No PR or merge was created.
+
+## Final visual closure patch (2026-08-06)
+
+- Red: `TEST_BASE_URL=http://127.0.0.1:3005 VISUAL_RUN_MODE=contract npx playwright test tests/e2e/visual/stage-agent-workspace.visual.spec.ts --grep IMG-UX-04 --workers=1 --reporter=line` → failed at `IMG-UX-04/mobile-narrow` because `stage-footer` overlapped `stage-field-2`.
+- Green focal: same command → 1/1 passed; desktop/tablet/mobile/mobile-narrow, mobile agent panes and axe contrast all green.
+- Focused Vitest: `npx vitest run tests/e2e/helpers/visual-geometry.test.ts app/features/tasks/components/GuidedPhaseForm.test.ts --reporter=dot` → 2 files, 45/45 passed.
+- Contract regression: `VISUAL_RUN_MODE=contract ... --grep "IMG-UX-0(3|4)" --workers=1` → 2/2 passed, with the new footer-vs-field overlap assertion in normal mobile and zoom-stage paths.
+- Evidence rerun: `VISUAL_RUN_MODE=evidence VISUAL_EVIDENCE_ROOT=specs/015-responsive-workspace/evidence/actual VISUAL_EVIDENCE_CASES=IMG-UX-03:tablet,IMG-UX-04:mobile,IMG-UX-04:mobile-narrow ...` → 2/2 passed and refreshed ACTUAL mobile stage captures.
+- Functional E2E: `TEST_BASE_URL=http://127.0.0.1:3005 npx playwright test tests/e2e/stage-agent-workspace.spec.ts --workers=1 --reporter=line` → 10/10 passed.
+- Typecheck: `npm run typecheck` → exit 0; existing Nuxt Icon runtime fallback warnings only.
+- Protected baseline pre-check without update failed as expected on selected mobile snapshots; `--update-snapshots` regenerated IMG-UX-03/04 mobile baselines and created missing IMG-UX-04 mobile agent baselines.
+- Baseline idempotence: same IMG-UX-03/04 command without `--update-snapshots` → 2/2 passed.

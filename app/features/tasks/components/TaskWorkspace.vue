@@ -968,6 +968,7 @@ watch(() => [localTask.id, localTask.fase], () => {
                   :draft="effectiveDraft"
                   :restore-message-id="props.lastVisibleMessageId"
                   :expanded="true"
+                  :collapsible="false"
                   :pending-proposals="phasePendingProposals.length"
                   :pending-corrections="evaluationRecovery.pendingCount"
                   ref="mobileAgentPanelRef"
@@ -1302,7 +1303,7 @@ watch(() => [localTask.id, localTask.fase], () => {
 
 @media (min-width: 768px) and (max-width: 1024px) {
   .workspace-stage-layout {
-    grid-template-columns: minmax(0, 1.18fr) minmax(16rem, .82fr);
+    grid-template-columns: minmax(0, 1.18fr) minmax(0, .82fr);
   }
 
   .workspace-stage-layout--agent-collapsed {

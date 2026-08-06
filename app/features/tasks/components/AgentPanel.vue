@@ -15,6 +15,7 @@ const props = withDefaults(defineProps<{
   expanded?: boolean;
   pendingProposals?: number;
   pendingCorrections?: number;
+  collapsible?: boolean;
 }>(), {
   suggestions: () => [],
   sendStatus: 'ready',
@@ -26,6 +27,7 @@ const props = withDefaults(defineProps<{
   expanded: true,
   pendingProposals: 0,
   pendingCorrections: 0,
+  collapsible: true,
 });
 
 const emit = defineEmits<{
@@ -50,7 +52,7 @@ async function focusConversation() {
 defineExpose({ focusConversation });
 
 function onContentKeydown(event: KeyboardEvent) {
-  if (event.key !== 'Escape' || !props.expanded) return;
+  if (event.key !== 'Escape' || !props.expanded || !props.collapsible) return;
   event.preventDefault();
   emit('toggle');
   void nextTick(() => {
@@ -84,6 +86,7 @@ watch(() => props.expanded, async (next, previous) => {
         </div>
       </div>
       <button
+        v-if="props.collapsible"
         ref="toggleButton"
         type="button"
         class="agent-panel__toggle"
@@ -136,6 +139,7 @@ watch(() => props.expanded, async (next, previous) => {
 <style scoped>
 .agent-panel {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
@@ -274,10 +278,13 @@ watch(() => props.expanded, async (next, previous) => {
 }
 
 .agent-panel__content {
+  min-width: 0;
   min-height: 0;
 }
 
 .agent-panel__content :deep(.task-chat) {
+  width: 100%;
+  max-width: 100%;
   height: 100%;
 }
 

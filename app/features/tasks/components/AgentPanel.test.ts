@@ -119,4 +119,15 @@ describe('AgentPanel', () => {
     await (wrapper.vm as unknown as { focusConversation: () => Promise<void> }).focusConversation();
     expect(document.activeElement).toBe(wrapper.get('[data-agent-panel-content]').element);
   });
+
+  it('keeps mobile agent content expanded without a redundant collapse toggle', () => {
+    const wrapper = mount(AgentPanel, {
+      props: { ...baseProps, collapsible: false },
+      global: { stubs: { TaskChat: { template: '<div data-testid="task-chat-stub">chat</div>' } } },
+    });
+
+    expect(wrapper.find('[aria-label="Contraer agente IA"]').exists()).toBe(false);
+    expect(wrapper.get('[data-agent-panel-content]').attributes('aria-hidden')).toBe('false');
+    expect(wrapper.get('[data-testid="task-chat-stub"]').isVisible()).toBe(true);
+  });
 });

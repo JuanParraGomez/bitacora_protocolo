@@ -4,7 +4,7 @@ import { buildPhaseRevision } from '../../../app/features/tasks/domain/task-assi
 import { repairTask, type Task } from '../../../app/features/tasks/domain/task.schema';
 import { stageAgentWorkspaceTasks, stageAgentWorkspaceWorkspaceState } from '../../fixtures/tasks/stage-agent-workspace';
 import { artifactPath, buildEvidenceScreenshotOptions, buildScreenshotOptions, shouldCaptureEvidence, shouldCaptureEvidenceScreenshot, shouldCompareBaseline, waitForStableUi } from '../helpers/visual-capture';
-import { assertContained, assertNoOverlap, assertNoOverlapPairs, countPrimaryActions, isWithinWidthLimit, type Box, type NamedBox, type PrimaryAction } from '../helpers/visual-geometry';
+import { assertContained, assertNoOverlap, assertNoOverlapPairs, countPrimaryActions, fitsViewportWidth, isWithinWidthLimit, type Box, type NamedBox, type PrimaryAction } from '../helpers/visual-geometry';
 import { VISUAL_SCENARIOS, type VisualScenarioId } from '../helpers/visual-scenarios';
 import { WORKSPACE_UX_VIEWPORTS } from '../helpers/workspace-ux';
 
@@ -198,6 +198,14 @@ async function assertVisualGeometry(page: Page, scenarioId: VisualScenarioId, vi
   expect(stageOverflow === 'auto' || stageOverflow === 'scroll').toBe(true);
   expect(messagesOverflow === 'auto' || messagesOverflow === 'scroll').toBe(true);
 
+  if (viewportName === 'mobile-narrow') {
+    const horizontalOverflow = await page.locator('html').evaluate((element) => (
+      element.scrollWidth > element.clientWidth
+      || document.body.scrollWidth > document.body.clientWidth
+    ));
+    expect(horizontalOverflow, `${scenarioId}/${viewportName} horizontal overflow`).toBe(false);
+  }
+
   if (scenarioId !== 'IMG-UX-06') {
     const stage = page.locator('.workspace-stage');
     const stageText = await stage.textContent();
@@ -364,7 +372,12 @@ async function reportContrast(page: Page, scenarioId: VisualScenarioId, viewport
 async function assertShellContract(page: Page, viewportName: string, scenarioId: VisualScenarioId) {
   const header = page.getByRole('region', { name: 'Contexto del workspace' });
   await expect(header.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible();
-  await expect(header.locator('[data-stage-chip]')).toHaveText(/Etapa [1-4] de 4/);
+  if (viewportName === 'mobile' || viewportName === 'mobile-narrow') {
+    await expect(header.locator('[data-mobile-context]')).toHaveText(/Etapa [1-4] de 4 · .+/);
+    await expect(header.locator('[data-stage-chip]')).toHaveCount(0);
+  } else {
+    await expect(header.locator('[data-stage-chip]')).toHaveText(/Etapa [1-4] de 4/);
+  }
 
   if (viewportName === 'desktop-large') {
     const sidebar = page.getByRole('navigation', { name: 'Navegación de tareas' });
@@ -377,6 +390,8 @@ async function assertShellContract(page: Page, viewportName: string, scenarioId:
     }
   } else {
     await expect(header.getByRole('button', { name: 'Abrir navegación' })).toBeVisible();
+    await expect(header.getByLabel('Más opciones del workspace')).toBeVisible();
+    await expect(page.locator('.workspace-navigation-drawer')).toHaveCount(0);
   }
 
   await expect(page.locator('[data-primary-action="true"]')).toHaveCount(1);
@@ -404,6 +419,114 @@ test.describe('stage-agent workspace visual baselines', () => {
           await assertShellContract(page, viewport.name, scenario.id);
           await assertVisualGeometry(page, scenario.id, viewport.name);
           await reportContrast(page, scenario.id, viewport.name);
+          if (scenario.id === 'IMG-UX-04' && (viewport.name === 'mobile' || viewport.name === 'mobile-narrow')) {
+            const stageTab = page.getByRole('tab', { name: 'Etapa' });
+            const agentTab = page.getByRole('tab', { name: /Agente/ });
+            const tablistBox = await page.getByRole('tablist', { name: 'Planos del workspace' }).boundingBox();
+            expect(tablistBox, `${scenario.id}/${viewport.name} segmented control box`).not.toBeNull();
+            expect(tablistBox?.height, `${scenario.id}/${viewport.name} compact segmented control height`).toBeLessThanOrEqual(56);
+            await expect(stageTab.locator('[data-pane-icon="stage"]')).toBeVisible();
+            await expect(agentTab.locator('[data-pane-icon="agent"]')).toBeVisible();
+            await agentTab.click();
+            await expect(agentTab).toBeFocused();
+            await expect(page.getByLabel('Chat de asistencia')).toBeVisible();
+            const agentBox = await page.locator('[data-pane="agent"]').boundingBox();
+            expect(agentBox, `${scenario.id}/${viewport.name} agent pane box`).not.toBeNull();
+            if (tablistBox && agentBox) {
+              expect(
+                agentBox.y - (tablistBox.y + tablistBox.height),
+                `${scenario.id}/${viewport.name} gap between segmented control and agent`,
+              ).toBeLessThanOrEqual(16);
+            }
+            await reportContrast(page, scenario.id, `${viewport.name}-agent`);
+            const agentOverflow = await page.locator('html').evaluate((element) => (
+              element.scrollWidth > element.clientWidth
+              || document.body.scrollWidth > document.body.clientWidth
+            ));
+            expect(agentOverflow, `${scenario.id}/${viewport.name}-agent horizontal overflow`).toBe(false);
+            if (shouldCompareBaseline()) {
+              await expect(page).toHaveScreenshot(
+                `${scenario.id}-${viewport.name}-agent.png`,
+                buildScreenshotOptions(page),
+              );
+            }
+            if (shouldCaptureEvidenceScreenshot()) {
+              const evidenceRoot = process.env.VISUAL_EVIDENCE_ROOT?.trim()
+                || 'specs/015-responsive-workspace/evidence/actual';
+              await page.screenshot({
+                path: `${evidenceRoot.replace(/\/$/, '')}/ACTUAL-${scenario.id}-${viewport.name}-agent.png`,
+                ...buildEvidenceScreenshotOptions(page),
+              });
+            }
+            await stageTab.click();
+            await expect(stageTab).toBeFocused();
+          }
+          if (scenario.id === 'IMG-UX-04' && (viewport.name === 'mobile' || viewport.name === 'mobile-narrow')) {
+            await page.evaluate(() => { document.documentElement.style.zoom = '200%'; });
+            const assertZoomPane = async (pane: 'stage' | 'agent') => {
+              const zoomOverflow = await page.locator('html').evaluate((element) => (
+                element.scrollWidth > element.clientWidth
+                || document.body.scrollWidth > document.body.clientWidth
+              ));
+              expect(zoomOverflow, `IMG-UX-04/${viewport.name}/${pane} zoom 200% horizontal overflow`).toBe(false);
+              const selector = pane === 'stage'
+                ? '.workspace-header, .workspace-pane-tabs__tablist, [data-pane="stage"], [data-stage-footer]'
+                : '.workspace-header, .workspace-pane-tabs__tablist, [data-pane="agent"], .task-chat__composer';
+              const visibleControls = await page.locator(selector).evaluateAll((elements) => elements.flatMap((element) => {
+                const rect = element.getBoundingClientRect();
+                const style = getComputedStyle(element);
+                return style.display === 'none' || rect.width <= 0 || rect.height <= 0 ? [] : [{
+                  x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+                }];
+              }));
+              expect(visibleControls.length, `IMG-UX-04/${viewport.name}/${pane} essential controls`).toBe(4);
+              expect(
+                visibleControls.every((box) => fitsViewportWidth(box, viewport.width)),
+                `IMG-UX-04/${viewport.name}/${pane} zoom boxes: ${JSON.stringify(visibleControls)}`,
+              ).toBe(true);
+              const tabBoxes = await page.getByRole('tab').evaluateAll((elements) => elements.map((element) => {
+                const rect = element.getBoundingClientRect();
+                return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+              }));
+              expect(assertNoOverlap([
+                { name: 'stage-tab', box: tabBoxes[0] },
+                { name: 'agent-tab', box: tabBoxes[1] },
+              ])).toEqual([]);
+              const paneBox = await page.locator(`[data-pane="${pane}"]`).boundingBox();
+              const tabBox = await page.getByRole('tablist', { name: 'Planos del workspace' }).boundingBox();
+              expect(paneBox && tabBox ? paneBox.y >= tabBox.y + tabBox.height : false).toBe(true);
+            };
+            await assertZoomPane('stage');
+            await page.getByRole('tab', { name: /Agente/ }).click();
+            await page.locator('.task-chat__composer').scrollIntoViewIfNeeded();
+            await assertZoomPane('agent');
+            await page.getByRole('tab', { name: 'Etapa' }).click();
+            await page.locator('[data-stage-footer]').scrollIntoViewIfNeeded();
+            await expect(page.getByRole('button', { name: 'Guardar borrador' })).toBeVisible();
+            await expect(page.locator('[data-primary-action="true"]')).toBeVisible();
+            await page.evaluate(() => { document.documentElement.style.zoom = ''; });
+          }
+          if (scenario.id === 'IMG-UX-03' && viewport.name === 'tablet') {
+            await page.evaluate(() => { document.documentElement.style.zoom = '200%'; });
+            const zoomOverflow = await page.locator('html').evaluate((element) => (
+              element.scrollWidth > element.clientWidth
+              || document.body.scrollWidth > document.body.clientWidth
+            ));
+            expect(zoomOverflow, 'IMG-UX-03/tablet zoom 200% horizontal overflow').toBe(false);
+            const zoomRegions = await page.locator('.workspace-header, .workspace-stage, .agent-panel, .task-chat__composer').evaluateAll((elements) => elements.map((element) => {
+              const rect = element.getBoundingClientRect();
+              return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+            }));
+            expect(zoomRegions.length, 'IMG-UX-03/tablet zoom essential regions').toBe(4);
+            expect(zoomRegions.every((box) => fitsViewportWidth(box, viewport.width))).toBe(true);
+            expect(assertNoOverlap([
+              { name: 'stage', box: zoomRegions[1] },
+              { name: 'agent', box: zoomRegions[2] },
+            ]), `IMG-UX-03/tablet zoom regions: ${JSON.stringify(zoomRegions)}`).toEqual([]);
+            await page.locator('.task-chat__composer').scrollIntoViewIfNeeded();
+            await expect(page.getByPlaceholder('Escribe al agente…')).toBeVisible();
+            await page.evaluate(() => { document.documentElement.style.zoom = ''; });
+          }
           if (process.env.VISUAL_SEED_DEFECT === 'true' && scenario.id === 'IMG-UX-01' && viewport.name === 'desktop-large') {
             await page.evaluate(() => {
               const defect = document.createElement('div');

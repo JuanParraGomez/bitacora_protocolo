@@ -32,7 +32,7 @@ const orderedTabs = computed(() => [
 
 function focusTab(key: WorkspacePane) {
   const target = orderedTabs.value.find((tab) => tab.key === key);
-  target?.ref.value?.focus();
+  target?.ref.value?.focus({ preventScroll: true });
 }
 
 function selectPane(key: WorkspacePane) {
@@ -150,9 +150,11 @@ function onTabKeydown(event: KeyboardEvent, key: WorkspacePane) {
 <style scoped>
 .workspace-pane-tabs {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: .75rem;
   min-width: 0;
   min-height: 0;
+  height: 100%;
 }
 
 .workspace-pane-tabs__tablist {
@@ -181,6 +183,13 @@ function onTabKeydown(event: KeyboardEvent, key: WorkspacePane) {
 }
 
 .workspace-pane-tabs__tab[aria-selected='true'] {
+  border-color: #0c7e53;
+  color: #fff;
+  background: #0c7e53;
+}
+
+.workspace-pane-tabs__tab[aria-selected='true']:hover:not(:disabled),
+.workspace-pane-tabs__tab[aria-selected='true']:focus-visible {
   border-color: #0c7e53;
   color: #fff;
   background: #0c7e53;
@@ -216,7 +225,25 @@ function onTabKeydown(event: KeyboardEvent, key: WorkspacePane) {
 }
 
 .workspace-pane-tabs__panel {
+  grid-row: 2;
+  grid-column: 1;
   min-width: 0;
   min-height: 0;
+}
+
+@media (max-width: 767px) {
+  .workspace-pane-tabs__tab {
+    flex-wrap: wrap;
+    align-content: center;
+    min-width: 0;
+    padding-inline: .4rem;
+  }
+
+  .workspace-pane-tabs__tab > span:not(.workspace-pane-tabs__sr-only) {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    line-height: 1.1;
+  }
 }
 </style>

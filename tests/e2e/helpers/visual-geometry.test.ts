@@ -6,6 +6,7 @@ import {
   countPrimaryActions,
   isWithinWidthLimit,
   hasIndependentScroll,
+  fitsViewportWidth,
   type NamedBox,
 } from './visual-geometry';
 
@@ -71,5 +72,12 @@ describe('visual geometry invariants', () => {
   it('detects independent scroll movement for stage and agent regions', () => {
     expect(hasIndependentScroll({ before: 0, after: 120 }, { before: 0, after: 0 })).toBe(true);
     expect(hasIndependentScroll({ before: 0, after: 0 }, { before: 0, after: 0 })).toBe(false);
+  });
+
+  it('accepts boxes inside a narrow viewport and rejects horizontal clipping', () => {
+    expect(fitsViewportWidth({ x: 0, y: 0, width: 320, height: 40 }, 320)).toBe(true);
+    expect(fitsViewportWidth({ x: 8, y: 0, width: 304, height: 40 }, 320)).toBe(true);
+    expect(fitsViewportWidth({ x: -1, y: 0, width: 320, height: 40 }, 320)).toBe(false);
+    expect(fitsViewportWidth({ x: 16, y: 0, width: 320, height: 40 }, 320)).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 
 import WorkspacePaneTabs from './WorkspacePaneTabs.vue';
@@ -96,5 +96,18 @@ describe('WorkspacePaneTabs', () => {
     expect(document.activeElement).toBe(tabs[0]?.element);
 
     wrapper.unmount();
+  });
+
+  it('moves pane focus without scrolling the viewport away from mobile context', async () => {
+    const wrapper = mount(WorkspacePaneTabs, {
+      props: { modelValue: 'stage' },
+      slots: { stage: '<div />', agent: '<div />' },
+    });
+    const agent = wrapper.findAll<HTMLButtonElement>('[role="tab"]')[1]!;
+    const focus = vi.spyOn(agent.element, 'focus');
+
+    await agent.trigger('click');
+
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
   });
 });

@@ -70,13 +70,13 @@
 
 **Goal**: no lost content, overflow or overlap under narrow/reflow conditions.
 
-- [ ] T023 [US3] Add Playwright responsive journey tests for 1024 tablet, 390 stage/agent, 320 field/list completeness, pane persistence/draft and primary maximum in `tests/e2e/stage-agent-workspace.spec.ts`. **Refs: FR-003, FR-007–FR-011, IMG-UX-03, IMG-UX-04**
-- [ ] T024 [US3] Add visual contract assertions/snapshots for IMG-UX-03 tablet agent and IMG-UX-04 mobile stage/agent at 390 and 320 in `tests/e2e/visual/stage-agent-workspace.visual.spec.ts`. **Refs: FR-011–FR-013, IMG-UX-03, IMG-UX-04**
-- [ ] T025 [P] [US3] Extend geometry helpers/tests for document/pane horizontal overflow, region overlap, independent scroll and 200% zoom in `tests/e2e/helpers/visual-geometry.ts` and `.test.ts`.
-- [ ] T026 [US3] Add axe contrast checks for both panes and record exact scenario/viewports in the visual spec.
-- [ ] T027 Run T023–T026 with one explicit server/base URL and `--workers=1`; record valid contract red without snapshot update.
-- [ ] T028 Implement only the responsive CSS/attributes required by T027 in owning frontend components; do not weaken tests or update baselines.
-- [ ] T029 Re-run functional/visual contract to green, then helper regressions; synchronize evidence.
+- [x] T023 [US3] Add Playwright responsive journey tests for 1024 tablet, 390 stage/agent, 320 field/list completeness, pane persistence/draft and primary maximum in `tests/e2e/stage-agent-workspace.spec.ts`. **Refs: FR-003, FR-007–FR-011, IMG-UX-03, IMG-UX-04**
+- [x] T024 [US3] Add visual contract assertions/snapshots for IMG-UX-03 tablet agent and IMG-UX-04 mobile stage/agent at 390 and 320 in `tests/e2e/visual/stage-agent-workspace.visual.spec.ts`. **Refs: FR-011–FR-013, IMG-UX-03, IMG-UX-04**
+- [x] T025 [P] [US3] Extend geometry helpers/tests for document/pane horizontal overflow, region overlap, independent scroll and 200% zoom in `tests/e2e/helpers/visual-geometry.ts` and `.test.ts`.
+- [x] T026 [US3] Add axe contrast checks for both panes and record exact scenario/viewports in the visual spec.
+- [x] T027 Run T023–T026 with one explicit server/base URL and `--workers=1`; record valid contract red without snapshot update.
+- [x] T028 Implement only the responsive CSS/attributes required by T027 in owning frontend components; do not weaken tests or update baselines.
+- [x] T029 Re-run functional/visual contract to green, then helper regressions; synchronize evidence.
 
 **Checkpoint**: Capa B contract green; visual acceptance remains pending.
 
@@ -84,8 +84,8 @@
 
 ## Phase 6: Capa C and human visual gate
 
-- [ ] T030 Capture candidate ACTUAL images for IMG-UX-03/04 into `specs/015-responsive-workspace/evidence/actual/` without changing baselines; verify baseline hashes.
-- [ ] T031 Complete ACTUAL vs IMG-UX-03/04 comparison in `evidence/visual-comparison.md` across hierarchy, content, geometry, interaction, responsive and accessibility.
+- [x] T030 Capture candidate ACTUAL images for IMG-UX-03/04 into `specs/015-responsive-workspace/evidence/actual/` without changing baselines; verify baseline hashes.
+- [x] T031 Complete ACTUAL vs IMG-UX-03/04 comparison in `evidence/visual-comparison.md` across hierarchy, content, geometry, interaction, responsive and accessibility.
 - [ ] T032 Request explicit human review; keep `HUMAN_DECISION_REQUIRED` until approved.
 - [ ] T033 Only after T032 approval, update the selected baselines and rerun the same selection idempotently.
 
@@ -93,9 +93,9 @@
 
 ## Phase 7: Regression, review and publication
 
-- [ ] T034 Run Capa A, `npm run typecheck`, affected E2E/visual contracts and `npm run verify`; record exact counts/exit codes.
-- [ ] T035 Run `git diff --check`, `graphify update .` and graph/structure verification; exclude Graphify caches, SQLite and unrelated evidence from staging.
-- [ ] T036 Launch independent patch review; resolve actionable findings through a new test-first cycle and record verdict.
+- [x] T034 Run Capa A, `npm run typecheck`, affected E2E/visual contracts and `npm run verify`; record exact counts/exit codes.
+- [x] T035 Run `git diff --check`, `graphify update .` and graph/structure verification; exclude Graphify caches, SQLite and unrelated evidence from staging.
+- [x] T036 Launch independent patch review; resolve actionable findings through a new test-first cycle and record verdict.
 - [ ] T037 Audit status, stage explicit 015/frontend/test paths, run `git diff --cached --check`, commit and push only `origin/codex/015-responsive-workspace`; record SHA/upstream.
 
 ## Dependencies and execution order

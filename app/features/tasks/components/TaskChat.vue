@@ -443,6 +443,9 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 0;
   height: 100%;
 }
@@ -648,10 +651,14 @@ onBeforeUnmount(() => {
 }
 
 .task-chat__composer {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin: 0;
   padding: .9rem 1.35rem 1.05rem;
   border-top: 1px solid #dde3de;
   background: #fff;
+  box-sizing: border-box;
 }
 
 .task-chat__composer :deep([data-testid='attach-file']) {

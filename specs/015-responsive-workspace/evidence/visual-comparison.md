@@ -1,13 +1,13 @@
 # Visual Comparison: ACTUAL vs IMG-UX-03/04
 
-**Status**: capture pending; human decision required.
+**Status**: candidate capture complete; **HUMAN_DECISION_REQUIRED**.
 
 | Ref/state | Hierarchy/content | Geometry/interaction | Responsive/accessibility | Classification |
 |---|---|---|---|---|
-| IMG-UX-03 tablet agent | pending | pending | pending | pending |
-| IMG-UX-04 mobile stage | pending | pending | pending | pending |
-| IMG-UX-04 mobile agent | pending | pending | pending | pending |
-| IMG-UX-04 mobile narrow | pending | pending | pending | pending |
+| IMG-UX-03 tablet agent | Compact breadcrumb header, stage chip and overflow are present; canvas and agent retain the 012/013 content hierarchy. | Closed drawer/hamburger and adjacent stage/agent regions match the reference intent; automated scroll probes confirm independent vertical scroll. | 1024×768 contract has no overlap or horizontal overflow at normal/200% zoom; agent controls remain keyboard reachable and axe reports zero contrast violations. | Candidate matches structural contract; visual approval pending. |
+| IMG-UX-04 mobile stage | The viewport candidate shows the exact context line, icon-labelled selector, evaluation context and the first complete fields with in-flow counters. Footer content is below this canonical 390×844 fold and is not claimed as screenshot evidence. | The visible single plane and field-first hierarchy match the reference; centered save/full-width primary are verified by DOM/scroll journey, not by this fold. | Automated 390×844 checks preserve all fields, draft and focus with no overlap; axe contrast is clear. | Candidate matches visible structural contract; below-fold visual approval pending. |
+| IMG-UX-04 mobile agent | The viewport candidate shows the same compact context, selected Agente pane, agent identity and composer. Its canonical fixture is idle; pending-dot appearance is proven separately by component and task-with-proposal journeys. | No redundant collapse control or modal appears. Mounted-draft and logical-focus behavior are automated interaction evidence, not inferable from one still image. | Automated agent-pane checks report no overlap/horizontal overflow and clear axe contrast at 390×844 and 320 px. | Candidate matches visible structural contract; populated-agent visual approval pending. |
+| IMG-UX-04 mobile narrow | Separate stage/agent viewport candidates exist at 320 px and show the canonical fold without horizontal clipping. They do not visually contain every below-fold field/list/action. | Selector-to-panel geometry is contiguous and at most one primary is proven by DOM inspection. | Automated scroll/reflow checks—not the still image—prove below-fold reachability and both-pane usability at 200% zoom, including footer/composer width and tab/pane non-overlap; axe reports zero contrast violations. | Candidate matches visible invariant 4 fold; full-flow visual approval pending. |
 
 No row may be marked approved without an explicit human decision. Candidate
 ACTUAL captures do not become baselines automatically.

@@ -254,6 +254,9 @@ test.describe('stage-agent workspace', () => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await expect(page.getByRole('region', { name: 'Panel del agente' })).toBeVisible();
     await expect(page.getByLabel('Chat de asistencia')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Abrir navegación' })).toBeVisible();
+    await expect(page.getByLabel('Más opciones del workspace')).toBeVisible();
+    await expect(page.locator('.workspace-navigation-drawer')).toHaveCount(0);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.getByRole('tablist', { name: 'Planos del workspace' })).toBeVisible();
@@ -263,6 +266,48 @@ test.describe('stage-agent workspace', () => {
     await expect(page.getByRole('region', { name: 'Formulario guiado' })).toBeVisible();
 
     await expect(page.getByRole('navigation', { name: 'Navegación de tareas' })).toHaveCount(0);
+  });
+
+  test('keeps mobile stage and agent drafts, focus and pane preference task-local', async ({ page }) => {
+    const task = taskWithProposalConversation('responsive-mobile');
+    const secondTask = structuredClone(stageAgentWorkspaceTasks.phase1);
+    secondTask.id = 'responsive-mobile-second';
+    secondTask.nombre = 'Segunda tarea responsive';
+    await seedWorkspace(page, task, [task, secondTask]);
+    await seedTask(page, secondTask);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/tasks/${task.id}`);
+
+    await expect(page.locator('[data-mobile-context]')).toHaveText('Etapa 2 de 4 · Preguntas de orientación');
+    const stageTab = page.getByRole('tab', { name: 'Etapa' });
+    const agentTab = page.getByRole('tab', { name: /Agente/ });
+    await expect(agentTab.locator('[data-agent-pending]')).toHaveCount(1);
+
+    const stageField = page.getByRole('region', { name: 'Formulario guiado' }).locator('textarea').first();
+    await stageField.fill('borrador de etapa sin guardar');
+    await agentTab.click();
+    await expect(agentTab).toBeFocused();
+    const composer = page.getByPlaceholder('Escribe al agente…');
+    await composer.fill('borrador móvil del agente');
+    await stageTab.click();
+    await expect(stageTab).toBeFocused();
+    await expect(stageField).toHaveValue('borrador de etapa sin guardar');
+    await agentTab.click();
+    await expect(composer).toHaveValue('borrador móvil del agente');
+
+    await page.goto(`/tasks/${secondTask.id}`);
+    await expect(page.getByRole('tab', { name: 'Etapa' })).toHaveAttribute('aria-selected', 'true');
+    await page.goto(`/tasks/${task.id}`);
+    await expect(page.getByRole('tab', { name: /Agente/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByPlaceholder('Escribe al agente…')).toHaveValue('borrador móvil del agente');
+    await page.goto(`/tasks/${secondTask.id}`);
+    await expect(page.getByRole('tab', { name: 'Etapa' })).toHaveAttribute('aria-selected', 'true');
+    await page.goto(`/tasks/${task.id}`);
+
+    await page.reload();
+    await expect(agentTab).toHaveAttribute('aria-selected', 'true');
+    await expect(composer).toHaveValue('borrador móvil del agente');
+    await expect(page.locator('[data-primary-action="true"]:visible')).toHaveCount(0);
   });
 
   test('persists agent rail preference per task and keeps pending badge task-local', async ({ page }) => {
@@ -334,12 +379,20 @@ test.describe('stage-agent workspace', () => {
     await expect.poll(() => stage.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
     await expect.poll(() => messages.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
 
+    const initialStageScroll = await stage.evaluate((element) => element.scrollTop);
+    const initialChatScroll = await messages.evaluate((element) => element.scrollTop);
     await stage.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    const stageAfterStageScroll = await stage.evaluate((element) => element.scrollTop);
     const chatAfterStageScroll = await messages.evaluate((element) => element.scrollTop);
-    expect(chatAfterStageScroll).toBe(0);
+    expect(stageAfterStageScroll).toBeGreaterThan(initialStageScroll);
+    expect(chatAfterStageScroll).toBe(initialChatScroll);
     await messages.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    const chatAfterChatScroll = await messages.evaluate((element) => element.scrollTop);
     const stageAfterChatScroll = await stage.evaluate((element) => element.scrollTop);
-    expect(stageAfterChatScroll).toBeGreaterThan(0);
+    expect(chatAfterChatScroll).toBeGreaterThan(chatAfterStageScroll);
+    expect(stageAfterChatScroll).toBe(stageAfterStageScroll);
+    await stage.evaluate((element) => { element.scrollTop = 0; });
+    expect(await messages.evaluate((element) => element.scrollTop)).toBe(chatAfterChatScroll);
     await expect(page.getByPlaceholder('Escribe al agente…')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Adjuntar' })).toBeDisabled();
   });

@@ -298,10 +298,15 @@ watch(() => [props.task.id, props.task.fase], () => {
 <style scoped>
 .guided-phase-form {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 100%;
   overflow: visible;
   background: #fff;
+  box-sizing: border-box;
 }
 
 .guided-phase-form__header {
@@ -402,6 +407,7 @@ watch(() => [props.task.id, props.task.fase], () => {
   grid-template-columns: auto minmax(0, 1fr);
   gap: .5rem;
   align-items: center;
+  min-width: 0;
   padding: 1rem 1.45rem 1.35rem;
   border-top: 1px solid #dde3de;
 }
@@ -545,7 +551,17 @@ watch(() => [props.task.id, props.task.fase], () => {
 
   .guided-phase-form__controls {
     grid-template-columns: minmax(0, 1fr);
+    width: auto;
+    max-width: none;
+    justify-self: stretch;
     padding-inline: 1rem;
+    box-sizing: border-box;
+  }
+
+  .guided-phase-form__controls button {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .guided-phase-form__save-button {

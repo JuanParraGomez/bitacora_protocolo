@@ -54,3 +54,10 @@ export function assertContained(inner: Box, outer: Box): boolean {
 export function hasIndependentScroll(first: ScrollState, second: ScrollState): boolean {
   return (first.before !== first.after) !== (second.before !== second.after);
 }
+
+export function fitsViewportWidth(box: Pick<Box, 'x' | 'width'>, viewportWidth: number): boolean {
+  return Number.isFinite(viewportWidth)
+    && viewportWidth > 0
+    && box.x >= 0
+    && box.x + box.width <= viewportWidth;
+}

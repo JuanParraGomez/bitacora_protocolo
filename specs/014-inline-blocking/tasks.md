@@ -208,7 +208,7 @@ foco y accesibilidad antes de crear/actualizar snapshots.
 - [X] T062 Ejecutar `npm run verify`, `git diff --check` y `graphify update .`; verificar `graph:check` y registrar evidencia, sin stagear Graphify/caches/SQLite.
 - [X] T063 Lanzar un revisor independiente de solo lectura sobre el patch 014; resolver hallazgos accionables con un nuevo ciclo test-first y registrar veredicto en `specs/014-inline-blocking/implementation-evidence.md`.
 - [X] T064 Auditar `git status`, excluir cambios ajenos y stagear rutas explícitas 014; ejecutar `git diff --cached --check` y documentar el alcance exacto del commit.
-- [ ] T065 Con autorización de publicación, crear commit descriptivo y hacer push únicamente a `origin/codex/014-inline-blocking`; registrar SHA y upstream. No abrir/mergear PR ni tocar `main` sin autorización adicional.
+- [X] T065 Con autorización de publicación, crear commit descriptivo y hacer push únicamente a `origin/codex/014-inline-blocking`; registrar SHA y upstream. No abrir/mergear PR ni tocar `main` sin autorización adicional.
 
 ---
 

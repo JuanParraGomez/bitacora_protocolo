@@ -53,6 +53,14 @@
 
 ## Publication
 
+## Spec Kit implementation audit (2026-08-06)
+
+- Regenerated task ledger was executed against the existing implementation; T001–T043 and T046 have reproducible evidence, while T044/T045 remain human-gated.
+- US2/US3 focused regression: `npx vitest run tests/e2e/helpers/visual-geometry.test.ts app/features/tasks/components/GuidedPhaseForm.test.ts app/features/tasks/components/AgentPanel.test.ts app/features/tasks/components/TaskChat.test.ts app/features/tasks/components/WorkspacePaneTabs.test.ts app/features/tasks/components/TaskWorkspace.test.ts --reporter=dot` → 6 files, 74/74 passed.
+- Contract visual rerun: `VISUAL_RUN_MODE=contract ... --grep "IMG-UX-0(3|4)" --workers=1` → 2/2 scenarios, all contract viewports, zero overlap/overflow assertions and axe contrast 0 violations.
+- Evidence capture rerun: `VISUAL_RUN_MODE=evidence ... --grep "IMG-UX-0(3|4)" --workers=1` → 2/2 scenarios; ACTUAL candidates refreshed without changing protected baselines.
+- `git diff --check` passed; Graphify caches remain untracked and excluded from the product patch.
+
 - Commit/push authorized by user on 2026-08-06.
-- Implementation/evidence SHA: `5d41487`; push succeeded only to `origin/codex/015-responsive-workspace` after switching the repository-required GitHub identity to `JuanParraGomez`.
+- Implementation/evidence baseline SHA: `5d41487`; this execution audit is recorded in the follow-up documentation commit and pushed only to `origin/codex/015-responsive-workspace` after switching the repository-required GitHub identity to `JuanParraGomez`.
 - Upstream confirmed: `[origin/codex/015-responsive-workspace]`. No PR or merge was created.

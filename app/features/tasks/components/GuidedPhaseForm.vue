@@ -353,6 +353,14 @@ watch(() => [props.task.id, props.task.fase], () => {
   font-weight: 760;
 }
 
+.guided-phase-form__save-state {
+  min-width: 0;
+}
+
+.guided-phase-form__save-state p {
+  overflow-wrap: anywhere;
+}
+
 .guided-phase-form__controls {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -496,7 +504,7 @@ watch(() => [props.task.id, props.task.fase], () => {
 
   .guided-phase-form__header,
   .guided-phase-form > :deep(.phase-workspace) {
-    padding-inline: 1rem;
+    padding-inline: .85rem;
   }
 
   .guided-phase-form__controls {

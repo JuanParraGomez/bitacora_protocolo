@@ -96,9 +96,9 @@ const effectiveStatusClass = computed(() => {
 }
 
 .evaluation-feedback header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  justify-content: space-between;
   gap: .75rem;
 }
 
@@ -115,7 +115,8 @@ const effectiveStatusClass = computed(() => {
   padding: .14rem .42rem;
   font-size: 0.7rem;
   font-weight: 600;
-  white-space: nowrap;
+  line-height: 1.25;
+  text-align: center;
 }
 
 .evaluation-feedback__status--ok {
@@ -189,5 +190,16 @@ const effectiveStatusClass = computed(() => {
   margin: 0;
   color: #4b5750;
   font-size: .84rem;
+}
+
+@media (max-width: 767px) {
+  .evaluation-feedback header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .evaluation-feedback__status {
+    justify-self: start;
+    max-width: 100%;
+  }
 }
 </style>

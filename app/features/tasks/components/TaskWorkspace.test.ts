@@ -2,6 +2,7 @@ import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { buildPhaseRevision } from '../domain/task-assistant-rules';
 import { repairTask } from '../domain/task.schema';
 import TaskWorkspace from './TaskWorkspace.vue';
 import { stageAgentWorkspaceRecords, stageAgentWorkspaceTasks } from '../../../../tests/fixtures/tasks/stage-agent-workspace';
@@ -162,6 +163,141 @@ function mountCompletedWorkspaceWithAgent() {
   });
 }
 
+function mountProposalWorkspace() {
+  const task = repairTask(structuredClone(stageAgentWorkspaceTasks.phase2));
+  const revision = buildPhaseRevision(task, task.fase);
+  task.assistant.messages = [{
+    id: 'proposal-message-visible',
+    projectId: task.projectId,
+    taskId: task.id,
+    phase: task.fase,
+    methodVersionId: null,
+    baseRevision: revision,
+    role: 'assistant',
+    parts: [{ type: 'text', text: 'Revisa estas propuestas.' }],
+    status: 'sent',
+    createdAt: 1,
+    primaryQuestion: null,
+    contradictions: [],
+    updates: [
+      {
+        id: 'proposal-accept-visible',
+        sourceMessageId: 'proposal-message-visible',
+        projectId: task.projectId,
+        taskId: task.id,
+        phase: task.fase,
+        methodVersionId: null,
+        baseRevision: revision,
+        status: 'proposed',
+        field: 'f2.pasos',
+        previousValue: task.f2.pasos,
+        value: '1. aceptar 2. verificar',
+      },
+      {
+        id: 'proposal-reject-visible',
+        sourceMessageId: 'proposal-message-visible',
+        projectId: task.projectId,
+        taskId: task.id,
+        phase: task.fase,
+        methodVersionId: null,
+        baseRevision: revision,
+        status: 'proposed',
+        field: 'f2.alcance',
+        previousValue: task.f2.alcance,
+        value: 'Alcance propuesto para descartar',
+      },
+      {
+        id: 'proposal-resolved-visible',
+        sourceMessageId: 'proposal-message-visible',
+        projectId: task.projectId,
+        taskId: task.id,
+        phase: task.fase,
+        methodVersionId: null,
+        baseRevision: revision,
+        status: 'applied',
+        field: 'f2.guia',
+        previousValue: task.f2.guia,
+        value: 'Resuelta',
+      },
+      {
+        id: 'proposal-conflict-visible',
+        sourceMessageId: 'proposal-message-visible',
+        projectId: task.projectId,
+        taskId: task.id,
+        phase: task.fase,
+        methodVersionId: null,
+        baseRevision: revision,
+        status: 'conflict',
+        field: 'f2.decision',
+        previousValue: task.f2.decision,
+        value: 'Conflicto vigente',
+      },
+      {
+        id: 'proposal-other-phase',
+        sourceMessageId: 'proposal-message-visible',
+        projectId: task.projectId,
+        taskId: task.id,
+        phase: 3,
+        methodVersionId: null,
+        baseRevision: revision,
+        status: 'proposed',
+        field: 'f3.notas',
+        previousValue: task.f3.notas,
+        value: 'Otra fase',
+      },
+    ],
+  }];
+
+  return mount(TaskWorkspace, {
+    props: {
+      task,
+      activeTasks: [task],
+      completedItems: [],
+      notices: [],
+      projectGroups: [],
+      expandedProjectIds: [],
+      agentPanelState: 'expanded',
+    },
+    global: {
+      stubs: {
+        DashboardSidebar: { template: '<div />' },
+        WorkspaceHeader: { template: '<button type="button">nav</button>' },
+        StructuredStageSummary: { template: '<div data-testid="structured-summary" />' },
+        GuidedPhaseForm: { template: '<div data-testid="guided-form" />' },
+        AgentPanel: {
+          props: ['pendingProposals'],
+          emits: ['proposalDecision'],
+          setup(_props, { emit }) {
+            return {
+              acceptProposal: () => emit('proposalDecision', {
+                proposalId: 'proposal-accept-visible',
+                action: 'accept',
+                baseRevision: revision,
+              }),
+              rejectProposal: () => emit('proposalDecision', {
+                proposalId: 'proposal-reject-visible',
+                action: 'reject',
+                baseRevision: revision,
+              }),
+            };
+          },
+          template: `
+            <div>
+              <span data-testid="proposal-count">{{ pendingProposals }}</span>
+              <button type="button" data-testid="accept-proposal" @click="acceptProposal">accept</button>
+              <button type="button" data-testid="reject-proposal" @click="rejectProposal">reject</button>
+            </div>
+          `,
+        },
+        AssistantSettingsModal: { template: '<div />' },
+        NewTaskModal: { template: '<div />' },
+        LibrarySlideover: { template: '<div />' },
+        NoticeRegion: { template: '<div />' },
+      },
+    },
+  });
+}
+
 describe('TaskWorkspace', () => {
   beforeEach(() => {
     sendMock.mockReset();
@@ -258,5 +394,36 @@ describe('TaskWorkspace', () => {
     expect(wrapper.emitted('save')).toBeUndefined();
     expect(wrapper.emitted('dirty')).toBeUndefined();
     expect(wrapper.emitted('requestContinue')).toBeUndefined();
+  });
+
+  it('derives pending proposal badge from the visible phase and updates it through proposal decisions', async () => {
+    const wrapper = mountProposalWorkspace();
+
+    expect(wrapper.get('[data-testid="proposal-count"]').text()).toBe('2');
+
+    await wrapper.get('[data-testid="accept-proposal"]').trigger('click');
+    await nextTick();
+
+    expect(wrapper.get('[data-testid="proposal-count"]').text()).toBe('1');
+    const firstSave = wrapper.emitted('save')?.at(-1);
+    expect(firstSave?.[0]).toMatchObject({
+      f2: {
+        pasos: '1. aceptar 2. verificar',
+      },
+    });
+    expect(firstSave?.[1]).toEqual({ operationId: 'proposal-save:proposal-accept-visible' });
+
+    await wrapper.get('[data-testid="reject-proposal"]').trigger('click');
+    await nextTick();
+
+    expect(wrapper.get('[data-testid="proposal-count"]').text()).toBe('0');
+    const secondSave = wrapper.emitted('save')?.at(-1);
+    expect(secondSave?.[0]).toMatchObject({
+      f2: {
+        alcance: stageAgentWorkspaceTasks.phase2.f2.alcance,
+      },
+    });
+    expect(secondSave?.[1]).toEqual({ operationId: 'proposal-save:proposal-reject-visible' });
+    expect(wrapper.emitted('dirty')?.length).toBeGreaterThanOrEqual(2);
   });
 });

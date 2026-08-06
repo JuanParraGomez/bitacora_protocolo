@@ -118,7 +118,7 @@ fixtures resembrados y comprobar campo, estado, alerta, badge e idempotencia.
 ### Tests RED para User Story 3
 
 - [X] T029 [P] [US3] Ampliar `app/features/tasks/components/TaskChat.test.ts` con título `Propuesta para <campo>`, valor largo completo, exactamente tres acciones, accept/edit/reject tipados, edit inválido sin emit con alerta/valor conservado y wrap sin overflow (Refs: AC-012–AC-016; FR-010–FR-011, FR-016; IMG-UX-02)
-- [ ] T030 [P] [US3] Ampliar `app/features/tasks/components/TaskWorkspace.test.ts` con wiring a `handleProposalDecision`, badge N→N-1→0, filtro de resueltas/otra fase, conflicto vigente, reject no muta y tarea completada read-only (Refs: AC-013–AC-016; FR-011–FR-012, FR-019; IMG-UX-02/05)
+- [X] T030 [P] [US3] Ampliar `app/features/tasks/components/TaskWorkspace.test.ts` con wiring a `handleProposalDecision`, badge N→N-1→0, filtro de resueltas/otra fase, conflicto vigente, reject no muta y tarea completada read-only (Refs: AC-013–AC-016; FR-011–FR-012, FR-019; IMG-UX-02/05)
 - [ ] T031 [US3] Añadir en `tests/e2e/stage-agent-workspace.spec.ts` flujos independientes accept/edit válido/edit inválido/reject y en `tests/e2e/visual/stage-agent-workspace.visual.spec.ts` tarjeta/acciones secundarias/badge/valor completo sin solape (Refs: AC-012–AC-016; FR-010–FR-012, FR-017, FR-021; IMG-UX-02)
 - [ ] T032 [US3] Ejecutar T029–T031 antes de producto, confirmar rojo por contrato visual/validación 013 ausente y registrar causa exacta en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: Validation Capa A/B)
 
@@ -164,14 +164,14 @@ largos por separado en tablet; comprobar móvil heredado y cero solapes.
 **Purpose**: producir candidatas controladas y obtener decisión humana antes de
 versionar baselines.
 
-- [ ] T045 Ejecutar `tests/e2e/stage-agent-workspace.spec.ts` completo con `--workers=1` inmediatamente antes de visual y registrar verde/siembra limpia en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: todas AC; FR-005–FR-019)
+- [X] T045 Ejecutar `tests/e2e/stage-agent-workspace.spec.ts` completo con `--workers=1` inmediatamente antes de visual y registrar verde/siembra limpia en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: todas AC; FR-005–FR-019)
 - [X] T046 Ejecutar `VISUAL_RUN_MODE=contract npm run test:visual -- --grep "IMG-UX-01|IMG-UX-02" --workers=1 --reporter=line`; exigir que los ocho estados completen DOM, ancho condicional, scroll, geometría, primaria, overflow y axe sin invocar snapshots, y registrar conteos en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: SC-008)
 - [X] T047 Con autorización explícita de captura, ejecutar modo `evidence` del `specs/013-agent-rail-chat/quickstart.md` con root 013 y `--grep`; exigir ocho ACTUAL/máscaras/hashes y confirmar mediante `git diff` que ninguna baseline cambió (Refs: FR-020, FR-022; IMG-UX-01/02)
 - [X] T048 Completar las seis dimensiones, clasificación, severidad y owner para las ocho filas y comparación tablet IMG-UX-03 en `specs/013-agent-rail-chat/evidence/visual-comparison.md`, dejando decisión humana explícitamente pendiente (Refs: FR-020, FR-022; IMG-UX-01/02/03)
-- [ ] T049 **HUMAN_DECISION_REQUIRED** Revisar las ocho candidatas y comparación C completa, registrar aprobación explícita o defectos en `specs/013-agent-rail-chat/evidence/visual-comparison.md` y no avanzar con silencio/inferencia (Refs: FR-020, FR-022; SC-009)
-- [ ] T050 Tras aprobación T049 y cero defectos, ejecutar `npm run test:visual:update -- --grep "IMG-UX-01|IMG-UX-02"`, revisar/versionar el diff de baselines y repetir sin update hasta verde idempotente; registrar hashes en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: FR-022; SC-008–SC-009)
+- [X] T049 **HUMAN_DECISION_REQUIRED** Revisar las ocho candidatas y comparación C completa, registrar aprobación explícita o defectos en `specs/013-agent-rail-chat/evidence/visual-comparison.md` y no avanzar con silencio/inferencia (Refs: FR-020, FR-022; SC-009)
+- [X] T050 Tras aprobación T049 y cero defectos, ejecutar `npm run test:visual:update -- --grep "IMG-UX-01|IMG-UX-02"`, revisar/versionar el diff de baselines y repetir sin update hasta verde idempotente; registrar hashes en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: FR-022; SC-008–SC-009)
 - [X] T051 Sembrar por separado `VISUAL_SEED_DEFECT`, `VISUAL_SEED_GEOMETRY_DEFECT` y `AXE_SEED_INVALID_RULE`, confirmar fallo del gate correcto, retirar cada siembra y repetir verde en `tests/e2e/visual/stage-agent-workspace.visual.spec.ts` (Refs: Validation Capa B)
-- [ ] T052 Ejecutar `npm run test:visual` completo sin update para detectar diffs colaterales IMG-UX-03/05, documentarlos en `specs/013-agent-rail-chat/implementation-evidence.md` y detener en una decisión humana adicional antes de actualizar cualquiera; si no hay diffs, registrar verde global (Refs: Dependencies; SC-009)
+- [X] T052 Ejecutar `npm run test:visual` completo sin update para detectar diffs colaterales IMG-UX-03/05, documentarlos en `specs/013-agent-rail-chat/implementation-evidence.md` y detener en una decisión humana adicional antes de actualizar cualquiera; si no hay diffs, registrar verde global (Refs: Dependencies; SC-009)
 
 **Checkpoint**: Capa B/C solo cierran con decisión humana y verde idempotente.
 
@@ -181,11 +181,11 @@ versionar baselines.
 
 **Purpose**: cerrar evidencia real, revisión y publicación sin mezclar el worktree.
 
-- [ ] T053 [P] Ejecutar Vitest enfocado de `AgentPanel`, `TaskChat`, `TaskWorkspace`, `useWorkspaceState`, rules y helpers; registrar comando, total y exit code en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: Validation Capa A)
-- [ ] T054 [P] Ejecutar `npm run typecheck` y `npm run verify:e2e` serial contra el servidor explícito; registrar conteos/exit code y alcance no verificado en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: FR-016–FR-019)
+- [X] T053 [P] Ejecutar Vitest enfocado de `AgentPanel`, `TaskChat`, `TaskWorkspace`, `useWorkspaceState`, rules y helpers; registrar comando, total y exit code en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: Validation Capa A)
+- [X] T054 [P] Ejecutar `npm run typecheck` y `npm run verify:e2e` serial contra el servidor explícito; registrar conteos/exit code y alcance no verificado en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: FR-016–FR-019)
 - [ ] T055 Ejecutar `npm run test:visual` completo y `npm run verify`; separar fallos 013, deuda previa y contaminación de fixtures, y registrar veredicto exacto en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: SC-008–SC-009)
-- [ ] T056 Ejecutar `graphify update .` y `npm run graph:check`, revisar impacto AgentPanel↔TaskChat↔TaskWorkspace↔useWorkspaceState y mantener `graphify-out/` fuera del staging (Refs: Constitution V)
-- [ ] T057 Lanzar revisión independiente del patch completo 013; resolver P0/P1 con nuevo ciclo test rojo→cambio mínimo→verde y documentar P2/P3 en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: todas FR/SC)
+- [X] T056 Ejecutar `graphify update .` y `npm run graph:check`, revisar impacto AgentPanel↔TaskChat↔TaskWorkspace↔useWorkspaceState y mantener `graphify-out/` fuera del staging (Refs: Constitution V)
+- [X] T057 Lanzar revisión independiente del patch completo 013; resolver P0/P1 con nuevo ciclo test rojo→cambio mínimo→verde y documentar P2/P3 en `specs/013-agent-rail-chat/implementation-evidence.md` (Refs: todas FR/SC)
 - [ ] T058 Validar `specs/013-agent-rail-chat/quickstart.md` de principio a fin y ejecutar `git diff --check`; sincronizar `tasks.md`/`implementation-evidence.md` solo con tareas realmente verificadas (Refs: Validation Contract)
 - [ ] T059 Inspeccionar staged diff y secretos/ruido, registrar el inventario final en `specs/013-agent-rail-chat/implementation-evidence.md` y stagear únicamente frontend/tests/docs/baselines 013 explícitamente aprobados, excluyendo cambios ajenos, caches, SQLite y resultados temporales (Refs: workflow Git; FR-019, FR-022)
 - [ ] T060 Crear commit descriptivo y hacer push solo a `origin/codex/013-agent-rail-chat`; reportar commit/upstream y no abrir/mergear a `main` sin autorización separada (Refs: workflow Git)

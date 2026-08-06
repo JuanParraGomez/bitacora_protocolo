@@ -294,6 +294,6 @@ test.describe('stage-agent workspace', () => {
     expect(storageWrites).toBe(0);
 
     await page.getByRole('button', { name: 'Volver a tareas' }).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(new RegExp(`/tasks/${stageAgentWorkspaceTasks.phase1.id}$`));
   });
 });

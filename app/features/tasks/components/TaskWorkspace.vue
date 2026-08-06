@@ -232,7 +232,11 @@ const phaseMessages = computed(() => localTask.assistant.messages
   .sort((left, right) => left.createdAt - right.createdAt));
 const phasePendingProposals = computed(() => phaseMessages.value
   .flatMap((message) => message.updates)
-  .filter((proposal) => proposal.status === 'proposed'));
+  .filter((proposal) => (
+    proposal.status === 'proposed'
+    && proposal.taskId === localTask.id
+    && proposal.phase === localTask.fase
+  )));
 const phaseContradictions = computed(() => phaseMessages.value.flatMap((message) => message.contradictions));
 
 type SendError = unknown;
@@ -1289,7 +1293,13 @@ watch(() => [localTask.id, localTask.fase], () => {
   }
 
   .workspace-stage-layout {
+    grid-template-columns: minmax(0, 1fr);
     padding: .75rem;
+  }
+
+  .workspace-stage-layout__tabs {
+    width: 100%;
+    min-width: 0;
   }
 
   .workspace-stage {

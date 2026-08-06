@@ -232,9 +232,22 @@ async function assertVisualGeometry(page: Page, scenarioId: VisualScenarioId, vi
     }
   }
 
+  if (viewportName === 'mobile' || viewportName === 'mobile-narrow') {
+    const viewport = page.viewportSize();
+    const activePane = scenarioId === 'IMG-UX-02' || scenarioId === 'IMG-UX-03'
+      ? agent
+      : stage;
+    expect(activePane, `${scenarioId}/${viewportName} active mobile pane`).toBeDefined();
+    if (viewport && activePane) {
+      expect(activePane.width, `${scenarioId}/${viewportName} active mobile pane width`).toBeGreaterThanOrEqual(viewport.width - 40);
+      expect(activePane.x, `${scenarioId}/${viewportName} active mobile pane left edge`).toBeGreaterThanOrEqual(0);
+      expect(activePane.x + activePane.width, `${scenarioId}/${viewportName} active mobile pane right edge`).toBeLessThanOrEqual(viewport.width);
+    }
+  }
+
   const actions = await visiblePrimaryActions(page);
   const primaryExpected = viewportName === 'mobile' || viewportName === 'mobile-narrow'
-    ? (scenarioId === 'IMG-UX-01' || scenarioId === 'IMG-UX-04' ? 1 : 0)
+    ? (scenarioId === 'IMG-UX-02' || scenarioId === 'IMG-UX-03' ? 0 : 1)
     : 1;
   expect(countPrimaryActions(actions), `${scenarioId}/${viewportName} visible primary actions`).toBe(primaryExpected);
   const primaryAction = await visibleBox(page, '[data-primary-action="true"]');

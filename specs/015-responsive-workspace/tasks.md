@@ -55,12 +55,12 @@
 
 **Independent Test**: fill stage + agent draft, switch both ways and change tasks; values, pane and logical focus survive. **Refs: IMG-UX-04**
 
-- [ ] T017 [US2] Add TaskWorkspace tests for exact context line, pending dot aggregation, pane events, draft/field preservation and focus in `TaskWorkspace.test.ts`. **Refs: FR-005–FR-008, IMG-UX-04**
-- [ ] T018 [P] [US2] Add GuidedPhaseForm responsive contract tests for full field/counter presence, centered save text and single full-width primary semantics in `GuidedPhaseForm.test.ts`. **Refs: FR-009, FR-010, IMG-UX-04**
-- [ ] T019 [US2] Run T017–T018 and record valid red in `implementation-evidence.md`.
-- [ ] T020 [US2] Recompose mobile context/panes minimally in `TaskWorkspace.vue` and `WorkspaceHeader.vue`, preserving 012–014 DOM/data behavior.
-- [ ] T021 [US2] Adjust only responsive owner styles in `GuidedPhaseForm.vue`/`WorkspacePaneTabs.vue` so fields precede nonessential meta and footer meets IMG-UX-04.
-- [ ] T022 [US2] Run focused green plus all phase component regressions and synchronize evidence.
+- [x] T017 [US2] Add TaskWorkspace tests for exact context line, pending dot aggregation, pane events, draft/field preservation and focus in `TaskWorkspace.test.ts`. **Refs: FR-005–FR-008, IMG-UX-04**
+- [x] T018 [P] [US2] Add GuidedPhaseForm responsive contract tests for full field/counter presence, centered save text and single full-width primary semantics in `GuidedPhaseForm.test.ts`. **Refs: FR-009, FR-010, IMG-UX-04**
+- [x] T019 [US2] Run T017–T018 and record valid red in `implementation-evidence.md`.
+- [x] T020 [US2] Recompose mobile context/panes minimally in `TaskWorkspace.vue` and `WorkspaceHeader.vue`, preserving 012–014 DOM/data behavior.
+- [x] T021 [US2] Adjust only responsive owner styles in `GuidedPhaseForm.vue`/`WorkspacePaneTabs.vue` so fields precede nonessential meta and footer meets IMG-UX-04.
+- [x] T022 [US2] Run focused green plus all phase component regressions and synchronize evidence.
 
 **Checkpoint**: IMG-UX-04 behavior passes Capa A at component level.
 

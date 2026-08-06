@@ -29,9 +29,10 @@ vi.mock('../services/mock-workspace-assistant', () => ({
   },
 }));
 
-function mountWorkspace() {
+function mountWorkspace(options: { attachTo?: HTMLElement } = {}) {
   const task = repairTask(structuredClone(stageAgentWorkspaceTasks.phase3));
   return mount(TaskWorkspace, {
+    attachTo: options.attachTo,
     props: {
       task,
       activeTasks: [task],
@@ -43,9 +44,24 @@ function mountWorkspace() {
     global: {
       stubs: {
         DashboardSidebar: { template: '<div />' },
-        WorkspaceHeader: { template: '<button type="button">nav</button>' },
+        WorkspaceHeader: {
+          props: ['compactNavigation', 'mobileContext', 'phase', 'phaseTitle'],
+          emits: ['openNavigation'],
+          setup() { return { focusNavigation: vi.fn() }; },
+          template: `
+            <header>
+              <button type="button" data-testid="header-navigation" @click="$emit('openNavigation')">nav</button>
+              <span data-testid="header-mobile-context">{{ mobileContext ? 'Etapa ' + phase + ' de 4 · ' + phaseTitle : '' }}</span>
+            </header>
+          `,
+        },
         StructuredStageSummary: { template: '<div data-testid="structured-summary" />' },
-        GuidedPhaseForm: { name: 'GuidedPhaseForm', emits: ['requestAgentRecommendations'], template: '<div data-testid="guided-form" />' },
+        GuidedPhaseForm: {
+          name: 'GuidedPhaseForm',
+          props: ['compactPresentation'],
+          emits: ['requestAgentRecommendations'],
+          template: '<div data-testid="guided-form"><input data-testid="stage-local-draft"><span data-testid="guided-compact">{{ compactPresentation }}</span></div>',
+        },
         AgentPanel: {
           props: ['draft', 'expanded', 'pendingCorrections'],
           emits: ['updateDraft', 'send', 'toggle'],
@@ -322,13 +338,51 @@ describe('TaskWorkspace', () => {
 
   it('loads tablet with a closed drawer and two adjacent independent scroll regions', async () => {
     setViewport(1024);
-    const wrapper = mountWorkspace();
+    const wrapper = mountWorkspace({ attachTo: document.body });
     await nextTick();
 
     expect(wrapper.find('.workspace-navigation-drawer').exists()).toBe(false);
     expect(wrapper.get('.workspace-stage').attributes('data-scroll-region')).toBe('stage');
     expect(wrapper.get('.agent-panel').attributes('data-scroll-region')).toBe('agent');
     expect(wrapper.get('.workspace-stage-layout').classes()).toContain('workspace-stage-layout--tablet');
+    wrapper.unmount();
+  });
+
+  it('uses one mobile plane and preserves stage and agent drafts with logical tab focus', async () => {
+    setViewport(390);
+    const wrapper = mountWorkspace({ attachTo: document.body });
+    await nextTick();
+
+    expect(wrapper.get('[data-testid="header-mobile-context"]').text()).toBe('Etapa 3 de 4 · Ejecución guiada');
+    expect(wrapper.get('[data-testid="guided-compact"]').text()).toBe('true');
+
+    const stageDraft = wrapper.get<HTMLInputElement>('[data-testid="stage-local-draft"]');
+    await stageDraft.setValue('avance local sin guardar');
+    const tabs = wrapper.findAll<HTMLButtonElement>('[role="tab"]');
+    await tabs[1]?.trigger('click');
+    await nextTick();
+    expect(document.activeElement).toBe(tabs[1]?.element);
+
+    await wrapper.get('[data-testid="draft"]').trigger('click');
+    await tabs[0]?.trigger('click');
+    await nextTick();
+
+    expect(stageDraft.element.value).toBe('avance local sin guardar');
+    expect(wrapper.get('[data-testid="draft-value"]').text()).toContain('borrador persistente');
+    expect(wrapper.emitted('updateMobilePane')).toEqual([
+      [{ taskId: stageAgentWorkspaceTasks.phase3.id, state: 'agent' }],
+      [{ taskId: stageAgentWorkspaceTasks.phase3.id, state: 'stage' }],
+    ]);
+    expect(document.activeElement).toBe(tabs[0]?.element);
+    wrapper.unmount();
+  });
+
+  it('aggregates proposal and correction work into the mobile agent pending dot', async () => {
+    setViewport(390);
+    const wrapper = mountProposalWorkspace();
+    await nextTick();
+
+    expect(wrapper.findAll('[data-agent-pending]')).toHaveLength(1);
   });
 
   it('keeps the composer draft while the agent panel collapses and expands again', async () => {

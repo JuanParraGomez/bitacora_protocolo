@@ -934,6 +934,7 @@ watch(() => [localTask.id, localTask.fase], () => {
                         :evaluation-history="evaluationHistory"
                         :primary-action="contextualPrimaryAction"
                         :evaluation-display="evaluationDisplay"
+                        :compact-presentation="isMobile"
                         @request-agent-recommendations="focusAgentRecommendations"
                         @dirty="onTaskDirty"
                         @save="onTaskSave"

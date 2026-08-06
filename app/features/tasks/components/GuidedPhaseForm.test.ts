@@ -234,6 +234,26 @@ describe('guided-phase-form model', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it('marks the compact mobile flow while preserving every field, counter and one primary action', () => {
+    const wrapper = mount(GuidedPhaseForm, {
+      props: {
+        task: structuredClone(stageAgentWorkspaceTasks.phase1),
+        compactPresentation: true,
+        primaryAction: {
+          kind: 'evaluate', label: 'Evaluar etapa', disabled: false, nextPhase: null, reason: null, gateReasons: [],
+        },
+        evaluationDisplay: blockedDisplay,
+      },
+      global: { stubs: { EvaluationFeedback: false } },
+    });
+
+    expect(wrapper.get('.guided-phase-form').classes()).toContain('guided-phase-form--compact');
+    expect(wrapper.findAll('[data-stage-text-field]')).toHaveLength(13);
+    expect(wrapper.findAll('[data-character-count]').length).toBeGreaterThan(0);
+    expect(wrapper.findAll('[data-primary-action="true"]')).toHaveLength(1);
+    expect(wrapper.get('.guided-phase-form__save-button').attributes('data-secondary-action')).toBe('true');
+  });
+
   it.each([
     {
       kind: 'evaluate' as const,

@@ -23,6 +23,7 @@ const props = withDefaults(defineProps<{
   evaluationHistory?: PhaseEvaluation[];
   primaryAction?: ContextualPrimaryAction | null;
   evaluationDisplay?: EvaluationDisplay | null;
+  compactPresentation?: boolean;
 }>(), {
   saveTask: undefined,
   evaluation: null,
@@ -33,6 +34,7 @@ const props = withDefaults(defineProps<{
   evaluationHistory: () => [],
   primaryAction: null,
   evaluationDisplay: null,
+  compactPresentation: false,
 });
 const emit = defineEmits<{
   save: [Task];
@@ -194,7 +196,11 @@ watch(() => [props.task.id, props.task.fase], () => {
 </script>
 
 <template>
-  <div aria-labelledby="guided-form-title" class="guided-phase-form">
+  <div
+    aria-labelledby="guided-form-title"
+    class="guided-phase-form"
+    :class="{ 'guided-phase-form--compact': props.compactPresentation }"
+  >
     <header class="guided-phase-form__header">
       <div>
         <h3 id="guided-form-title">{{ phaseLabel }}</h3>
@@ -265,7 +271,13 @@ watch(() => [props.task.id, props.task.fase], () => {
     />
 
     <footer class="guided-phase-form__controls" data-stage-footer>
-      <button type="button" class="guided-phase-form__save-button" :disabled="saveState === 'saving'" @click="onSaveDraft">
+      <button
+        type="button"
+        class="guided-phase-form__save-button"
+        data-secondary-action="true"
+        :disabled="saveState === 'saving'"
+        @click="onSaveDraft"
+      >
         {{ saveCopy.actionLabel }}
       </button>
       <button
@@ -538,6 +550,43 @@ watch(() => [props.task.id, props.task.fase], () => {
 
   .guided-phase-form__save-button {
     justify-self: center;
+  }
+
+  .guided-phase-form--compact > :deep(.evaluation-feedback),
+  .guided-phase-form--compact > :deep(.stage-field-issues) {
+    order: 0;
+  }
+
+  .guided-phase-form--compact > :deep(.phase-workspace) {
+    order: 10;
+    overflow: visible;
+  }
+
+  .guided-phase-form--compact .guided-phase-form__header {
+    order: 20;
+    padding-block: .75rem;
+    border-top: 1px solid #dde3de;
+    border-bottom: 0;
+  }
+
+  .guided-phase-form--compact .guided-phase-form__header > :not(.guided-phase-form__save-state) {
+    display: none;
+  }
+
+  .guided-phase-form--compact .guided-phase-form__controls {
+    order: 30;
+  }
+
+  .guided-phase-form--compact .guided-phase-form__save-button {
+    border: 0;
+    color: #176448;
+    background: transparent;
+    text-decoration: underline;
+    text-underline-offset: .2rem;
+  }
+
+  .guided-phase-form--compact .guided-phase-form__primary-action {
+    width: 100%;
   }
 }
 </style>

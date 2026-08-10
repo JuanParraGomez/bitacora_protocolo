@@ -159,11 +159,12 @@ defineExpose({ focusNavigation });
 }
 
 .workspace-header__identity h1 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  color: #101812;
-  font-size: 1.22rem;
-  line-height: 1.2;
-  text-overflow: ellipsis;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
 }
 
@@ -179,17 +180,31 @@ defineExpose({ focusNavigation });
 }
 
 .workspace-header__stage {
-  display: grid;
-  justify-items: end;
-  color: #4e5c54;
-  font-size: .72rem;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  color: #68736c;
+  font-size: .78rem;
 }
 
 .workspace-header__stage strong {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  border: 1px solid #dfe6e1;
   border-radius: 999px;
-  padding: .3rem .6rem;
+  padding: .3rem .7rem;
   color: #1e2a23;
-  background: #d9f2e3;
+  font-weight: 500;
+  background: #fff;
+}
+
+.workspace-header__stage strong::before {
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  background: #5ba882;
+  content: "";
 }
 
 .workspace-header__mobile-context {

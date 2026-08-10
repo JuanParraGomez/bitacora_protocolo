@@ -142,9 +142,10 @@ function selectProject(group: WorkspaceProjectGroup) {
 <template>
   <aside class="task-sidebar" role="navigation" aria-label="Navegación de tareas">
     <header class="task-sidebar__brand">
-      <div>
+      <div class="task-sidebar__brand-identity">
+        <span class="task-sidebar__brand-mark" aria-hidden="true">N</span>
         <NuxtLink to="/" class="task-sidebar__brand-link">Nexus</NuxtLink>
-        <p>Espacio de trabajo</p>
+        <p class="sr-only">Espacio de trabajo</p>
       </div>
       <button
         type="button"
@@ -186,22 +187,6 @@ function selectProject(group: WorkspaceProjectGroup) {
     </nav>
 
     <section class="task-sidebar__tools" aria-label="Herramientas de proyectos" data-shell-region="search">
-      <button
-        type="button"
-        class="task-sidebar__create-project"
-        @click="createProjectOpen = !createProjectOpen"
-      >
-        Crear proyecto
-      </button>
-      <form v-if="createProjectOpen" class="task-sidebar__inline-form" @submit.prevent="submitProject">
-        <label for="new-project-name">Nombre del proyecto</label>
-        <input id="new-project-name" v-model="createProjectName" maxlength="120" required>
-        <div>
-          <button type="button" @click="createProjectOpen = false">Cancelar</button>
-          <button type="submit">Guardar proyecto</button>
-        </div>
-      </form>
-
       <label class="task-sidebar__search-label sr-only" for="task-search">Buscar tareas o proyectos…</label>
       <div class="task-sidebar__search-field" data-search-field>
         <WorkspaceShellIcon name="search" data-search-icon />
@@ -211,6 +196,26 @@ function selectProject(group: WorkspaceProjectGroup) {
     </section>
 
     <div class="task-sidebar__projects" data-shell-region="projects">
+      <div class="task-sidebar__projects-header">
+        <span class="task-sidebar__projects-title">Proyectos</span>
+        <button
+          type="button"
+          class="task-sidebar__create-project"
+          aria-label="Crear proyecto"
+          @click="createProjectOpen = !createProjectOpen"
+        >
+          +
+        </button>
+      </div>
+      <form v-if="createProjectOpen" class="task-sidebar__inline-form" @submit.prevent="submitProject">
+        <label for="new-project-name">Nombre del proyecto</label>
+        <input id="new-project-name" v-model="createProjectName" maxlength="120" required>
+        <div>
+          <button type="button" @click="createProjectOpen = false">Cancelar</button>
+          <button type="submit">Guardar proyecto</button>
+        </div>
+      </form>
+
       <section
         v-for="group in activeGroups"
         :key="group.project.id"
@@ -226,7 +231,8 @@ function selectProject(group: WorkspaceProjectGroup) {
             :aria-controls="`project-tasks-${group.project.id}`"
             @click="selectProject(group)"
           >
-            {{ group.project.name }}
+            <WorkspaceShellIcon name="folder" />
+            <span class="task-sidebar__project-name">{{ group.project.name }}</span>
           </button>
           <button
             type="button"
@@ -347,11 +353,11 @@ function selectProject(group: WorkspaceProjectGroup) {
 .task-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: .85rem;
   min-height: 100%;
-  padding: 1rem;
-  color: #152019;
-  background: #f8faf8;
+  padding: 1.1rem .9rem;
+  color: #1d2a22;
+  background: #fbfafb;
 }
 
 .task-sidebar__brand,
@@ -364,6 +370,34 @@ function selectProject(group: WorkspaceProjectGroup) {
   gap: .5rem;
 }
 
+.task-sidebar__brand-identity {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+}
+
+.task-sidebar__brand-mark {
+  display: grid;
+  width: 1.9rem;
+  height: 1.9rem;
+  place-items: center;
+  border-radius: .45rem;
+  color: #fff;
+  background: #067b46;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .task-sidebar__brand p,
 .task-sidebar__project-description,
 .task-sidebar__project-content > p {
@@ -373,9 +407,10 @@ function selectProject(group: WorkspaceProjectGroup) {
 }
 
 .task-sidebar__brand-link {
-  color: #063e28;
-  font-size: 1.45rem;
-  font-weight: 850;
+  color: #0d1f16;
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
   text-decoration: none;
 }
 
@@ -385,40 +420,55 @@ function selectProject(group: WorkspaceProjectGroup) {
   place-items: center;
   min-width: 2.25rem;
   min-height: 2.25rem;
-  border: 1px solid #d2dcd5;
+  border: 0;
   border-radius: .55rem;
-  background: #fff;
+  color: #7a857e;
+  background: transparent;
+}
+
+.task-sidebar__icon-action:hover,
+.task-sidebar__icon-action:focus-visible {
+  color: #1f5138;
+  background: #eaf1eb;
 }
 
 .task-sidebar__primary {
   display: flex;
   flex-direction: column;
-  gap: .25rem;
+  gap: .15rem;
 }
 
 .task-sidebar__secondary {
   display: flex;
   flex-direction: column;
-  gap: .25rem;
+  gap: .15rem;
 }
 
 .task-sidebar__primary-link {
   display: flex;
   align-items: center;
-  gap: .65rem;
-  min-height: 2.35rem;
+  gap: .6rem;
+  min-height: 2.3rem;
+  border: 0;
   border-radius: .55rem;
-  padding: .4rem .55rem;
-  color: #34433a;
-  font-size: .78rem;
+  padding: .4rem .6rem;
+  color: #2e3d34;
+  font-size: .88rem;
+  font-weight: 500;
+  text-align: left;
   text-decoration: none;
+  background: transparent;
 }
 
 .task-sidebar__primary-link:hover,
 .task-sidebar__primary-link:focus-visible,
 .task-sidebar__primary-link[aria-current="page"] {
-  color: #075237;
-  background: #e7f5ee;
+  color: #1f5138;
+  background: #eaf1eb;
+}
+
+.task-sidebar__primary-link[aria-current="page"] {
+  box-shadow: inset -3px 0 0 #067b46;
 }
 
 .task-sidebar__primary-link--button {
@@ -434,16 +484,15 @@ function selectProject(group: WorkspaceProjectGroup) {
 }
 
 .task-sidebar__tools {
-  padding-block: .75rem;
-  border-block: 1px solid #e0e6e2;
-  padding-bottom: 1rem;
+  padding-block: .35rem .55rem;
+  border-block: 0;
 }
 
 .task-sidebar__tools label,
 .task-sidebar__inline-form label {
   color: #34433a;
   font-size: .76rem;
-  font-weight: 720;
+  font-weight: 600;
 }
 
 .task-sidebar__search-label.sr-only {
@@ -502,13 +551,39 @@ function selectProject(group: WorkspaceProjectGroup) {
   background: #fff;
 }
 
+.task-sidebar__projects-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .25rem .15rem .35rem;
+}
+
+.task-sidebar__projects-title {
+  color: #5b665f;
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
 .task-sidebar__create-project {
-  min-height: 2.5rem;
-  border: 1px solid #9bc6b2;
-  border-radius: .55rem;
-  color: #06472e;
-  font-weight: 760;
-  background: #f4fcf8;
+  display: grid;
+  width: 1.6rem;
+  min-height: 1.6rem;
+  place-items: center;
+  border: 0;
+  border-radius: .4rem;
+  color: #4a5a50;
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1;
+  background: transparent;
+}
+
+.task-sidebar__create-project:hover,
+.task-sidebar__create-project:focus-visible {
+  color: #1f5138;
+  background: #eaf1eb;
 }
 
 .task-sidebar__projects {
@@ -519,36 +594,59 @@ function selectProject(group: WorkspaceProjectGroup) {
 }
 
 .task-sidebar__project {
-  padding: .65rem 0;
-  border-bottom: 1px solid #e0e6e2;
+  padding: .3rem 0;
+  border-bottom: 0;
 }
 
 .task-sidebar__project--active {
-  border-left: 3px solid #087a50;
-  padding-left: .55rem;
+  border-left: 0;
+  padding-left: 0;
 }
 
 .task-sidebar__project-toggle {
+  display: flex;
   flex: 1;
+  align-items: center;
+  gap: .55rem;
   min-width: 0;
   border: 0;
-  padding: .4rem 0;
+  border-radius: .55rem;
+  padding: .45rem .6rem;
   overflow: hidden;
-  color: #19261e;
-  font-weight: 790;
+  color: #243129;
+  font-size: .88rem;
+  font-weight: 500;
   text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   background: transparent;
 }
 
+.task-sidebar__project--active .task-sidebar__project-toggle {
+  color: #1f5138;
+  background: #eaf1eb;
+}
+
 .task-sidebar__project-toggle::before {
-  margin-right: .45rem;
-  content: "›";
+  margin-right: 0;
+  content: none;
+}
+
+.task-sidebar__project-toggle svg {
+  flex: 0 0 auto;
+  color: #7a857e;
+}
+
+.task-sidebar__project--active .task-sidebar__project-toggle svg {
+  color: #1f5138;
+}
+
+.task-sidebar__project-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .task-sidebar__project-toggle[aria-expanded="true"]::before {
-  content: "⌄";
+  content: none;
 }
 
 .task-sidebar__project-content {
@@ -584,20 +682,21 @@ function selectProject(group: WorkspaceProjectGroup) {
 
 .task-sidebar__task-link span {
   overflow: hidden;
-  font-size: .83rem;
-  font-weight: 700;
+  font-size: .85rem;
+  font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .task-sidebar__task-link small {
-  color: #526058;
+  color: #4d5a52;
   font-size: .68rem;
+  font-weight: 400;
 }
 
 .task-sidebar__task-link--active {
-  color: #053c27;
-  background: #e7f5ee;
+  color: #1f5138;
+  background: #eaf1eb;
 }
 
 .task-sidebar__inline-form {
@@ -642,10 +741,10 @@ function selectProject(group: WorkspaceProjectGroup) {
   height: 2rem;
   place-items: center;
   border-radius: 50%;
-  color: #075237;
-  background: #cfe9da;
+  color: #fff;
+  background: #057242;
   font-size: .68rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .task-sidebar__user span:last-child {

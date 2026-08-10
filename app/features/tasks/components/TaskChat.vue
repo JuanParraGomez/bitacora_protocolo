@@ -465,9 +465,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   overflow: auto;
   padding: 1.4rem 1.55rem;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .72), rgba(250, 252, 250, .86)),
-    radial-gradient(circle at 30% 0%, rgba(0, 122, 77, .06), transparent 34%);
+  background: #fff;
 }
 
 .task-chat__bubble {
@@ -506,17 +504,16 @@ onBeforeUnmount(() => {
 }
 
 .task-chat__bubble-content {
-  border: 1px solid #dce2de;
-  border-radius: .85rem;
+  border: 1px solid #e6eae7;
+  border-radius: .75rem;
   padding: .82rem 1rem;
   color: #1d241f;
   background: #fff;
-  box-shadow: 0 12px 30px rgba(30, 40, 34, .035);
 }
 
 .task-chat__bubble--user .task-chat__bubble-content {
-  border-color: #9bc9b5;
-  background: #edf8f3;
+  border-color: #d9ebe1;
+  background: #f2f8f4;
 }
 
 .task-chat__message-body {
@@ -542,7 +539,7 @@ onBeforeUnmount(() => {
 
 .task-chat__primary-question {
   margin: .65rem 0 0;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .task-chat__bubble small {
@@ -573,9 +570,9 @@ onBeforeUnmount(() => {
 .task-chat__proposal {
   display: grid;
   gap: .45rem;
-  border: 1px solid #cfd9d3;
-  border-radius: .7rem;
-  padding: .8rem;
+  border: 1px solid #e6eae7;
+  border-radius: .75rem;
+  padding: .9rem 1rem;
   background: #fff;
 }
 
@@ -588,21 +585,60 @@ onBeforeUnmount(() => {
   gap: .45rem;
 }
 
+.task-chat__proposal header strong {
+  font-weight: 600;
+}
+
+.task-chat__proposal header span {
+  color: #68736c;
+  font-size: .74rem;
+  font-weight: 400;
+}
+
 .task-chat__proposal p,
 .task-chat__proposal label {
   margin: 0;
+  font-weight: 400;
 }
 
 .task-chat__proposal input {
   width: 100%;
-  border: 1px solid #b9c6be;
-  border-radius: .4rem;
+  border: 1px solid #dfe6e1;
+  border-radius: .55rem;
   padding: .55rem .65rem;
 }
 
+.task-chat__proposal-actions {
+  justify-content: flex-start;
+  gap: 1rem;
+}
+
 .task-chat__proposal-actions button {
-  flex: 1 1 7rem;
-  min-height: 2.25rem;
+  flex: 0 0 auto;
+  min-height: 2rem;
+  border: 0;
+  padding: 0 .15rem;
+  color: #3a644c;
+  font-size: .85rem;
+  font-weight: 500;
+  background: transparent;
+}
+
+.task-chat__proposal-actions button:hover,
+.task-chat__proposal-actions button:focus-visible {
+  color: #1f5138;
+  text-decoration: underline;
+  text-underline-offset: .2rem;
+}
+
+.task-chat__proposal-actions button[aria-label='Aceptar propuesta'] {
+  color: #047d47;
+  font-weight: 600;
+}
+
+.task-chat__proposal-actions button[aria-label='Aceptar propuesta']::before {
+  margin-right: .3rem;
+  content: "✓";
 }
 
 .task-chat__contradictions {
@@ -663,20 +699,21 @@ onBeforeUnmount(() => {
 
 .task-chat__composer :deep([data-testid='attach-file']) {
   min-height: 2.25rem;
-  border: 1px solid #cbd7d0;
+  border: 0;
   border-radius: .45rem;
-  padding: 0 .7rem;
-  color: #64736a;
-  background: #f4f7f5;
+  padding: 0 .5rem;
+  color: #7a857e;
+  background: transparent;
 }
 
 .task-chat__composer-label {
-  display: block;
-  padding: .75rem 1.35rem 0;
-  color: #304038;
-  font-size: .82rem;
-  font-weight: 720;
-  background: #fff;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .task-chat__composer :deep(form) {

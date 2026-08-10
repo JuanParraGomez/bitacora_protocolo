@@ -160,9 +160,9 @@ watch(() => props.expanded, async (next, previous) => {
   align-items: center;
   justify-content: space-between;
   gap: .85rem;
-  padding: .85rem .95rem;
-  border-bottom: 1px solid #dce3de;
-  background: linear-gradient(180deg, #f8fbf9, #fff);
+  padding: .9rem 1rem;
+  border-bottom: 1px solid #e6eae7;
+  background: #fff;
 }
 
 .agent-panel__identity {
@@ -174,14 +174,14 @@ watch(() => props.expanded, async (next, previous) => {
 
 .agent-panel__sparkle {
   display: grid;
-  width: 1.8rem;
-  height: 1.8rem;
+  width: 1.6rem;
+  height: 1.6rem;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 50%;
-  color: #08724c;
-  background: #e5f5ed;
-  font-size: 1rem;
+  color: #7c5cd6;
+  background: transparent;
+  font-size: 1.15rem;
 }
 
 .agent-panel__identity-copy {
@@ -250,31 +250,53 @@ watch(() => props.expanded, async (next, previous) => {
 }
 
 .agent-panel__eyebrow {
-  color: #08724c;
-  font-size: .72rem;
-  font-weight: 780;
-  letter-spacing: .06em;
-  text-transform: uppercase;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .agent-panel__identity h2 {
-  color: #15221a;
-  font-size: .98rem;
-  font-weight: 770;
+  color: #0d1f16;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .agent-panel__state {
-  color: #5d6962;
-  font-size: .8rem;
+  color: #68736c;
+  font-size: .78rem;
+  font-weight: 400;
 }
 
 .agent-panel__toggle {
-  min-height: 2.4rem;
-  border: 1px solid #c8d7cf;
-  border-radius: .6rem;
-  padding: 0 .8rem;
-  color: #173026;
-  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  min-height: 2.2rem;
+  border: 0;
+  border-radius: .5rem;
+  padding: 0 .5rem;
+  color: #4a5a50;
+  background: transparent;
+}
+
+.agent-panel__toggle:hover,
+.agent-panel__toggle:focus-visible {
+  color: #1f5138;
+  background: #eaf1eb;
+}
+
+.agent-panel__toggle-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .agent-panel__content {

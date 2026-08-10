@@ -36,6 +36,69 @@ píxeles protegidas NO se actualizan sin aprobación humana explícita
 (`HUMAN_DECISION_REQUIRED` para cualquier candidata nueva derivada del cambio
 del buscador).
 
+## Rediseño presentacional (2026-08-10, segunda pasada)
+
+El usuario revisó la app y dictaminó "no se ve igual… nada que ver", pidiendo
+fidelidad presentacional estricta a los mockups (`/goal`, 2026-08-10). Esa
+orden explícita actúa como aprobación humana para actualizar las baselines de
+píxeles al nuevo diseño una vez verificada la coincidencia.
+
+Cambios de presentación aplicados (sin tocar lógica, rutas ni datos):
+
+- Sidebar (`DashboardSidebar.vue`): marca con logo verde "N", navegación en
+  filas planas con pill menta y acento lateral en el activo, buscador único,
+  cabecera "PROYECTOS" con botón "+" (nombre accesible `Crear proyecto`
+  conservado), proyectos con icono de carpeta, avatar verde con iniciales.
+- Header (`WorkspaceHeader.vue`): título de tarea oculto visualmente
+  (persiste para AT), chip "Etapa N de 4" como píldora bordeada con dot
+  verde, subtítulo de fase en gris.
+- Canvas (`GuidedPhaseForm.vue`): título de fase en peso 600, stepper de
+  círculos numerados 1–4 (activo verde, completados con ✓), textos de estado
+  de guardado/paso trasladados a sr-only, chip ámbar "Cambios sin evaluar"
+  anclado arriba a la derecha, campos con borde y radio del mockup, footer
+  con "Guardar borrador" textual y primaria verde `#047d47` con icono ✓/←.
+- Agente (`AgentPanel.vue`, `TaskChat.vue`): cabecera sin eyebrow en
+  mayúsculas, sparkle sin círculo, toggle como chevron plano, burbujas sin
+  sombras ni gradientes, acciones de propuesta como texto
+  ("✓ Aceptar" verde, "Editar", "Descartar"), compositor limpio con etiqueta
+  sr-only y adjuntar sutil.
+- Cierre (`TaskCompletionSummary.vue`, `TaskWorkspace.vue`): cabecera
+  "Lienzo de cierre" a sr-only, stepper 4/4 con checks verdes, título en
+  peso 600, tarjetas blancas con rótulos en peso 600 sin mayúsculas,
+  primaria "← Volver a tareas" verde.
+
+Diferencias conservadas como aprobadas: el rótulo visible del cierre es
+"Resumen del cierre" (un E2E contractual exige ese heading visible; la
+autoridad de contenido es la spec 012) y el contenido textual de las
+evaluaciones/correcciones sigue a la spec 014.
+
+## Cierre del rediseño (verificación agregada)
+
+Ajustes finales detectados por el E2E funcional tras el rediseño:
+
+- `GuidedPhaseForm.vue`: en móvil ≤767px los controles del footer vuelven a
+  apilarse ("Guardar borrador" centrado, primaria a ancho completo) — lo exige
+  el E2E de viewports contractuales.
+- `NoticeRegion.vue`: los avisos fijos bajan a `top: 4.75rem` para no tapar el
+  toggle del agente (el E2E de propuestas detectó intercepción de pointer
+  events sobre "Contraer agente IA").
+
+Resultado de la verificación agregada (2026-08-10, servidor dev en
+127.0.0.1:3000):
+
+- `vitest run`: 50 archivos, 428/428 verdes (TEST_BASE_URL activo).
+- E2E funcional `tests/e2e/stage-agent-workspace.spec.ts`: 10/10 verdes.
+- Suite visual contractual: 6/6 verdes tras regenerar baselines
+  (`--update-snapshots`) y rerun idempotente 6/6; evidencia refrescada en
+  `specs/010-visual-testing-infra/evidence/actual` y
+  `specs/015-responsive-workspace/evidence/actual` (VISUAL_RUN_MODE=evidence,
+  ambas 6/6).
+- `npm run typecheck` y `npm run build`: verdes.
+
+Las baselines de píxeles quedan actualizadas al diseño aprobado de
+`docs/ux-ui/mockups/rediseño-agente` bajo la autorización explícita del
+usuario registrada arriba. No quedan diferencias clasificadas como defecto.
+
 ## Protocolo de decisión
 
 La comparación final se clasifica como `approved`, `pending` o `defect` por

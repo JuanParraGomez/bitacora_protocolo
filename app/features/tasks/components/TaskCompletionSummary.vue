@@ -33,6 +33,9 @@ function recordTitle(record: TaskIndex['registros'][number]): string {
   <section class="task-completion-summary" aria-label="Resumen completado">
     <header class="task-completion-summary__header">
       <p class="task-completion-summary__eyebrow">Tarea completada</p>
+      <ol class="task-completion-summary__steps" aria-hidden="true">
+        <li v-for="step in 4" :key="step">✓</li>
+      </ol>
       <div class="task-completion-summary__heading">
         <h3>Resumen del cierre</h3>
         <p data-testid="completion-progress">{{ summary.progress }}</p>
@@ -123,12 +126,45 @@ function recordTitle(record: TaskIndex['registros'][number]): string {
 }
 
 .task-completion-summary__eyebrow {
-  margin: 0;
-  color: #4d6358;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.task-completion-summary__steps {
+  display: flex;
+  gap: 2.6rem;
+  margin: 0 0 .4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.task-completion-summary__steps li {
+  position: relative;
+  display: grid;
+  width: 1.45rem;
+  height: 1.45rem;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  background: #067b46;
   font-size: .78rem;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.task-completion-summary__steps li + li::before {
+  position: absolute;
+  right: calc(100% + .35rem);
+  top: 50%;
+  width: 1.9rem;
+  height: .14rem;
+  border-radius: 999px;
+  background: #067b46;
+  content: "";
 }
 
 .task-completion-summary__heading {
@@ -141,23 +177,28 @@ function recordTitle(record: TaskIndex['registros'][number]): string {
 
 .task-completion-summary__heading h3 {
   margin: 0;
-  font-size: clamp(1.35rem, 2vw, 1.85rem);
+  color: #0d1f16;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
 }
 
 .task-completion-summary__heading p {
   margin: 0;
-  border: 1px solid #b7c7bd;
-  border-radius: .55rem;
-  padding: .3rem .65rem;
-  background: #edf5ef;
-  color: #194831;
-  font-weight: 800;
+  border: 1px solid #dfe6e1;
+  border-radius: 999px;
+  padding: .3rem .7rem;
+  background: #fff;
+  color: #1e2a23;
+  font-size: .8rem;
+  font-weight: 500;
 }
 
 .task-completion-summary__intro {
   max-width: 58rem;
   margin: 0;
-  color: #4d5c54;
+  color: #68736c;
+  font-size: .9rem;
 }
 
 .task-completion-summary__facts {
@@ -172,24 +213,25 @@ function recordTitle(record: TaskIndex['registros'][number]): string {
   display: grid;
   gap: .45rem;
   min-width: 0;
-  border: 1px solid #dce3de;
-  border-radius: .65rem;
-  padding: .9rem;
-  background: #fbfdfb;
+  border: 1px solid #e6eae7;
+  border-radius: .75rem;
+  padding: .95rem 1rem;
+  background: #fff;
 }
 
 .task-completion-summary__fact dt,
 .task-completion-summary__records h4 {
   margin: 0;
-  color: #42534a;
-  font-size: .82rem;
-  font-weight: 800;
-  text-transform: uppercase;
+  color: #242d27;
+  font-size: .9rem;
+  font-weight: 600;
+  text-transform: none;
 }
 
 .task-completion-summary__fact dd {
   margin: 0;
-  color: #202721;
+  color: #3d4842;
+  font-size: .9rem;
   line-height: 1.5;
 }
 
@@ -222,12 +264,18 @@ function recordTitle(record: TaskIndex['registros'][number]): string {
 
 .task-completion-summary__primary {
   border: 0;
-  border-radius: .6rem;
-  padding: .75rem 1rem;
-  background: #1b6f4a;
+  border-radius: .55rem;
+  padding: .7rem 1.15rem;
+  background: #047d47;
   color: #fff;
-  font-weight: 800;
+  font-size: .9rem;
+  font-weight: 600;
   cursor: pointer;
+}
+
+.task-completion-summary__primary::before {
+  margin-right: .4rem;
+  content: "←";
 }
 
 .task-completion-summary__primary:focus-visible {

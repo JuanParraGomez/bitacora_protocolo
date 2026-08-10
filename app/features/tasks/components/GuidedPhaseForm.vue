@@ -206,18 +206,19 @@ watch(() => [props.task.id, props.task.fase], () => {
         <h3 id="guided-form-title">{{ phaseLabel }}</h3>
         <p class="guided-phase-form__meta">Fase {{ phase }} de 4</p>
       </div>
+      <p v-if="props.isStaleEvaluation" class="guided-phase-form__evaluation-status">Cambios sin evaluar</p>
       <ol class="guided-phase-form__progress" aria-label="Progreso de fases">
         <li
           v-for="item in progressSteps"
           :key="item.step"
           :class="{ 'guided-phase-form__progress-step': true, 'guided-phase-form__progress-step--complete': item.complete, 'guided-phase-form__progress-step--current': item.current }"
         >
-          <span>{{ item.step }}</span>
+          <span aria-hidden="true">{{ item.complete ? '✓' : item.step }}</span>
+          <span class="guided-phase-form__sr">{{ item.complete ? `Fase ${item.step} completada` : item.current ? `Fase ${item.step} actual` : `Fase ${item.step}` }}</span>
         </li>
       </ol>
       <p class="guided-phase-form__current-step" role="status" aria-live="polite">Paso actual: Fase {{ phase }}</p>
       <section class="guided-phase-form__save-state" role="status" aria-live="polite">
-        <p v-if="props.isStaleEvaluation" class="guided-phase-form__evaluation-status">Cambios sin evaluar</p>
         <p class="guided-phase-form__save-status">{{ saveCopy.statusLabel }}</p>
         <p class="guided-phase-form__save-helper">{{ saveCopy.helperLabel }}</p>
       </section>
@@ -283,6 +284,7 @@ watch(() => [props.task.id, props.task.fase], () => {
       <button
         type="button"
         class="guided-phase-form__primary-action"
+        :class="`guided-phase-form__primary-action--${activePrimaryAction.kind}`"
         data-focus-target="form"
         data-primary-action="true"
         :disabled="activePrimaryAction.disabled"
@@ -310,24 +312,55 @@ watch(() => [props.task.id, props.task.fase], () => {
 }
 
 .guided-phase-form__header {
+  position: relative;
   display: grid;
-  gap: 1rem;
-  padding: 1.35rem 1.45rem 1rem;
-  border-bottom: 1px solid #dde3de;
+  gap: .9rem;
+  padding: 1.5rem 1.6rem 1.1rem;
+  border-bottom: 1px solid #e6eae7;
 }
 
 .guided-phase-form__header h3 {
   margin: 0;
-  color: #101612;
-  font-size: 1.12rem;
-  font-weight: 780;
+  color: #0d1f16;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
   line-height: 1.2;
 }
 
 .guided-phase-form__meta {
-  margin: .2rem 0 0;
-  color: #59645d;
-  font-size: .8rem;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.guided-phase-form__evaluation-status {
+  position: absolute;
+  top: 1.55rem;
+  right: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin: 0;
+  border: 1px solid #f3e3c8;
+  border-radius: 999px;
+  padding: .32rem .75rem;
+  color: #7a5a1e;
+  background: #fef9f0;
+  font-size: .78rem;
+  font-weight: 500;
+}
+
+.guided-phase-form__evaluation-status::before {
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  background: #f7900a;
+  content: "";
 }
 
 .guided-phase-form__progress {
@@ -369,33 +402,57 @@ watch(() => [props.task.id, props.task.fase], () => {
   z-index: 1;
   display: grid;
   place-items: center;
-  width: .95rem;
-  height: .95rem;
-  border: 1px solid #cfd6d1;
+  width: 1.45rem;
+  height: 1.45rem;
+  border: 1px solid #d5dcd7;
   border-radius: 999px;
-  color: transparent;
-  background: #d9dedb;
+  color: #8a948d;
+  background: #fff;
+  font-size: .78rem;
+  font-weight: 500;
 }
 
 .guided-phase-form__progress-step--complete span,
 .guided-phase-form__progress-step--current span {
-  border-color: #007a4d;
-  background: #007a4d;
+  border-color: #067b46;
+  color: #fff;
+  background: #067b46;
 }
 
 .guided-phase-form__progress-step--current span {
   outline: 3px solid #e8f5ee;
 }
 
+.guided-phase-form__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .guided-phase-form__current-step {
-  margin: -.35rem 0 0;
-  color: #005f3e;
-  font-size: .8rem;
-  font-weight: 760;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .guided-phase-form__save-state {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   min-width: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .guided-phase-form__save-state p {
@@ -403,27 +460,63 @@ watch(() => [props.task.id, props.task.fase], () => {
 }
 
 .guided-phase-form__controls {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: .5rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
   align-items: center;
   min-width: 0;
-  padding: 1rem 1.45rem 1.35rem;
-  border-top: 1px solid #dde3de;
+  padding: 1rem 1.6rem 1.4rem;
+  border-top: 1px solid #e6eae7;
 }
 
 .guided-phase-form__controls button {
   min-height: 2.6rem;
-  border-radius: .42rem;
+  border-radius: .55rem;
   white-space: nowrap;
 }
 
+.guided-phase-form__save-button {
+  border: 0;
+  padding: 0 .25rem;
+  color: #3a644c;
+  font-size: .88rem;
+  font-weight: 500;
+  background: transparent;
+}
+
+.guided-phase-form__save-button:hover,
+.guided-phase-form__save-button:focus-visible {
+  color: #1f5138;
+  text-decoration: underline;
+  text-underline-offset: .2rem;
+}
+
 .guided-phase-form__controls .guided-phase-form__primary-action {
-  min-height: 3.05rem;
-  border-color: #007a4d;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: 2.7rem;
+  border-color: #047d47;
+  padding: 0 1.2rem;
   color: #fff;
-  background: #007a4d;
-  box-shadow: 0 13px 28px rgba(0, 95, 62, .18);
+  font-size: .9rem;
+  font-weight: 600;
+  background: #047d47;
+  box-shadow: none;
+}
+
+.guided-phase-form__primary-icon {
+  font-weight: 700;
+}
+
+.guided-phase-form__primary-action--evaluate::before,
+.guided-phase-form__primary-action--reevaluate::before {
+  content: "✓";
+  font-weight: 700;
+}
+
+.guided-phase-form__primary-action--return::before {
+  content: "←";
 }
 
 .guided-phase-form__controls button:last-child:disabled {
@@ -489,8 +582,8 @@ watch(() => [props.task.id, props.task.fase], () => {
   gap: .42rem;
   margin: .15rem 0;
   color: #242d27;
-  font-size: .86rem;
-  font-weight: 680;
+  font-size: .88rem;
+  font-weight: 600;
 }
 
 .guided-phase-form > :deep(label:has(> input[type='checkbox'])) {
@@ -505,9 +598,9 @@ watch(() => [props.task.id, props.task.fase], () => {
   width: 100%;
   min-width: 0;
   min-height: 2.65rem;
-  padding: .68rem .75rem;
-  border-radius: .48rem;
-  border-color: #d4dbd6;
+  padding: .68rem .8rem;
+  border-radius: .6rem;
+  border-color: #dfe6e1;
   background: #fff;
 }
 
@@ -532,9 +625,9 @@ watch(() => [props.task.id, props.task.fase], () => {
 
 .guided-phase-form > :deep(legend) {
   padding: 0;
-  color: #101612;
+  color: #0d1f16;
   font-size: .95rem;
-  font-weight: 780;
+  font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
 }
@@ -552,10 +645,10 @@ watch(() => [props.task.id, props.task.fase], () => {
   }
 
   .guided-phase-form__controls {
-    grid-template-columns: minmax(0, 1fr);
+    flex-direction: column;
+    align-items: stretch;
     width: auto;
     max-width: none;
-    justify-self: stretch;
     padding-inline: 1rem;
     box-sizing: border-box;
   }
@@ -567,7 +660,12 @@ watch(() => [props.task.id, props.task.fase], () => {
   }
 
   .guided-phase-form__save-button {
-    justify-self: center;
+    align-self: center;
+  }
+
+  .guided-phase-form__controls .guided-phase-form__primary-action {
+    justify-content: center;
+    width: 100%;
   }
 
   .guided-phase-form--compact > :deep(.evaluation-feedback),

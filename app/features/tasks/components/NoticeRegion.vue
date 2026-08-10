@@ -54,7 +54,7 @@ const emit = defineEmits<{
 <style scoped>
 .notice-region {
   position: fixed;
-  top: max(1rem, env(safe-area-inset-top));
+  top: max(4.75rem, env(safe-area-inset-top));
   right: max(1rem, env(safe-area-inset-right));
   z-index: 95;
   display: grid;

@@ -13,6 +13,10 @@
   --ui-primary-700: #005f3e;
 }
 
+body {
+  font-family: 'Avenir Next', 'Avenir', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+}
+
 .workspace-section--form .phase-workspace__content,
 .workspace-section--form .phase-workspace__form {
   width: 100%;

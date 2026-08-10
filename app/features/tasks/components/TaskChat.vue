@@ -325,12 +325,12 @@ onBeforeUnmount(() => {
           :class="['task-chat__bubble', message.role === 'user' ? 'task-chat__bubble--user' : 'task-chat__bubble--assistant']"
           :data-message-id="message.id"
         >
-          <span class="task-chat__avatar" data-message-avatar aria-hidden="true">{{ message.role === 'assistant' ? '✦' : 'Tú' }}</span>
+          <div class="task-chat__meta">
+            <span class="task-chat__avatar" data-message-avatar aria-hidden="true"><template v-if="message.role === 'assistant'">✦</template><svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            <strong>{{ message.role === 'assistant' ? 'Agente IA' : 'Tú' }}</strong>
+            <time :datetime="new Date(message.createdAt).toISOString()">{{ new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</time>
+          </div>
           <div class="task-chat__bubble-content">
-            <div class="task-chat__message-heading">
-              <strong>{{ message.role === 'assistant' ? 'Agente IA' : 'Tú' }}</strong>
-              <time :datetime="new Date(message.createdAt).toISOString()">{{ new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</time>
-            </div>
             <p class="task-chat__message-body">{{ extractText(message) }}</p>
             <p v-if="message.primaryQuestion" class="task-chat__primary-question">{{ message.primaryQuestion }}</p>
           </div>
@@ -426,9 +426,13 @@ onBeforeUnmount(() => {
       @submit="onSendSubmit"
     >
       <template #footer>
-        <button type="button" data-testid="attach-file" aria-disabled="true" disabled title="Los adjuntos estarán disponibles próximamente">Adjuntar</button>
+        <button type="button" data-testid="attach-file" aria-label="Adjuntar archivo" aria-disabled="true" disabled title="Los adjuntos estarán disponibles próximamente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
         <UChatPromptSubmit
           aria-label="Enviar mensaje"
+          label="Enviar"
+          icon="i-lucide-send-horizontal"
+          color="neutral"
+          variant="outline"
           :status="props.sendStatus"
           :disabled="props.disabled || props.sendStatus !== 'ready' || !draft.trim()"
           @reload="retryLatest"
@@ -470,41 +474,58 @@ onBeforeUnmount(() => {
 
 .task-chat__bubble {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: .75rem;
-  width: min(78%, 34rem);
-  margin: 0 0 1rem;
+  gap: .35rem;
+  width: min(82%, 34rem);
+  margin: 0 0 1.1rem;
 }
 
 .task-chat__bubble--user {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
   margin-left: auto;
 }
 
-.task-chat__bubble--user .task-chat__avatar {
-  grid-column: 2;
-  grid-row: 1;
+.task-chat__meta {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  color: #25332b;
+  font-size: .78rem;
 }
 
-.task-chat__bubble--user .task-chat__bubble-content {
-  grid-column: 1;
-  grid-row: 1;
+.task-chat__meta strong {
+  font-weight: 600;
+}
+
+.task-chat__meta time {
+  margin-left: auto;
+  color: #526058;
+  font-size: .72rem;
+  font-weight: 500;
 }
 
 .task-chat__avatar {
   display: grid;
   place-items: center;
-  width: 2rem;
-  height: 2rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #7c5cd6;
+  font-size: .9rem;
+}
+
+.task-chat__bubble--user .task-chat__avatar {
+  width: 1.6rem;
+  height: 1.6rem;
   border-radius: 999px;
   color: #fff;
-  background: radial-gradient(circle at 30% 20%, #1bb47a, #006c45 70%);
-  box-shadow: 0 10px 24px rgba(0, 95, 62, .18);
+  background: #067b46;
+}
+
+.task-chat__bubble--user .task-chat__avatar svg {
+  width: .95rem;
+  height: .95rem;
 }
 
 .task-chat__bubble-content {
-  border: 1px solid #e6eae7;
+  border: 1px solid #e3e8e4;
   border-radius: .75rem;
   padding: .82rem 1rem;
   color: #1d241f;
@@ -513,28 +534,12 @@ onBeforeUnmount(() => {
 
 .task-chat__bubble--user .task-chat__bubble-content {
   border-color: #d9ebe1;
-  background: #f2f8f4;
+  background: #eaf4ec;
 }
 
 .task-chat__message-body {
   margin: 0;
   white-space: pre-wrap;
-}
-
-.task-chat__message-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: .75rem;
-  margin-bottom: .35rem;
-  color: #25332b;
-  font-size: .78rem;
-}
-
-.task-chat__message-heading time {
-  color: #526058;
-  font-size: .72rem;
-  font-weight: 500;
 }
 
 .task-chat__primary-question {
@@ -550,7 +555,7 @@ onBeforeUnmount(() => {
 }
 
 .task-chat__message-meta {
-  margin: -.7rem 0 1rem 2.8rem;
+  margin: -.7rem 0 1rem 1.7rem;
   font-size: 0.75rem;
 }
 
@@ -561,7 +566,7 @@ onBeforeUnmount(() => {
 .task-chat__updates {
   display: grid;
   gap: .6rem;
-  margin: .5rem 0 1rem 2.75rem;
+  margin: .5rem 0 1rem 1.7rem;
   padding: 0;
   list-style: none;
   font-size: 0.85rem;
@@ -641,8 +646,18 @@ onBeforeUnmount(() => {
   content: "✓";
 }
 
+.task-chat__proposal-actions button[aria-label='Editar propuesta']::before {
+  margin-right: .3rem;
+  content: "✎";
+}
+
+.task-chat__proposal-actions button[aria-label='Descartar propuesta']::before {
+  margin-right: .3rem;
+  content: "🗑";
+}
+
 .task-chat__contradictions {
-  margin: .5rem 0 1rem 2.75rem;
+  margin: .5rem 0 1rem 1.7rem;
   color: #9a3412;
 }
 
@@ -698,12 +713,20 @@ onBeforeUnmount(() => {
 }
 
 .task-chat__composer :deep([data-testid='attach-file']) {
+  display: grid;
   min-height: 2.25rem;
+  width: 2.25rem;
+  place-items: center;
   border: 0;
   border-radius: .45rem;
-  padding: 0 .5rem;
+  padding: 0;
   color: #7a857e;
   background: transparent;
+}
+
+.task-chat__composer :deep([data-testid='attach-file'] svg) {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .task-chat__composer-label {

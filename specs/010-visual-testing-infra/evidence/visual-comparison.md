@@ -144,6 +144,34 @@ Verificación agregada de la segunda ronda (2026-08-10, 127.0.0.1:3000):
   refrescada 6/6 en 010 y 015, axe-contrast sin violaciones.
 - `npm run typecheck` y `npm run build`: verdes.
 
+## Tercera ronda: pulido de detalle fino (tipografía, iconos, chat)
+
+El usuario reportó que aun así no se veía igual; diagnóstico: la app servida
+ya coincidía en estructura (verificado con capturas de browser fresco sin
+seed), pero faltaba fidelidad de detalle:
+
+- Tipografía (`app/assets/css/main.css`): stack global `Avenir Next` primero
+  (fuente del mockup, disponible en macOS), con fallback al stack de sistema.
+- Logo (`DashboardSidebar.vue`): la "N" plana sobre cuadrado verde se
+  reemplaza por la marca plegada bicolor del mockup (SVG inline, dos tonos de
+  verde); se restaura el acento verde en el borde derecho de la nav activa.
+- Iconos de campo (`StageTextField.vue`): el reloj genérico repetido se
+  reemplaza por un set de iconos de línea estilo feather (24px) por tipo de
+  campo: alert-circle (problema), paperclip (evidencia), barras (análisis),
+  target (resultado), flag (criterio), lock (restricciones), users (actores),
+  check-circle (decisión), maximize (alcance), etc., con fallback genérico.
+- Chat (`TaskChat.vue`): la meta (sparkle/avatar + nombre + hora) sale de la
+  burbuja y queda encima como en el mockup; burbuja de usuario menta
+  `#eaf4ec` alineada a la derecha con avatar verde circular con icono de
+  persona; avatar del asistente reducido a sparkle morado sin círculo ni
+  sombra; acciones de propuesta con glifos ✓/✎/🗑.
+- Compositor (`TaskChat.vue`): "Adjuntar" pasa a icono paperclip; el submit
+  muestra icono de envío + etiqueta "Enviar" en pill bordeada.
+
+Verificación de la tercera ronda: vitest 428/428, E2E 10/10, suite visual
+6/6 con baselines regeneradas y rerun idempotente, evidencia 010/015
+refrescada, typecheck y build verdes.
+
 ## Protocolo de decisión
 
 La comparación final se clasifica como `approved`, `pending` o `defect` por

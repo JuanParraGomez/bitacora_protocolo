@@ -143,7 +143,7 @@ function selectProject(group: WorkspaceProjectGroup) {
   <aside class="task-sidebar" role="navigation" aria-label="Navegación de tareas">
     <header class="task-sidebar__brand">
       <div class="task-sidebar__brand-identity">
-        <span class="task-sidebar__brand-mark" aria-hidden="true">N</span>
+        <span class="task-sidebar__brand-mark" aria-hidden="true"><svg viewBox="0 0 28 28" fill="none"><path d="M5 25V3l8.5 13.5V25z" fill="#0a6b3c"/><path d="M13.5 16.5 22 3v22l-8.5-8.5z" fill="#17a457"/></svg></span>
         <NuxtLink to="/" class="task-sidebar__brand-link">Nexus</NuxtLink>
         <p class="sr-only">Espacio de trabajo</p>
       </div>
@@ -382,11 +382,11 @@ function selectProject(group: WorkspaceProjectGroup) {
   width: 1.9rem;
   height: 1.9rem;
   place-items: center;
-  border-radius: .45rem;
-  color: #fff;
-  background: #067b46;
-  font-size: 1rem;
-  font-weight: 700;
+}
+
+.task-sidebar__brand-mark svg {
+  width: 100%;
+  height: 100%;
 }
 
 .sr-only {
@@ -466,6 +466,10 @@ function selectProject(group: WorkspaceProjectGroup) {
 .task-sidebar__primary-link[aria-current="page"] {
   color: #1f5138;
   background: #eaf1eb;
+}
+
+.task-sidebar__primary-link[aria-current="page"] {
+  box-shadow: inset -3px 0 0 #067b46;
 }
 
 .task-sidebar__primary-link--button {

@@ -99,6 +99,51 @@ Las baselines de píxeles quedan actualizadas al diseño aprobado de
 `docs/ux-ui/mockups/rediseño-agente` bajo la autorización explícita del
 usuario registrada arriba. No quedan diferencias clasificadas como defecto.
 
+## Segunda ronda de fidelidad (revisión estricta contra los mockups)
+
+Tras la revisión del usuario ("no se parece a las imágenes"), se comparó cada
+mockup región a región y se corrigió presentación:
+
+- Canvas (`TaskWorkspace.vue`, `GuidedPhaseForm.vue`): fondo de página gris
+  `#f1f4f2` con la tarjeta blanca del lienzo en contraste; la tarjeta acota su
+  altura en desktop (`grid-template-rows: minmax(0,1fr) auto`) y el formulario
+  pasa a flex-column con el footer "Guardar borrador / ✓ Evaluar etapa"
+  fijado al fondo visible de la tarjeta; en tablet (768–1024) la tarjeta
+  vuelve a desplazarse como región (contrato E2E de scroll independiente) y en
+  móvil igual. Se eliminaron divisores header/pie que el mockup no muestra.
+- Campos (`GuidedPhaseForm.vue`, `StageTextField.vue`): fieldset sin borde
+  (los selectores `> :deep()` solo alcanzaban hijos directos y la regla de
+  fieldset/inputs estaba muerta; se corrigió a `:deep()`), textareas
+  uniformes de 3.9rem, contador `N/500` dentro de la caja abajo a la derecha
+  (en flujo cuando hay issues), etiquetas en peso 600, borde residual de
+  `.stage-text-field` eliminado.
+- Rail del agente contraído (`AgentPanel.vue`): etiqueta visible "Agente IA",
+  sparkle con dot verde de presencia, toggle como caja bordeada con chevron
+  (ya no ocupa todo el rail); en tarea completada el icono pasa a ser un
+  check verde circular como en IMG-UX-06.
+- Sidebar (`DashboardSidebar.vue`): pill activa sin acento lateral, chevron en
+  el footer de usuario, buscador con placeholder completo (font .8rem).
+- Móvil (`GuidedPhaseForm.vue`, `WorkspacePaneTabs.vue`,
+  `WorkspaceHeader.vue`): la cabecera de etapa (título + chip ámbar +
+  stepper numerado) vuelve a ser visible arriba en la presentación compacta
+  como en IMG-UX-04; tabs Etapa/Agente como segmentado claro con pill blanca
+  y dot verde de pendientes; línea de contexto con dot verde y peso 500;
+  "Guardar borrador" sin subrayado.
+
+Diferencias conservadas como aprobadas en esta ronda: la caja "Evaluación del
+asistente" y la barra "Resumen de etapa" son contenido contractual de specs
+012/014 (los mockups no las muestran porque ilustran estados sin esos datos),
+y el banner menta "Protocolo completado" de IMG-UX-06 no se replica por ser
+contenido no presente en el dominio.
+
+Verificación agregada de la segunda ronda (2026-08-10, 127.0.0.1:3000):
+
+- `vitest run`: 428/428 verdes.
+- E2E funcional: 10/10 verdes (incluye el contrato de scroll en tablet).
+- Suite visual: baselines regeneradas, rerun idempotente 6/6, evidencia
+  refrescada 6/6 en 010 y 015, axe-contrast sin violaciones.
+- `npm run typecheck` y `npm run build`: verdes.
+
 ## Protocolo de decisión
 
 La comparación final se clasifica como `approved`, `pending` o `defect` por

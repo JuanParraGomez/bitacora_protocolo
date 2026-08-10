@@ -1166,6 +1166,7 @@ watch(() => [localTask.id, localTask.fase], () => {
   min-height: 0;
   height: 100%;
   padding: 1rem;
+  background: #f1f4f2;
 }
 
 .workspace-stage-layout--agent-collapsed {
@@ -1174,11 +1175,12 @@ watch(() => [localTask.id, localTask.fase], () => {
 
 .workspace-stage {
   display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: .85rem;
   min-width: 0;
   min-height: 0;
   overflow: auto;
-  padding: 1rem;
+  padding: 0;
   border: 1px solid #dce3de;
   border-radius: .9rem;
   background: #fff;
@@ -1214,6 +1216,7 @@ watch(() => [localTask.id, localTask.fase], () => {
 }
 
 .workspace-stage__form-region {
+  display: grid;
   min-width: 0;
   min-height: 0;
 }
@@ -1314,6 +1317,10 @@ watch(() => [localTask.id, localTask.fase], () => {
   .workspace-stage-layout--agent-collapsed {
     grid-template-columns: minmax(0, 1fr) minmax(3.5rem, 7rem);
   }
+
+  .workspace-stage {
+    grid-template-rows: none;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -1354,7 +1361,9 @@ watch(() => [localTask.id, localTask.fase], () => {
   }
 
   .workspace-stage {
-    padding: .85rem;
+    grid-template-rows: none;
+    padding: 0;
+    overflow: auto;
   }
 }
 </style>

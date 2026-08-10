@@ -208,10 +208,22 @@ defineExpose({ focusNavigation });
 }
 
 .workspace-header__mobile-context {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
   margin: 0;
   color: #405149;
   font-size: .78rem;
-  font-weight: 680;
+  font-weight: 500;
+}
+
+.workspace-header__mobile-context::before {
+  width: .5rem;
+  height: .5rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #067b46;
+  content: "";
 }
 
 .workspace-header__overflow {

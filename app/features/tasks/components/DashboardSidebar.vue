@@ -339,7 +339,8 @@ function selectProject(group: WorkspaceProjectGroup) {
     <footer class="task-sidebar__footer" data-shell-region="user-footer">
       <div class="task-sidebar__user">
         <span class="task-sidebar__avatar" aria-hidden="true">JP</span>
-        <span><strong data-shell-user-name>{{ props.userName }}</strong><small>{{ props.userEmail }}</small></span>
+        <span class="task-sidebar__user-copy"><strong data-shell-user-name>{{ props.userName }}</strong><small>{{ props.userEmail }}</small></span>
+        <span class="task-sidebar__user-chevron" aria-hidden="true">⌄</span>
       </div>
       <p v-if="props.settingsDisabled" id="task-sidebar-settings-unavailable" class="task-sidebar__availability" role="status">
         {{ props.settingsUnavailableReason }}
@@ -467,10 +468,6 @@ function selectProject(group: WorkspaceProjectGroup) {
   background: #eaf1eb;
 }
 
-.task-sidebar__primary-link[aria-current="page"] {
-  box-shadow: inset -3px 0 0 #067b46;
-}
-
 .task-sidebar__primary-link--button {
   border: 0;
   padding: 0;
@@ -528,6 +525,7 @@ function selectProject(group: WorkspaceProjectGroup) {
   border: 0;
   padding: .55rem 0;
   background: transparent;
+  font-size: .8rem;
   outline: none;
 }
 
@@ -747,9 +745,15 @@ function selectProject(group: WorkspaceProjectGroup) {
   font-weight: 600;
 }
 
-.task-sidebar__user span:last-child {
+.task-sidebar__user-copy {
   display: grid;
   min-width: 0;
+}
+
+.task-sidebar__user-chevron {
+  margin-left: auto;
+  color: #68736c;
+  font-size: .8rem;
 }
 
 .task-sidebar__user strong,

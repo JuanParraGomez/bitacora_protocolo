@@ -77,8 +77,9 @@ watch(() => props.expanded, async (next, previous) => {
     :aria-busy="isBusy ? 'true' : 'false'"
   >
     <header class="agent-panel__rail">
+      <span class="agent-panel__collapsed-label" aria-hidden="true">Agente IA</span>
       <div class="agent-panel__identity">
-        <span class="agent-panel__sparkle" data-agent-icon="sparkle" aria-hidden="true">✦</span>
+        <span class="agent-panel__sparkle" :class="{ 'agent-panel__sparkle--done': props.disabled }" data-agent-icon="sparkle" aria-hidden="true">{{ props.disabled ? '✓' : '✦' }}</span>
         <div class="agent-panel__identity-copy">
           <p class="agent-panel__eyebrow">Agente IA</p>
           <h2>Agente IA</h2>
@@ -150,7 +151,7 @@ watch(() => props.expanded, async (next, previous) => {
 
 .agent-panel[data-agent-state='collapsed'] {
   width: min(7rem, 12%);
-  min-width: 3.5rem;
+  min-width: 4.25rem;
   border-radius: .75rem;
 }
 
@@ -184,8 +185,38 @@ watch(() => props.expanded, async (next, previous) => {
   font-size: 1.15rem;
 }
 
+.agent-panel__sparkle--done {
+  border-radius: 50%;
+  color: #fff;
+  background: #067b46;
+  font-size: .95rem;
+}
+
 .agent-panel__identity-copy {
   min-width: 0;
+}
+
+.agent-panel__collapsed-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.agent-panel[data-agent-state='collapsed'] .agent-panel__collapsed-label {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  color: #6b7670;
+  font-size: .72rem;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .agent-panel[data-agent-state='collapsed'] .agent-panel__identity-copy,
@@ -199,17 +230,46 @@ watch(() => props.expanded, async (next, previous) => {
 }
 
 .agent-panel[data-agent-state='collapsed'] .agent-panel__rail {
-  justify-content: center;
-  padding: .55rem .4rem;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 1rem;
+  padding: .8rem .4rem;
+}
+
+.agent-panel[data-agent-state='collapsed'] .agent-panel__sparkle {
+  position: relative;
+  width: 1.9rem;
+  height: 1.9rem;
+  font-size: 1.3rem;
+}
+
+.agent-panel[data-agent-state='collapsed'] .agent-panel__sparkle::after {
+  position: absolute;
+  right: -.1rem;
+  bottom: -.1rem;
+  width: .55rem;
+  height: .55rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #16a34a;
+  content: "";
+}
+
+.agent-panel[data-agent-state='collapsed'] .agent-panel__sparkle--done::after {
+  content: none;
 }
 
 .agent-panel[data-agent-state='collapsed'] .agent-panel__toggle {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  background: transparent;
+  position: static;
+  display: grid;
+  width: 2.1rem;
+  height: 2.1rem;
+  min-height: 2.1rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #dfe6e1;
+  border-radius: .55rem;
+  background: #fff;
 }
 
 [data-agent-pending-badge] {

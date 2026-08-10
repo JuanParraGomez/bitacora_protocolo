@@ -48,7 +48,7 @@ function updateValue(event: Event) {
 </script>
 
 <template>
-  <div class="stage-text-field" data-stage-text-field>
+  <div class="stage-text-field" :class="{ 'stage-text-field--has-issues': inlineIssues.length > 0 }" data-stage-text-field>
     <label :for="id" class="stage-text-field__label">
       <svg class="stage-text-field__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
         <circle cx="8" cy="8" r="5.5" />
@@ -91,8 +91,11 @@ function updateValue(event: Event) {
 
 <style scoped>
 .stage-text-field {
+  position: relative;
   display: grid;
   gap: 0.35rem;
+  border: 0;
+  padding: 0;
 }
 
 .stage-text-field__label {
@@ -100,7 +103,7 @@ function updateValue(event: Event) {
   align-items: center;
   gap: 0.45rem;
   color: #26362b;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .stage-text-field__icon {
@@ -120,10 +123,18 @@ function updateValue(event: Event) {
 }
 
 .stage-text-field__count {
-  justify-self: end;
+  position: absolute;
+  right: 0.8rem;
+  bottom: 0.55rem;
   color: #526158;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   line-height: 1.2;
+  pointer-events: none;
+}
+
+.stage-text-field--has-issues .stage-text-field__count {
+  position: static;
+  justify-self: end;
 }
 
 .stage-text-field__issue {

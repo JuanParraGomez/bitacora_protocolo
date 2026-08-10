@@ -299,12 +299,12 @@ watch(() => [props.task.id, props.task.fase], () => {
 
 <style scoped>
 .guided-phase-form {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  height: 100%;
   min-height: 100%;
   overflow: visible;
   background: #fff;
@@ -316,7 +316,6 @@ watch(() => [props.task.id, props.task.fase], () => {
   display: grid;
   gap: .9rem;
   padding: 1.5rem 1.6rem 1.1rem;
-  border-bottom: 1px solid #e6eae7;
 }
 
 .guided-phase-form__header h3 {
@@ -367,6 +366,8 @@ watch(() => [props.task.id, props.task.fase], () => {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: .35rem;
+  width: 100%;
+  max-width: 30rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -461,12 +462,13 @@ watch(() => [props.task.id, props.task.fase], () => {
 
 .guided-phase-form__controls {
   display: flex;
+  flex: 0 0 auto;
   justify-content: flex-end;
   gap: 1rem;
   align-items: center;
   min-width: 0;
+  margin-top: auto;
   padding: 1rem 1.6rem 1.4rem;
-  border-top: 1px solid #e6eae7;
 }
 
 .guided-phase-form__controls button {
@@ -541,6 +543,7 @@ watch(() => [props.task.id, props.task.fase], () => {
 }
 
 .guided-phase-form > :deep(.phase-workspace) {
+  flex: 1 1 auto;
   min-height: 0;
   margin: 0;
   padding: 1rem 1.45rem 1.45rem;
@@ -571,13 +574,13 @@ watch(() => [props.task.id, props.task.fase], () => {
   min-width: 0;
 }
 
-.guided-phase-form > :deep(.phase-workspace__form > p) {
+.guided-phase-form :deep(.phase-workspace__form > p) {
   margin: 0;
   color: #4c5851;
   font-size: .86rem;
 }
 
-.guided-phase-form > :deep(label) {
+.guided-phase-form :deep(label:not(.stage-text-field__label)) {
   display: grid;
   gap: .42rem;
   margin: .15rem 0;
@@ -586,44 +589,45 @@ watch(() => [props.task.id, props.task.fase], () => {
   font-weight: 600;
 }
 
-.guided-phase-form > :deep(label:has(> input[type='checkbox'])) {
+.guided-phase-form :deep(label:has(> input[type='checkbox'])) {
   display: flex;
   align-items: center;
 }
 
-.guided-phase-form > :deep(input:not([type='checkbox'])),
-.guided-phase-form > :deep(select),
-.guided-phase-form > :deep(textarea) {
+.guided-phase-form :deep(input:not([type='checkbox'])),
+.guided-phase-form :deep(select),
+.guided-phase-form :deep(textarea) {
   display: block;
   width: 100%;
   min-width: 0;
-  min-height: 2.65rem;
+  min-height: 2.5rem;
   padding: .68rem .8rem;
+  border: 1px solid #dfe6e1;
   border-radius: .6rem;
-  border-color: #dfe6e1;
   background: #fff;
 }
 
-.guided-phase-form > :deep(textarea) {
-  min-height: 5.8rem;
+.guided-phase-form :deep(textarea) {
+  height: 3.9rem;
+  min-height: 3.9rem;
+  padding-bottom: 1.7rem;
   resize: vertical;
 }
 
-.guided-phase-form > :deep(fieldset) {
+.guided-phase-form :deep(fieldset) {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: .85rem;
+  gap: 1rem;
   width: 100%;
   min-width: 0;
   min-inline-size: 0;
   margin: 0;
-  padding: 1rem 0 0;
-  border-width: 1px 0 0;
-  border-color: #dde3de;
+  padding: 0;
+  border-width: 0;
   border-radius: 0;
 }
 
-.guided-phase-form > :deep(legend) {
+.guided-phase-form :deep(legend) {
   padding: 0;
   color: #0d1f16;
   font-size: .95rem;
@@ -632,10 +636,22 @@ watch(() => [props.task.id, props.task.fase], () => {
   text-transform: none;
 }
 
+@media (min-width: 768px) and (max-width: 1024px) {
+  .guided-phase-form {
+    height: auto;
+  }
+
+  .guided-phase-form > :deep(.phase-workspace) {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+}
+
 @media (max-width: 767px) {
   .guided-phase-form {
     grid-template-rows: none;
     grid-auto-rows: auto;
+    height: auto;
     max-height: none;
   }
 
@@ -670,7 +686,7 @@ watch(() => [props.task.id, props.task.fase], () => {
 
   .guided-phase-form--compact > :deep(.evaluation-feedback),
   .guided-phase-form--compact > :deep(.stage-field-issues) {
-    order: 0;
+    order: 5;
   }
 
   .guided-phase-form--compact > :deep(.phase-workspace) {
@@ -680,14 +696,12 @@ watch(() => [props.task.id, props.task.fase], () => {
   }
 
   .guided-phase-form--compact .guided-phase-form__header {
-    order: 20;
-    padding-block: .75rem;
-    border-top: 1px solid #dde3de;
-    border-bottom: 0;
+    order: 0;
+    padding-block: 1rem .75rem;
   }
 
-  .guided-phase-form--compact .guided-phase-form__header > :not(.guided-phase-form__save-state) {
-    display: none;
+  .guided-phase-form--compact .guided-phase-form__header h3 {
+    font-size: 1.3rem;
   }
 
   .guided-phase-form--compact .guided-phase-form__controls {
@@ -698,8 +712,6 @@ watch(() => [props.task.id, props.task.fase], () => {
     border: 0;
     color: #176448;
     background: transparent;
-    text-decoration: underline;
-    text-underline-offset: .2rem;
   }
 
   .guided-phase-form--compact .guided-phase-form__primary-action {

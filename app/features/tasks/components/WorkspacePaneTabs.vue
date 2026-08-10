@@ -183,16 +183,15 @@ function onTabKeydown(event: KeyboardEvent, key: WorkspacePane) {
 }
 
 .workspace-pane-tabs__tab[aria-selected='true'] {
-  border-color: #0c7e53;
-  color: #fff;
-  background: #0c7e53;
+  color: #173026;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(16, 24, 18, .12);
 }
 
 .workspace-pane-tabs__tab[aria-selected='true']:hover:not(:disabled),
 .workspace-pane-tabs__tab[aria-selected='true']:focus-visible {
-  border-color: #0c7e53;
-  color: #fff;
-  background: #0c7e53;
+  color: #173026;
+  background: #fff;
 }
 
 .workspace-pane-tabs__icon {
@@ -208,9 +207,9 @@ function onTabKeydown(event: KeyboardEvent, key: WorkspacePane) {
 .workspace-pane-tabs__pending {
   width: .45rem;
   height: .45rem;
-  border: 1px solid currentColor;
+  border: 0;
   border-radius: 999px;
-  background: #f4a340;
+  background: #16a34a;
 }
 
 .workspace-pane-tabs__sr-only {

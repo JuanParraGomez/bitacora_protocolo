@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
+import { pathToFileURL } from 'node:url';
 
-const scriptPath = new URL('./verify-workspace-visual-contract.mjs', import.meta.url);
+const scriptPath = pathToFileURL(path.join(process.cwd(), 'scripts/verify-workspace-visual-contract.mjs'));
 function buildManifest(rows) {
   return [
     '# Manifiesto visual',

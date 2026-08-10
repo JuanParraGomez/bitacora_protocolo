@@ -14,6 +14,28 @@ no son aprobación contra el mockup. Todos los estados permanecen
 | IMG-UX-05 | `docs/ux-ui/mockups/rediseño-agente/img-ux-05-desktop-bloqueo.png` | Bloqueo recuperable, causa inline, Reevaluar etapa como única primaria | `specs/010-visual-testing-infra/evidence/actual/ACTUAL-IMG-UX-05-<viewport>.png` | 1440×900 | Contraste en `small`; primaria 1:1; revisar jerarquía de errores y recuperación | pendiente de rediseño | specs 011–016 |
 | IMG-UX-06 | `docs/ux-ui/mockups/rediseño-agente/img-ux-06-desktop-completada-v2.png` | Cierre 4/4, resumen persistente, Volver a tareas como única primaria | `specs/010-visual-testing-infra/evidence/actual/ACTUAL-IMG-UX-06-<viewport>.png` | 1440×900 | Contraste en `small`; no hubo hallazgo de componente en la auditoría actual | pendiente de rediseño | specs 011–016 |
 
+## Reclasificación post-rediseño (2026-08-10)
+
+Tras el cierre de las specs 011–015 se regeneraron las capturas ACTUAL
+(`VISUAL_RUN_MODE=evidence`, 2026-08-10) y se compararon los estados desktop
+contra los mockups del manifiesto. Las diferencias se clasifican como
+`aprobada`, `pendiente` o `defecto` según el protocolo de decisión.
+
+| ID | Hallazgo | Clasificación | Resolución |
+|---|---|---|---|
+| IMG-UX-01 | Estructura (lienzo protagonista, agente como rail contraído, campos completos, una primaria, sin solapes) coincide con el contrato visual del manifiesto. | aprobada | Gate humano de specs 011/012/015; baselines aprobadas. |
+| IMG-UX-01 | Stepper con puntos en lugar de círculos numerados, pesos tipográficos del sistema y estilo de chips difieren del render del mockup (imagen generada, no fuente real). | aprobada | Diferencias presentacionales ya aprobadas en el gate humano 011–015. |
+| IMG-UX-02 | Agente expandido como columna estructural con chat, propuesta (Aceptar/Editar/Descartar) y compositor sin cubrir el lienzo; coincide con la invariante 3. | aprobada | Gate humano de specs 013/015. |
+| IMG-UX-02 | Buscador del sidebar duplicaba visualmente la etiqueta "Buscar tareas o proyectos…" sobre el input con el mismo placeholder, divergiendo del campo único con icono y ⌘K del mockup. | defecto → corregido | Ciclo test-first 2026-08-10: campo unificado `data-search-field` con icono, input y ⌘K integrados en `DashboardSidebar.vue`; test nuevo en `DashboardSidebar.test.ts`. |
+| IMG-UX-05 | Caja ámbar "2 correcciones pendientes" junto a su causa, "Ver recomendaciones del agente" y evaluación marcada como obsoleta; coincide con la invariante 6. | aprobada | Gate humano de specs 014/015. |
+| IMG-UX-06 | Resumen 4/4 con cuatro tarjetas, registros y "Volver a tareas" como única primaria; coincide con el manifiesto. | aprobada | Gate humano de specs 012/014/015. |
+| Todas | Tipografía: los mockups son imágenes generadas (sin fuente real exacta); la familia identificable más próxima es la sans humanista Avenir Next, ya declarada en `app.vue` y verificada renderizada (`document.fonts.check('16px "Avenir Next"') === true`, 2026-08-10). | aprobada | Sin cambio de fuente requerido en esta plataforma; en plataformas sin Avenir Next aplica la pila de fallback del sistema. |
+
+Sin defectos abiertos tras la corrección del buscador. Las baselines de
+píxeles protegidas NO se actualizan sin aprobación humana explícita
+(`HUMAN_DECISION_REQUIRED` para cualquier candidata nueva derivada del cambio
+del buscador).
+
 ## Protocolo de decisión
 
 La comparación final se clasifica como `approved`, `pending` o `defect` por

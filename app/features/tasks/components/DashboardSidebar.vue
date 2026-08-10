@@ -202,8 +202,12 @@ function selectProject(group: WorkspaceProjectGroup) {
         </div>
       </form>
 
-      <label class="task-sidebar__search-label" for="task-search"><WorkspaceShellIcon name="search" /><span>Buscar tareas o proyectos…</span><kbd>⌘K</kbd></label>
-      <input id="task-search" type="search" aria-label="Buscar tareas" :value="effectiveSearch" placeholder="Buscar tareas o proyectos…" @input="updateSearch(($event.target as HTMLInputElement).value)">
+      <label class="task-sidebar__search-label sr-only" for="task-search">Buscar tareas o proyectos…</label>
+      <div class="task-sidebar__search-field" data-search-field>
+        <WorkspaceShellIcon name="search" data-search-icon />
+        <input id="task-search" type="search" aria-label="Buscar tareas" :value="effectiveSearch" placeholder="Buscar tareas o proyectos…" @input="updateSearch(($event.target as HTMLInputElement).value)">
+        <kbd>⌘K</kbd>
+      </div>
     </section>
 
     <div class="task-sidebar__projects" data-shell-region="projects">
@@ -442,13 +446,43 @@ function selectProject(group: WorkspaceProjectGroup) {
   font-weight: 720;
 }
 
-.task-sidebar__search-label {
+.task-sidebar__search-label.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.task-sidebar__search-field {
   display: flex;
   align-items: center;
   gap: .45rem;
+  width: 100%;
+  min-height: 2.5rem;
+  border: 1px solid #cbd7d0;
+  border-radius: .55rem;
+  padding: 0 .65rem;
+  background: #fff;
 }
 
-.task-sidebar__search-label kbd {
+.task-sidebar__search-field:focus-within {
+  border-color: #9bc6b2;
+}
+
+.task-sidebar__search-field input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: auto;
+  border: 0;
+  padding: .55rem 0;
+  background: transparent;
+  outline: none;
+}
+
+.task-sidebar__search-field kbd {
   margin-left: auto;
   border: 1px solid #cbd7d0;
   border-radius: .3rem;

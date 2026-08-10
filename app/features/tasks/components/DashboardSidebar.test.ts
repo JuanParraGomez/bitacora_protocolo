@@ -27,7 +27,7 @@ describe('DashboardSidebar shell contract', () => {
     expect(wrapper.find('[data-shell-region="search"]').exists()).toBe(true);
     expect(wrapper.find('[data-shell-region="projects"]').exists()).toBe(true);
     expect(wrapper.find('[data-shell-region="user-footer"]').exists()).toBe(true);
-    expect(wrapper.text()).toContain('Buscar tareas o proyectos…');
+    expect(wrapper.find('#task-search').attributes('placeholder')).toBe('Buscar tareas o proyectos…');
     expect(wrapper.text()).toContain('⌘K');
     expect(wrapper.find('[aria-label="Tareas"]').exists()).toBe(true);
     expect(wrapper.find('[aria-label="Biblioteca"]').exists()).toBe(true);
@@ -41,5 +41,17 @@ describe('DashboardSidebar shell contract', () => {
     for (const label of ['Tareas', 'Biblioteca', 'Ajustes']) {
       expect(wrapper.findAll(`[aria-label="${label}"]`)).toHaveLength(1);
     }
+  });
+
+  it('renders search as a single unified field without duplicated label row', () => {
+    const wrapper = mountSidebar();
+    const field = wrapper.find('[data-search-field]');
+    expect(field.exists()).toBe(true);
+    expect(field.find('#task-search').exists()).toBe(true);
+    expect(field.find('kbd').text()).toBe('⌘K');
+    expect(field.find('[data-search-icon]').exists()).toBe(true);
+    const labelRow = wrapper.find('.task-sidebar__search-label');
+    expect(labelRow.exists() === false || labelRow.classes().includes('sr-only')).toBe(true);
+    expect(wrapper.findAll('input[type="search"]')).toHaveLength(1);
   });
 });

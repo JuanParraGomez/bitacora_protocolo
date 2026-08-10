@@ -12,3 +12,52 @@ import { REFERENCE_SECTIONS } from '../domain/reference-content';
     </article>
   </section>
 </template>
+
+<style scoped>
+section {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+h2 {
+  margin: 0;
+  color: #067b46;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+article {
+  display: grid;
+  gap: .45rem;
+  border: 1px solid #e3e8e4;
+  border-radius: .9rem;
+  padding: 1.1rem 1.2rem;
+  background: #fff;
+}
+
+article h3 {
+  margin: 0;
+  color: #101812;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+
+article p {
+  margin: 0;
+  color: #4e5b54;
+  line-height: 1.55;
+}
+
+article ul {
+  display: grid;
+  gap: .3rem;
+  margin: .25rem 0 0;
+  padding-left: 1.1rem;
+  color: #334139;
+  line-height: 1.55;
+}
+</style>

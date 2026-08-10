@@ -222,14 +222,14 @@ async function submit(payload: TaskIntakeSubmission) {
 .new-task-modal__dialog {
   position: relative;
   display: grid;
-  gap: .8rem;
+  gap: .9rem;
   width: min(38rem, 100%);
   max-height: min(90dvh, 46rem);
   overflow: auto;
-  border: 1px solid #cfddd5;
-  border-radius: 1rem;
-  padding: 1.2rem;
-  background: linear-gradient(145deg, #ffffff 0%, #f6fbf8 100%);
+  border: 1px solid #e3e8e4;
+  border-radius: .9rem;
+  padding: 1.4rem;
+  background: #fff;
   box-shadow: 0 28px 70px rgba(0, 47, 28, .22);
 }
 
@@ -246,26 +246,68 @@ async function submit(payload: TaskIntakeSubmission) {
   margin: 0;
 }
 
+.new-task-modal__header p {
+  color: #067b46;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.new-task-modal__header h2 {
+  margin-top: .2rem;
+  color: #101812;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+
+.new-task-modal__dialog > label {
+  color: #334139;
+  font-size: .85rem;
+  font-weight: 600;
+}
+
 .new-task-modal__select,
 .new-task-modal :deep(input),
 .new-task-modal :deep(textarea) {
   width: 100%;
-  border: 1px solid #c9d9d0;
-  border-radius: .7rem;
-  padding: .8rem .9rem;
+  border: 1px solid #dfe6e1;
+  border-radius: .6rem;
+  padding: .68rem .8rem;
   background: #fff;
+  color: #173026;
+  font: inherit;
+}
+
+.new-task-modal__select:focus,
+.new-task-modal :deep(input:focus),
+.new-task-modal :deep(textarea:focus) {
+  border-color: #047d47;
+  outline: 2px solid rgba(4, 125, 71, .22);
+  outline-offset: 1px;
 }
 
 .new-task-modal__close {
   width: 2.3rem;
   height: 2.3rem;
-  border: 1px solid #d7e4db;
+  border: 1px solid #e3e8e4;
   border-radius: 999px;
   background: #fff;
+  color: #5a6a61;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.new-task-modal__close:hover {
+  background: #f1f4f2;
+  color: #173026;
 }
 
 .new-task-modal__error {
   color: #8e2f2f;
+  font-size: .85rem;
 }
 
 @media (max-width: 767px) {

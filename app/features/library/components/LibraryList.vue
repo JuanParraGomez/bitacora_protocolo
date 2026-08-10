@@ -58,15 +58,26 @@ function labelForRecordKind(kind: LibraryRecordSummary['resourceKind']): string 
   gap: .2rem;
   width: 100%;
   text-align: left;
-  border: 1px solid #d7e4db;
+  border: 1px solid #e3e8e4;
   border-radius: .8rem;
   padding: .7rem .8rem;
   background: #fff;
+  color: #173026;
+  font: inherit;
+  cursor: pointer;
+}
+
+.library-list__item:hover {
+  background: #f7faf8;
+}
+
+.library-list__item strong {
+  font-weight: 600;
 }
 
 .library-list__item--selected {
-  border-color: #007a4d;
-  background: #f2fbf6;
+  border-color: #047d47;
+  background: #eaf1eb;
 }
 
 .library-list__item span {

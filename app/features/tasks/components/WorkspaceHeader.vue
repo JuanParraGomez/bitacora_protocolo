@@ -255,7 +255,7 @@ defineExpose({ focusNavigation });
   display: grid;
   min-width: 10rem;
   padding: .35rem;
-  border: 1px solid #ccd8d0;
+  border: 1px solid #e3e8e4;
   border-radius: .65rem;
   background: #fff;
   box-shadow: 0 12px 30px rgba(17, 34, 24, .15);
@@ -269,10 +269,11 @@ defineExpose({ focusNavigation });
   color: #173026;
   text-align: left;
   background: transparent;
+  cursor: pointer;
 }
 
 .workspace-header__overflow-menu button:hover,
-.workspace-header__overflow-menu button:focus-visible { background: #edf6f1; }
+.workspace-header__overflow-menu button:focus-visible { background: #eaf1eb; }
 
 @media (max-width: 767px) {
   .workspace-header {

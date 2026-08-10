@@ -112,3 +112,69 @@ function submit() {
     </button>
   </form>
 </template>
+
+<style scoped>
+form {
+  display: grid;
+  gap: .55rem;
+}
+
+label {
+  color: #334139;
+  font-size: .85rem;
+  font-weight: 600;
+}
+
+input,
+textarea {
+  width: 100%;
+  border: 1px solid #dfe6e1;
+  border-radius: .6rem;
+  padding: .68rem .8rem;
+  background: #fff;
+  color: #173026;
+  font: inherit;
+}
+
+textarea {
+  min-height: 7rem;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+input:focus,
+textarea:focus {
+  border-color: #047d47;
+  outline: 2px solid rgba(4, 125, 71, .22);
+  outline-offset: 1px;
+}
+
+p[role="alert"] {
+  margin: 0;
+  color: #8e2f2f;
+  font-size: .85rem;
+}
+
+button[type="submit"] {
+  justify-self: start;
+  min-height: 2.6rem;
+  margin-top: .35rem;
+  padding: .6rem 1.2rem;
+  border: 1px solid #047d47;
+  border-radius: .55rem;
+  background: #047d47;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button[type="submit"]:hover:not(:disabled) {
+  background: #067b46;
+}
+
+button[type="submit"]:disabled {
+  opacity: .55;
+  cursor: default;
+}
+</style>

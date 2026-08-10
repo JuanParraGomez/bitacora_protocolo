@@ -76,9 +76,9 @@ const preferredTaskLink = preferredTask
 
 .library-page__eyebrow {
   margin: 0 0 .45rem;
-  color: #08724c;
+  color: #067b46;
   font-size: .78rem;
-  font-weight: 780;
+  font-weight: 600;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
@@ -87,7 +87,8 @@ const preferredTaskLink = preferredTask
   margin: 0;
   color: #101812;
   font-size: clamp(2rem, 4vw, 3rem);
-  letter-spacing: -.05em;
+  font-weight: 600;
+  letter-spacing: -.04em;
   line-height: 1.05;
 }
 
@@ -109,29 +110,37 @@ const preferredTaskLink = preferredTask
 .library-page__action {
   display: inline-flex;
   align-items: center;
-  min-height: 2.75rem;
-  padding: .65rem 1rem;
-  border: 1px solid #d7ddd8;
-  border-radius: .75rem;
-  color: #173026;
-  font-weight: 750;
+  min-height: 2.4rem;
+  padding: .6rem 1rem;
+  border: 1px solid #dfe6e1;
+  border-radius: .55rem;
+  color: #334139;
+  font-weight: 600;
   text-decoration: none;
   background: #fff;
 }
 
+.library-page__action:hover {
+  background: #f1f4f2;
+}
+
 .library-page__action--primary {
-  border-color: #007a4d;
+  border-color: #047d47;
   color: #fff;
-  background: #007a4d;
+  background: #047d47;
+}
+
+.library-page__action--primary:hover {
+  background: #067b46;
 }
 
 .library-page__summary,
 .library-page__empty {
   margin-top: 1.75rem;
   padding: 1rem 1.1rem;
-  border: 1px solid #dfe5e0;
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, .8);
+  border: 1px solid #e3e8e4;
+  border-radius: .9rem;
+  background: #fff;
 }
 
 .library-page__summary h2,
@@ -139,5 +148,6 @@ const preferredTaskLink = preferredTask
   margin: 0;
   color: #152019;
   font-size: 1rem;
+  font-weight: 600;
 }
 </style>

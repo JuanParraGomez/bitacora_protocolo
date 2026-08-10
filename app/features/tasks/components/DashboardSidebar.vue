@@ -711,7 +711,25 @@ function selectProject(group: WorkspaceProjectGroup) {
 
 .task-sidebar__inline-form button {
   min-height: 2.25rem;
+  border: 1px solid #dfe6e1;
   border-radius: .45rem;
+  padding: .4rem .8rem;
+  background: #fff;
+  color: #334139;
+  font-size: .84rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.task-sidebar__inline-form button:hover {
+  background: #f1f4f2;
+}
+
+.task-sidebar__inline-form button[type="submit"],
+.task-sidebar__inline-form button[type="submit"]:hover {
+  border-color: #047d47;
+  background: #047d47;
+  color: #fff;
 }
 
 .task-sidebar__records summary,

@@ -172,6 +172,56 @@ Verificación de la tercera ronda: vitest 428/428, E2E 10/10, suite visual
 6/6 con baselines regeneradas y rerun idempotente, evidencia 010/015
 refrescada, typecheck y build verdes.
 
+## Cuarta ronda: superficies secundarias (modal, biblioteca, referencia, nav)
+
+Tras el pulido del workspace, el usuario reportó que los elementos pequeños
+(modal de crear tarea, Biblioteca, Referencia, Ajustes, formularios inline)
+se veían "horribles" y sin el estilo del rediseño. Diagnóstico con capturas
+frescas (`/tmp/real-app/`): el modal "Crear tarea" tenía el botón submit
+nativo (sin estilo) y campos crudos; Referencia era texto plano sin tarjetas;
+la nav global usaba una pastilla morada ajena al sistema; los botones de los
+formularios inline de renombrar eran nativos del browser (solo tenían
+`min-height` y `border-radius`).
+
+Cambios aplicados (solo presentación):
+
+- Reset global (`app/assets/css/main.css`): `button, input, select, textarea
+  { font: inherit; }` — la causa raíz de que muchos controles se vieran
+  "nativos" era que no heredaban la tipografía Avenir Next.
+- `TaskIntakeForm.vue`: estilos propios (antes no tenía bloque `<style>`):
+  labels peso 600, inputs/textarea con borde `#dfe6e1`, radio `.6rem` y foco
+  verde, botón "Crear tarea" primario verde `#047d47` con hover `#067b46`.
+- `NewTaskModal.vue`: tarjeta blanca (sin gradiente), borde `#e3e8e4`, radio
+  `.9rem`, eyebrow "Nueva conversación" verde en mayúsculas, título peso 600,
+  label "Proyecto" y select estilados, botón de cierre con hover.
+- `ReferenceContent.vue` + `pages/reference.vue`: contenedor de página igual
+  que Biblioteca, título peso 600, secciones como tarjetas blancas con borde
+  `#e3e8e4` y jerarquía h3/resumen/lista.
+- `AppNavigation.vue`: pastilla activa morada `#5445c0/#eeecff` reemplazada
+  por el sistema verde (`#047d47` sobre menta `#eaf1eb`); marca y enlaces con
+  pesos 500/600/700.
+- `pages/library/index.vue`: pesos 750/780 → 600, primario `#007a4d` →
+  `#047d47`, bordes y radios a tokens, tarjetas blancas sólidas.
+- `LibrarySlideover.vue`: panel blanco con borde `#e3e8e4`, eyebrow + título
+  del sistema, input de búsqueda estilado, pills de filtro con estado activo
+  verde sólido `#047d47` (como "Todos" del mockup de Biblioteca), botón de
+  cierre con hover, textarea del detalle en blanco.
+- `LibraryList.vue`: ítems con hover, seleccionado menta `#eaf1eb` con borde
+  `#047d47`.
+- `LibraryRecordView.vue`: nuevo bloque de estilos — título peso 600, meta en
+  gris, toolbar con acciones ghost + acción primaria "Vincular a esta tarea"
+  verde, textarea estilado.
+- `DashboardSidebar.vue`: botones de formularios inline (renombrar proyecto/
+  tarea, crear proyecto) con estilo ghost + submit primario verde (antes
+  nativos).
+- `WorkspaceHeader.vue`: menú ⋮ con borde `#e3e8e4` y hover menta `#eaf1eb`.
+
+Verificación de la cuarta ronda: capturas antes (`/tmp/real-app/`) y después
+(`/tmp/secondary-after/`) por superficie — modal Nueva tarea, overlay
+Biblioteca, página Biblioteca, página Referencia, Ajustes, formulario inline
+de renombrar — sin elementos nativos restantes; vitest 428/428, E2E funcional
+10/10, suite visual 6/6, typecheck y build verdes.
+
 ## Protocolo de decisión
 
 La comparación final se clasifica como `approved`, `pending` o `defect` por

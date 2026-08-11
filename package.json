@@ -1,61 +1,22 @@
 {
-  "name": "bitacora-protocolo",
-  "version": "1.0.0",
+  "name": "ruta",
   "private": true,
-  "type": "module",
+  "version": "0.1.0",
+  "description": "De un problema a una solución tecnológica: asistente guiado por fases (máx. 4-5 preguntas por fase).",
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "start": "node .output/server/index.mjs",
-    "dev": "node scripts/dev-with-graphify.mjs",
-    "dev:nuxt": "npx nuxi dev --host 0.0.0.0 --port 3000",
-    "test:red": "vitest run",
-    "test:green": "npm run typecheck && npm run test:unit && npm run test:contract && npm run test:migration",
-    "test:e2e:red": "playwright test",
-    "build": "nuxt build",
-    "typecheck": "nuxt typecheck",
-    "test:unit": "vitest run app tests/migration",
-    "test:contract": "vitest run tests/contract",
-    "test:integration": "vitest run tests/integration",
-    "test:migration": "vitest run tests/migration",
-    "db:check": "node scripts/db-check.mjs",
-    "db:backup": "node scripts/db-backup.mjs",
-    "fixtures:create": "node scripts/create-legacy-fixtures.mjs",
-    "migration:verify": "npm run test:migration",
-    "graph:generate": "node scripts/graphify-workflow.mjs generate",
-    "graph:update": "node scripts/graphify-workflow.mjs update",
-    "graph:check": "node scripts/graphify-workflow.mjs check",
-    "graph:watch": "node scripts/graphify-watch.mjs",
-    "architecture": "node scripts/generate-structure.mjs",
-    "structure": "node scripts/generate-structure.mjs",
-    "structure:check": "node scripts/structure-check.mjs",
-    "structure:watch": "node scripts/structure-watch.mjs",
-    "architecture:check": "dependency-cruiser --config .dependency-cruiser.cjs app server shared --output-type err-long",
-    "test:architecture": "npx vitest run tests/integration/structure-snapshot.test.ts",
-    "test:browser": "npm run test:e2e:red",
-    "test:visual": "playwright test tests/e2e/visual",
-    "test:visual:update": "playwright test tests/e2e/visual --update-snapshots",
-    "build:production": "npm run build",
-    "verify": "npm run typecheck && npm run test:unit && npm run test:contract && npm run test:migration && npm run test:integration && npm run structure:check && npm run graph:update && npm run graph:check && npm run build",
-    "verify:e2e": "playwright test --config tests/e2e/playwright.verify.config.mjs"
-  },
-  "dependencies": {
-    "@nuxt/ui": "^4.10.0",
-    "better-sqlite3": "^11.9.1",
-    "express": "^4.21.2",
-    "nuxt": "^4.5.0",
-    "tailwindcss": "^4.3.0",
-    "vue": "^3.5.40",
-    "zod": "^4.4.3"
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
+    "dev:api": "npm run dev -w apps/api",
+    "dev:web": "npm run dev -w apps/web",
+    "build": "npm run build -w apps/api && npm run build -w apps/web",
+    "test": "npm run test -w apps/api"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.12.1",
-    "@playwright/test": "^1.62.0",
-    "@types/better-sqlite3": "^7.6.13",
-    "@vitejs/plugin-vue": "^6.0.8",
-    "@vue/test-utils": "^2.4.11",
-    "dependency-cruiser": "^18.0.0",
-    "jsdom": "^29.1.1",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.10",
-    "vue-tsc": "^3.3.8"
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

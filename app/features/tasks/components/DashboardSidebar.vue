@@ -87,6 +87,19 @@ function projectTasks(group: WorkspaceProjectGroup) {
   ));
 }
 
+const MAX_VISIBLE_TASKS = 5;
+
+function visibleProjectTasks(group: WorkspaceProjectGroup) {
+  const tasks = projectTasks(group);
+  if (normalizedSearch.value) return tasks;
+  return tasks.slice(0, MAX_VISIBLE_TASKS);
+}
+
+function hiddenTaskCount(group: WorkspaceProjectGroup): number {
+  if (normalizedSearch.value) return 0;
+  return Math.max(0, projectTasks(group).length - MAX_VISIBLE_TASKS);
+}
+
 function isExpanded(group: WorkspaceProjectGroup): boolean {
   if (normalizedSearch.value && projectTasks(group).length > 0) return true;
   return props.expandedProjectIds.includes(group.project.id)
@@ -275,7 +288,7 @@ function selectProject(group: WorkspaceProjectGroup) {
             No hay tareas que coincidan con la búsqueda.
           </p>
           <ul v-else class="task-sidebar__task-list">
-            <li v-for="task in projectTasks(group)" :key="task.id">
+            <li v-for="task in visibleProjectTasks(group)" :key="task.id">
               <div class="task-sidebar__task-row">
                 <NuxtLink
                   :to="`/tasks/${encodeURIComponent(task.id)}`"
@@ -310,6 +323,9 @@ function selectProject(group: WorkspaceProjectGroup) {
               </form>
             </li>
           </ul>
+          <p v-if="hiddenTaskCount(group) > 0" class="task-sidebar__more">
+            +{{ hiddenTaskCount(group) }} tareas más — usa la búsqueda para encontrarlas
+          </p>
 
           <details v-if="group.completedItems.length" class="task-sidebar__records">
             <summary>Resultados guardados ({{ group.completedItems.length }})</summary>
@@ -469,7 +485,7 @@ function selectProject(group: WorkspaceProjectGroup) {
 }
 
 .task-sidebar__primary-link[aria-current="page"] {
-  box-shadow: inset -3px 0 0 #067b46;
+  box-shadow: inset -3px 0 0 #044128;
 }
 
 .task-sidebar__primary-link--button {
@@ -701,6 +717,12 @@ function selectProject(group: WorkspaceProjectGroup) {
   background: #eaf1eb;
 }
 
+.task-sidebar__more {
+  margin: .35rem 0 0;
+  color: #526058;
+  font-size: .78rem;
+}
+
 .task-sidebar__inline-form {
   margin-top: .4rem;
   border: 1px solid #d8e1db;
@@ -727,8 +749,8 @@ function selectProject(group: WorkspaceProjectGroup) {
 
 .task-sidebar__inline-form button[type="submit"],
 .task-sidebar__inline-form button[type="submit"]:hover {
-  border-color: #047d47;
-  background: #047d47;
+  border-color: #065535;
+  background: #065535;
   color: #fff;
 }
 

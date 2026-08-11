@@ -76,7 +76,7 @@ async function closeNewTask() {
 }
 
 .tasks-new-page__empty-state a {
-  color: #005f3a;
+  color: #065535;
   text-decoration: none;
 }
 

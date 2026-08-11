@@ -366,7 +366,7 @@ async function renameProject(payload: { projectId: string; name: string }) {
   padding: .7rem;
   color: #171d19;
   background:
-    linear-gradient(90deg, rgba(0, 122, 77, .035), transparent 32%),
+    linear-gradient(90deg, rgba(6, 85, 53, .035), transparent 32%),
     #f4f7f3;
 }
 
@@ -455,7 +455,7 @@ async function renameProject(payload: { projectId: string; name: string }) {
 .workspace-empty__eyebrow {
   color: #08724c;
   font-size: .78rem;
-  font-weight: 780;
+  font-weight: 600;
   letter-spacing: .06em;
   text-transform: uppercase;
 }
@@ -468,9 +468,9 @@ async function renameProject(payload: { projectId: string; name: string }) {
   padding: .65rem 1rem;
   border-radius: .65rem;
   color: #fff;
-  font-weight: 760;
+  font-weight: 600;
   text-decoration: none;
-  background: #007a4d;
+  background: #065535;
 }
 
 @media (max-width: 767px) {

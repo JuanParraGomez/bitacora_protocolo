@@ -247,7 +247,7 @@ async function submit(payload: TaskIntakeSubmission) {
 }
 
 .new-task-modal__header p {
-  color: #067b46;
+  color: #044128;
   font-size: .72rem;
   font-weight: 600;
   letter-spacing: .08em;
@@ -283,8 +283,8 @@ async function submit(payload: TaskIntakeSubmission) {
 .new-task-modal__select:focus,
 .new-task-modal :deep(input:focus),
 .new-task-modal :deep(textarea:focus) {
-  border-color: #047d47;
-  outline: 2px solid rgba(4, 125, 71, .22);
+  border-color: #065535;
+  outline: 2px solid rgba(6, 85, 53, .22);
   outline-offset: 1px;
 }
 

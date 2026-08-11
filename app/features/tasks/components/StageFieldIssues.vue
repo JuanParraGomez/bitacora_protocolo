@@ -98,7 +98,7 @@ const issueDescriptionIds = computed(() => renderedIssues.value.map((issue) => i
 .stage-field-issues h4 {
   color: #151d18;
   font-size: .9rem;
-  font-weight: 760;
+  font-weight: 600;
 }
 
 .stage-field-issues__summary {

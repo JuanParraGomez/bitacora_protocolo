@@ -163,7 +163,7 @@ function valueText(value: unknown): string {
   padding: 0;
   color: #152019;
   font-size: .95rem;
-  font-weight: 760;
+  font-weight: 600;
   text-align: left;
   background: transparent;
 }

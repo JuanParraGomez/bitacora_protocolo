@@ -102,13 +102,13 @@ article p strong {
 }
 
 .toolbar button {
-  border-color: #047d47;
-  background: #047d47;
+  border-color: #065535;
+  background: #065535;
   color: #fff;
 }
 
 .toolbar button:hover {
-  background: #067b46;
+  background: #044128;
 }
 
 textarea {

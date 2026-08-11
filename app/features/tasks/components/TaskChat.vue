@@ -516,7 +516,7 @@ onBeforeUnmount(() => {
   height: 1.6rem;
   border-radius: 999px;
   color: #fff;
-  background: #067b46;
+  background: #044128;
 }
 
 .task-chat__bubble--user .task-chat__avatar svg {
@@ -637,7 +637,7 @@ onBeforeUnmount(() => {
 }
 
 .task-chat__proposal-actions button[aria-label='Aceptar propuesta'] {
-  color: #047d47;
+  color: #065535;
   font-weight: 600;
 }
 

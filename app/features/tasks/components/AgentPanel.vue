@@ -188,7 +188,7 @@ watch(() => props.expanded, async (next, previous) => {
 .agent-panel__sparkle--done {
   border-radius: 50%;
   color: #fff;
-  background: #067b46;
+  background: #044128;
   font-size: .95rem;
 }
 

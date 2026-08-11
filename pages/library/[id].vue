@@ -25,5 +25,31 @@ if (fallbackTask?.id) {
 </script>
 
 <template>
-  <main><h1>Biblioteca</h1><p>Abre una tarea del workspace para revisar este registro en contexto.</p></main>
+  <main class="library-record-page">
+    <h1>Biblioteca</h1>
+    <p>Abre una tarea del workspace para revisar este registro en contexto.</p>
+  </main>
 </template>
+
+<style scoped>
+.library-record-page {
+  width: min(100% - 2rem, 56rem);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 4rem) 0 4rem;
+}
+
+.library-record-page h1 {
+  margin: 0;
+  color: #101812;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 600;
+  letter-spacing: -.04em;
+  line-height: 1.05;
+}
+
+.library-record-page p {
+  margin: .8rem 0 0;
+  color: #4e5b54;
+  line-height: 1.6;
+}
+</style>

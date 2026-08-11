@@ -151,7 +151,7 @@ function recordTitle(record: TaskIndex['registros'][number]): string {
   place-items: center;
   border-radius: 999px;
   color: #fff;
-  background: #067b46;
+  background: #044128;
   font-size: .78rem;
   font-weight: 600;
 }
@@ -163,7 +163,7 @@ function recordTitle(record: TaskIndex['registros'][number]): string {
   width: 1.9rem;
   height: .14rem;
   border-radius: 999px;
-  background: #067b46;
+  background: #044128;
   content: "";
 }
 
@@ -266,7 +266,7 @@ function recordTitle(record: TaskIndex['registros'][number]): string {
   border: 0;
   border-radius: .55rem;
   padding: .7rem 1.15rem;
-  background: #047d47;
+  background: #065535;
   color: #fff;
   font-size: .9rem;
   font-weight: 600;

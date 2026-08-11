@@ -236,7 +236,7 @@ async function linkRecord(recordId: string) {
 }
 
 .library-slideover__header p {
-  color: #067b46;
+  color: #044128;
   font-size: .72rem;
   font-weight: 600;
   letter-spacing: .08em;
@@ -269,8 +269,8 @@ async function linkRecord(recordId: string) {
 }
 
 .library-slideover__panel > input[type="search"]:focus {
-  border-color: #047d47;
-  outline: 2px solid rgba(4, 125, 71, .22);
+  border-color: #065535;
+  outline: 2px solid rgba(6, 85, 53, .22);
   outline-offset: 1px;
 }
 
@@ -325,8 +325,8 @@ async function linkRecord(recordId: string) {
 
 .library-slideover__filter--active,
 .library-slideover__filters .library-slideover__filter--active:hover {
-  border-color: #047d47;
-  background: #047d47;
+  border-color: #065535;
+  background: #065535;
   color: #fff;
   font-weight: 600;
 }

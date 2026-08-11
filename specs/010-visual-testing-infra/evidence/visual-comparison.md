@@ -222,6 +222,49 @@ Biblioteca, página Biblioteca, página Referencia, Ajustes, formulario inline
 de renombrar — sin elementos nativos restantes; vitest 428/428, E2E funcional
 10/10, suite visual 6/6, typecheck y build verdes.
 
+## Quinta ronda: desaturación de la paleta y barrido de rincones
+
+El usuario reportó que el verde se veía "muy saturado" respecto al mockup y
+que la data debía resumirse a 5 ítems como en la imagen (Recientes del
+sidebar del mockup muestra 5 tareas).
+
+Muestreo de píxeles sobre los mockups (`Nexus — Rediseño visual/*.png`):
+
+- Verde primario real del mockup: promedio `#065535` (botón "Nueva tarea",
+  pill "Todos"); tonos oscuros `#044128`. El sistema usaba `#047d47`, mucho
+  más brillante/saturado.
+- Pill menta del sidebar: `(224-232, 232-240, 224-232)` ≈ `#e8f0e8`; el
+  token `#eaf1eb` vigente ya estaba dentro de rango y se mantiene.
+
+Cambios aplicados (solo presentación):
+
+- Reemplazo global de tokens: `#047d47` → `#065535`, `#067b46` → `#044128`,
+  `#007a4d` → `#065535`, `#005f3e` → `#044128` (46 ocurrencias en 19
+  archivos `app/` + `pages/`); `--ui-primary-500` → `#0d6b44`; rings de foco
+  `rgba(4,125,71,.22)` → `rgba(6,85,53,.22)`; tintes de fondo
+  `rgba(0,122,77,.035)` → `rgba(6,85,53,.035)`.
+- Pesos fuera de escala Avenir Next normalizados: `font-weight: 750/760/780`
+  → `600` (WorkspaceHeader, TaskWorkspace, EvaluationFeedback,
+  StructuredStageSummary, StageFieldIssues, pages/index).
+- `AssistantSettingsModal.vue`: fondo plano blanco (sin gradiente), primario
+  plano `#065535` (antes gradiente `#065535→#00925d` brillante), eyebrow
+  verde en mayúsculas, radio cards con hover, botón de cierre del sistema.
+- `DashboardSidebar.vue`: lista de tareas por proyecto limitada a 5 visibles
+  (`MAX_VISIBLE_TASKS`, como "Recientes" del mockup) con indicador
+  "+N tareas más — usa la búsqueda"; la búsqueda sigue mostrando todos los
+  resultados coincidentes.
+- `pages/library/[id].vue`: fallback con el contenedor y tipografía del
+  sistema (antes HTML crudo); `pages/tasks/new.vue`: enlace del empty state
+  al verde del sistema.
+- `PromptBox.vue`: componente sin uso (no se importa en ninguna parte);
+  no se tocó.
+
+Verificación de la quinta ronda: capturas `/tmp/round5-after/` (home, modal
+Nueva tarea, overlay Biblioteca, Ajustes, renombrar inline, páginas
+Biblioteca/Referencia) contra mockups; vitest 428/428, E2E funcional 10/10,
+suite visual 6/6 con baselines regeneradas por el cambio de paleta y rerun
+idempotente 6/6, typecheck y build verdes.
+
 ## Protocolo de decisión
 
 La comparación final se clasifica como `approved`, `pending` o `defect` por

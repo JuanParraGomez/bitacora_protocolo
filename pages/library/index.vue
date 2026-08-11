@@ -76,7 +76,7 @@ const preferredTaskLink = preferredTask
 
 .library-page__eyebrow {
   margin: 0 0 .45rem;
-  color: #067b46;
+  color: #044128;
   font-size: .78rem;
   font-weight: 600;
   letter-spacing: .08em;
@@ -125,13 +125,13 @@ const preferredTaskLink = preferredTask
 }
 
 .library-page__action--primary {
-  border-color: #047d47;
+  border-color: #065535;
   color: #fff;
-  background: #047d47;
+  background: #065535;
 }
 
 .library-page__action--primary:hover {
-  background: #067b46;
+  background: #044128;
 }
 
 .library-page__summary,

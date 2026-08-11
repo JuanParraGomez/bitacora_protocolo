@@ -2,15 +2,15 @@
 @import "@nuxt/ui";
 
 :root {
-  --ui-primary: #007a4d;
+  --ui-primary: #065535;
   --ui-primary-50: #effaf4;
   --ui-primary-100: #d8f3e5;
   --ui-primary-200: #aee4c9;
   --ui-primary-300: #76cda6;
   --ui-primary-400: #35a978;
-  --ui-primary-500: #078752;
-  --ui-primary-600: #007a4d;
-  --ui-primary-700: #005f3e;
+  --ui-primary-500: #0d6b44;
+  --ui-primary-600: #065535;
+  --ui-primary-700: #044128;
 }
 
 body {

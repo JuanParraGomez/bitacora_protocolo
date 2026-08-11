@@ -1119,7 +1119,7 @@ watch(() => [localTask.id, localTask.fase], () => {
   padding: .7rem;
   color: #171d19;
   background:
-    linear-gradient(90deg, rgba(0, 122, 77, .035), transparent 32%),
+    linear-gradient(90deg, rgba(6, 85, 53, .035), transparent 32%),
     #f4f7f3;
 }
 
@@ -1204,7 +1204,7 @@ watch(() => [localTask.id, localTask.fase], () => {
 .workspace-stage__eyebrow {
   color: #08724c;
   font-size: .72rem;
-  font-weight: 780;
+  font-weight: 600;
   letter-spacing: .06em;
   text-transform: uppercase;
 }
@@ -1212,7 +1212,7 @@ watch(() => [localTask.id, localTask.fase], () => {
 .workspace-stage__header h2 {
   color: #101812;
   font-size: 1rem;
-  font-weight: 780;
+  font-weight: 600;
 }
 
 .workspace-stage__form-region {
@@ -1239,7 +1239,7 @@ watch(() => [localTask.id, localTask.fase], () => {
 .workspace-empty-context__eyebrow {
   color: #08724c;
   font-size: .78rem;
-  font-weight: 780;
+  font-weight: 600;
   letter-spacing: .06em;
   text-transform: uppercase;
 }
@@ -1253,8 +1253,8 @@ watch(() => [localTask.id, localTask.fase], () => {
   border: 0;
   border-radius: .65rem;
   color: #fff;
-  font-weight: 760;
-  background: #007a4d;
+  font-weight: 600;
+  background: #065535;
 }
 
 .workspace-sidebar-frame :deep(aside.task-sidebar) {

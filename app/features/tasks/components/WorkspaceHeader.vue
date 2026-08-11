@@ -172,7 +172,7 @@ defineExpose({ focusNavigation });
   overflow: hidden;
   color: #08724c;
   font-size: .72rem;
-  font-weight: 780;
+  font-weight: 600;
   letter-spacing: .04em;
   text-overflow: ellipsis;
   text-transform: uppercase;
@@ -222,7 +222,7 @@ defineExpose({ focusNavigation });
   height: .5rem;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: #067b46;
+  background: #044128;
   content: "";
 }
 

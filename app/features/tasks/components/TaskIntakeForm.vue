@@ -144,8 +144,8 @@ textarea {
 
 input:focus,
 textarea:focus {
-  border-color: #047d47;
-  outline: 2px solid rgba(4, 125, 71, .22);
+  border-color: #065535;
+  outline: 2px solid rgba(6, 85, 53, .22);
   outline-offset: 1px;
 }
 
@@ -160,9 +160,9 @@ button[type="submit"] {
   min-height: 2.6rem;
   margin-top: .35rem;
   padding: .6rem 1.2rem;
-  border: 1px solid #047d47;
+  border: 1px solid #065535;
   border-radius: .55rem;
-  background: #047d47;
+  background: #065535;
   color: #fff;
   font: inherit;
   font-weight: 600;
@@ -170,7 +170,7 @@ button[type="submit"] {
 }
 
 button[type="submit"]:hover:not(:disabled) {
-  background: #067b46;
+  background: #044128;
 }
 
 button[type="submit"]:disabled {

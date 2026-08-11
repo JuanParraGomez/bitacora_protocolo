@@ -22,7 +22,7 @@ section {
 
 h2 {
   margin: 0;
-  color: #067b46;
+  color: #044128;
   font-size: .78rem;
   font-weight: 600;
   letter-spacing: .08em;

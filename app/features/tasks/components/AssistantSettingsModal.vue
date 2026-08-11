@@ -151,11 +151,11 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 1.1rem;
   width: min(35rem, 100%);
-  border: 1px solid #cfded4;
-  border-radius: 1rem;
-  padding: 1.35rem;
+  border: 1px solid #e3e8e4;
+  border-radius: .9rem;
+  padding: 1.4rem;
   color: #15211a;
-  background: linear-gradient(145deg, #ffffff 0%, #f5fbf7 100%);
+  background: #fff;
   box-shadow: 0 28px 80px rgba(0, 47, 28, .22);
 }
 
@@ -166,7 +166,15 @@ onBeforeUnmount(() => {
   gap: 1rem;
 }
 
-.assistant-settings__header p,
+.assistant-settings__header p {
+  margin: 0;
+  color: #044128;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
 .assistant-settings__option small,
 .assistant-settings__status {
   margin: 0;
@@ -175,20 +183,28 @@ onBeforeUnmount(() => {
 }
 
 .assistant-settings__header h2 {
-  margin: .15rem 0 0;
-  color: #07150e;
-  font-size: 1.45rem;
+  margin: .2rem 0 0;
+  color: #101812;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
 }
 
 .assistant-settings__close {
   width: 2.3rem;
   height: 2.3rem;
-  border: 1px solid #d7e4db;
+  border: 1px solid #e3e8e4;
   border-radius: 999px;
-  color: #003f27;
+  color: #5a6a61;
   background: #fff;
-  font-size: 1.4rem;
+  font-size: 1.05rem;
   line-height: 1;
+  cursor: pointer;
+}
+
+.assistant-settings__close:hover {
+  background: #f1f4f2;
+  color: #173026;
 }
 
 .assistant-settings__options {
@@ -201,8 +217,9 @@ onBeforeUnmount(() => {
 
 .assistant-settings__options legend {
   margin-bottom: .25rem;
-  color: #27342d;
-  font-weight: 750;
+  color: #334139;
+  font-size: .85rem;
+  font-weight: 600;
 }
 
 .assistant-settings__option {
@@ -210,21 +227,30 @@ onBeforeUnmount(() => {
   grid-template-columns: auto 1fr;
   gap: .8rem;
   align-items: start;
-  border: 1px solid #d5e3da;
+  border: 1px solid #dfe6e1;
   border-radius: .8rem;
   padding: .9rem;
   background: #fff;
+  cursor: pointer;
 }
 
-.assistant-settings__option--active {
-  border-color: #007a4d;
-  background: #edf8f2;
-  box-shadow: inset 0 0 0 1px rgba(0, 122, 77, .15);
+.assistant-settings__option:hover {
+  background: #f7faf8;
+}
+
+.assistant-settings__option--active,
+.assistant-settings__option--active:hover {
+  border-color: #065535;
+  background: #eaf1eb;
+}
+
+.assistant-settings__option strong {
+  font-weight: 600;
 }
 
 .assistant-settings__option input {
   margin-top: .2rem;
-  accent-color: #007a4d;
+  accent-color: #065535;
 }
 
 .assistant-settings__option span {
@@ -240,24 +266,35 @@ onBeforeUnmount(() => {
 
 .assistant-settings__secondary,
 .assistant-settings__primary {
-  border: 1px solid #cfded4;
+  min-height: 2.5rem;
+  border: 1px solid #dfe6e1;
   border-radius: .55rem;
-  padding: .7rem .95rem;
-  font-weight: 750;
+  padding: .6rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .assistant-settings__secondary {
-  color: #2b3830;
+  color: #334139;
   background: #fff;
 }
 
+.assistant-settings__secondary:hover {
+  background: #f1f4f2;
+}
+
 .assistant-settings__primary {
-  border-color: #007a4d;
+  border-color: #065535;
   color: #fff;
-  background: linear-gradient(135deg, #007a4d 0%, #00925d 100%);
+  background: #065535;
+}
+
+.assistant-settings__primary:hover:not(:disabled) {
+  background: #044128;
 }
 
 .assistant-settings__primary:disabled {
-  opacity: .65;
+  opacity: .55;
+  cursor: default;
 }
 </style>

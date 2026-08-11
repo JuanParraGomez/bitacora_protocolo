@@ -395,7 +395,7 @@ watch(() => [props.task.id, props.task.fase], () => {
 
 .guided-phase-form__progress-step--complete::before,
 .guided-phase-form__progress-step--current::before {
-  background: #007a4d;
+  background: #065535;
 }
 
 .guided-phase-form__progress-step span {
@@ -415,9 +415,9 @@ watch(() => [props.task.id, props.task.fase], () => {
 
 .guided-phase-form__progress-step--complete span,
 .guided-phase-form__progress-step--current span {
-  border-color: #067b46;
+  border-color: #044128;
   color: #fff;
-  background: #067b46;
+  background: #044128;
 }
 
 .guided-phase-form__progress-step--current span {
@@ -498,12 +498,12 @@ watch(() => [props.task.id, props.task.fase], () => {
   align-items: center;
   gap: .45rem;
   min-height: 2.7rem;
-  border-color: #047d47;
+  border-color: #065535;
   padding: 0 1.2rem;
   color: #fff;
   font-size: .9rem;
   font-weight: 600;
-  background: #047d47;
+  background: #065535;
   box-shadow: none;
 }
 

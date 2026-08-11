@@ -99,7 +99,7 @@ const effectiveStatusClass = computed(() => {
 .evaluation-feedback__title {
   margin: 0;
   font-size: .88rem;
-  font-weight: 760;
+  font-weight: 600;
 }
 
 .evaluation-feedback__status {
@@ -114,7 +114,7 @@ const effectiveStatusClass = computed(() => {
 }
 
 .evaluation-feedback__status--ok {
-  color: #007a4d;
+  color: #065535;
 }
 
 .evaluation-feedback__status--warn {

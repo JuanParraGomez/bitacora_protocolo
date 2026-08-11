@@ -76,7 +76,7 @@ function labelForRecordKind(kind: LibraryRecordSummary['resourceKind']): string 
 }
 
 .library-list__item--selected {
-  border-color: #047d47;
+  border-color: #065535;
   background: #eaf1eb;
 }
 
